@@ -11,11 +11,17 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
   const [status, setStatus] = useState<'connecting' | 'connected' | 'ready'>('connecting');
   const [dots, setDots] = useState('');
   const [isHidden, setIsHidden] = useState(false);
+  const [playroomLoaded, setPlayroomLoaded] = useState(false);
 
   // Only show on mobile/touch devices
-  if (!shouldUsePlayroom()) {
+  const shouldUsePlayroomResult = shouldUsePlayroom();
+  console.log('🎮 PlayroomSessionScreen: shouldUsePlayroom() =', shouldUsePlayroomResult);
+  
+  if (!shouldUsePlayroomResult) {
     // Skip session screen on desktop
+    console.log('🎮 PlayroomSessionScreen: Desktop detected, skipping session screen');
     useEffect(() => {
+      console.log('🎮 PlayroomSessionScreen: Desktop - calling onSessionReady immediately');
       onSessionReady();
     }, [onSessionReady]);
     return null;
@@ -33,39 +39,122 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
     return () => clearInterval(interval);
   }, []);
 
-  // Wait for real Playroom connection with 3s timeout
+  // Track Playroom loading state
   useEffect(() => {
+    if (playroomLoaded) {
+      console.log('🎮 Playroom screen is now loaded and visible');
+    }
+  }, [playroomLoaded]);
+
+  // Advanced Playroom detection with MutationObserver
+  useEffect(() => {
+    if (!shouldUsePlayroom()) return;
+
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.type === 'childList') {
+          mutation.addedNodes.forEach((node) => {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              const element = node as Element;
+              // Check if the added element or its children contain Playroom elements
+              const playroomElements = element.querySelectorAll?.('[data-playroom], .playroom-joystick, [class*="playroom"], [class*="joystick"], .bootstrap-wrapper, [class*="bootstrap"]') || [];
+              const isPlayroomElement = element.matches?.('[data-playroom], .playroom-joystick, [class*="playroom"], [class*="joystick"], .bootstrap-wrapper, [class*="bootstrap"]') || false;
+              
+              // Also check if element has Playroom-like classes or IDs
+              const className = element.className || '';
+              const id = element.id || '';
+              const isPlayroomLike = className.includes('playroom') || 
+                                   className.includes('joystick') || 
+                                   className.includes('bootstrap') ||
+                                   id.includes('playroom') ||
+                                   id.includes('joystick');
+              
+              if (playroomElements.length > 0 || isPlayroomElement || isPlayroomLike) {
+                console.log('🎮 Playroom element detected via MutationObserver:', element);
+                if (!playroomLoaded) {
+                  setPlayroomLoaded(true);
+                }
+              }
+            }
+          });
+        }
+      });
+    });
+
+    // Start observing
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [playroomLoaded]);
+
+  // Wait for Playroom connection and Launch button click
+  useEffect(() => {
+    console.log('🎮 PlayroomSessionScreen: useEffect started');
     let isCompleted = false;
 
     const checkConnection = async () => {
       try {
+        console.log('🎮 Starting Playroom connection...');
         // Initialize Playroom session
         await playroomSession.initialize();
+        console.log('🎮 Playroom session initialized successfully');
         if (!isCompleted) {
           setStatus('connected');
+          console.log('🎮 Status set to connected');
         }
 
         // Wait for Playroom UI to be ready and then hide loading screen
         const checkPlayroomUI = () => {
-          if (isCompleted) return;
+          console.log('🎮 checkPlayroomUI called, isCompleted:', isCompleted);
+          if (isCompleted) {
+            console.log('🎮 checkPlayroomUI: Already completed, returning');
+            return;
+          }
           
           // Check if Playroom has rendered its UI elements
-          const playroomElements = document.querySelectorAll('[data-playroom], .playroom-joystick, [class*="playroom"], [class*="joystick"]');
+          const playroomElements = document.querySelectorAll('[data-playroom], .playroom-joystick, [class*="playroom"], [class*="joystick"], .bootstrap-wrapper, [class*="bootstrap"]');
+          console.log('🎮 checkPlayroomUI: Found', playroomElements.length, 'Playroom elements');
           
-          // Also check if our game canvas is ready
-          const gameCanvas = document.querySelector('canvas');
+          // Also check for any elements that might be Playroom UI
+          const allElements = document.querySelectorAll('*');
+          const playroomLikeElements = Array.from(allElements).filter(el => {
+            const className = el.className || '';
+            const id = el.id || '';
+            return className.includes('playroom') || 
+                   className.includes('joystick') || 
+                   className.includes('bootstrap') ||
+                   id.includes('playroom') ||
+                   id.includes('joystick');
+          });
+          console.log('🎮 checkPlayroomUI: Found', playroomLikeElements.length, 'Playroom-like elements:', playroomLikeElements);
           
-          // Check if Playroom session is ready
-          const isPlayroomReady = playroomSession.isReady();
-          
-          if (playroomElements.length > 0 || (gameCanvas && gameCanvas.width > 0) || isPlayroomReady) {
-            // Playroom UI is visible or game is ready, hide loading screen immediately
+          if (playroomElements.length > 0 || playroomLikeElements.length > 0) {
+            // Playroom UI is visible, track that it's loaded
+            if (!playroomLoaded) {
+              setPlayroomLoaded(true);
+              console.log('🎮 Playroom UI detected and loaded:', playroomElements.length, 'elements');
+            }
+            
+            // Playroom UI is visible, start game automatically
+            console.log('🎮 Setting isCompleted = true');
             isCompleted = true;
-            setIsHidden(true);
             setStatus('ready');
+            
+            // Start game immediately after Playroom is connected
+            console.log('🎮 Playroom connected! Starting game automatically...');
+            console.log('🎮 onSessionReady callback:', onSessionReady);
             setTimeout(() => {
+              console.log('🎮 About to call setIsHidden(true) and onSessionReady()');
+              setIsHidden(true);
+              console.log('🎮 Calling onSessionReady()...');
               onSessionReady();
-            }, 500);
+              console.log('🎮 onSessionReady() called successfully');
+            }, 1000); // Small delay to show "ready" status
           } else {
             // Check again in 200ms
             setTimeout(checkPlayroomUI, 200);
@@ -100,23 +189,13 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
       }
     };
 
-    // 3 second timeout - force hide loading screen
-    const timeout = setTimeout(() => {
-      if (!isCompleted) {
-        isCompleted = true;
-        setIsHidden(true);
-        setStatus('ready');
-        setTimeout(() => {
-          onSessionReady();
-        }, 500);
-      }
-    }, 3000);
 
+    console.log('🎮 PlayroomSessionScreen: About to call checkConnection()');
     checkConnection();
 
     // Cleanup function
     return () => {
-      clearTimeout(timeout);
+      // No cleanup needed for this implementation
     };
   }, [onSessionReady]);
 
@@ -127,7 +206,7 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
       case 'connected':
         return 'Conectado! Configurando controles...';
       case 'ready':
-        return 'Pronto! Iniciando jogo...';
+        return 'Playroom conectado! Iniciando jogo...';
       default:
         return 'Conectando...';
     }
@@ -163,13 +242,15 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 3000,
+      zIndex: 1, // Very low z-index to stay below Playroom
       fontFamily: "'Pixelify Sans', monospace",
       color: '#fff',
+      pointerEvents: status === 'ready' ? 'none' : 'auto', // Allow clicks through when ready
     }}>
       <div style={{
         textAlign: 'center',
         padding: '20px',
+        pointerEvents: 'auto', // Keep content interactive
       }}>
         <div style={{
           fontSize: '24px',
@@ -190,6 +271,19 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
         }}>
           {getStatusText()}
         </div>
+        
+        {/* Playroom loaded indicator */}
+        {playroomLoaded && (
+          <div style={{
+            fontSize: '14px',
+            color: '#00ff00',
+            marginBottom: '10px',
+            fontWeight: 'bold',
+            textShadow: '1px 1px 0px #000',
+          }}>
+            ✅ Playroom carregado
+          </div>
+        )}
 
         <div style={{
           fontSize: '12px',

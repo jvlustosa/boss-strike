@@ -8,18 +8,25 @@ interface PlayroomJoystickProps {
 
 export function PlayroomJoystick({ onFire }: PlayroomJoystickProps) {
   useEffect(() => {
+    console.log('🎮 PlayroomJoystick: useEffect started');
     // Check if we should use Playroom (only on mobile/touch devices)
     if (!shouldUsePlayroom()) {
-      console.log('Desktop detected - Playroom disabled:', getEnvironmentInfo());
+      console.log('🎮 PlayroomJoystick: Desktop detected - Playroom disabled:', getEnvironmentInfo());
       return;
     }
 
-    console.log('Mobile/Touch detected - Initializing Playroom:', getEnvironmentInfo());
+    console.log('🎮 PlayroomJoystick: Mobile/Touch detected - Initializing Playroom:', getEnvironmentInfo());
     
     // Initialize the persistent Playroom session
-    playroomSession.initialize();
+    console.log('🎮 PlayroomJoystick: About to call playroomSession.initialize()');
+    playroomSession.initialize().then(() => {
+      console.log('🎮 PlayroomJoystick: playroomSession.initialize() completed successfully');
+    }).catch((error) => {
+      console.error('🎮 PlayroomJoystick: playroomSession.initialize() failed:', error);
+    });
     
     // Set callbacks for this component
+    console.log('🎮 PlayroomJoystick: Setting callbacks');
     playroomSession.setCallbacks({ onFire });
 
     // Listen for soft restart events (game restart/level change)

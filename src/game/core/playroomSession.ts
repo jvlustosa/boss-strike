@@ -24,8 +24,9 @@ class PlayroomSessionManager {
   private connectionStatus: 'disconnected' | 'connecting' | 'connected' = 'disconnected';
 
   async initialize(): Promise<void> {
+    console.log('🎮 playroomSession: initialize() called');
     if (this.session.isInitialized) {
-      console.log('Playroom session already initialized');
+      console.log('🎮 playroomSession: Already initialized, returning');
       return;
     }
 

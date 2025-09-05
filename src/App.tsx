@@ -37,9 +37,12 @@ export default function App() {
   };
 
   const handleSessionReady = () => {
+    console.log('🎮 App: handleSessionReady called');
+    console.log('🎮 App: Current state - showPlayroomSession:', showPlayroomSession, 'gameStarted:', gameStarted);
     setShowPlayroomSession(false);
     setGameStarted(true);
     setIsPaused(false);
+    console.log('🎮 App: State updated - gameStarted should be true now');
   };
 
   const togglePause = () => {
@@ -60,7 +63,10 @@ export default function App() {
     };
   }, [gameStarted, isPaused]);
 
+  console.log('🎮 App: Render - gameStarted:', gameStarted, 'showPlayroomSession:', showPlayroomSession);
+  
   if (!gameStarted) {
+    console.log('🎮 App: Rendering MainMenu and/or PlayroomSessionScreen');
     return (
       <>
         <MainMenu onStartGame={handleStartGame} />
@@ -71,6 +77,7 @@ export default function App() {
     );
   }
 
+  console.log('🎮 App: Rendering GameCanvas');
   return (
     <div style={{
       display: 'flex',
