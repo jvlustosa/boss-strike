@@ -1,5 +1,6 @@
 import type { Boss, Bullet, Player, LevelConfig, BulletPattern } from '../core/types';
 import { LOGICAL_H, LOGICAL_W } from '../core/config';
+import { audioManager } from '../core/audio';
 
 export function updateBoss(boss: Boss, dt: number, bullets: Bullet[], player: Player, levelConfig: LevelConfig): void {
   // Atualizar movimento do boss (a partir do nível 4)

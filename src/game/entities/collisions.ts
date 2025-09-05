@@ -1,6 +1,8 @@
 import type { GameState } from '../core/types';
 import { aabbCollision } from '../engine/math';
 import { damageBoss } from './boss';
+import { audioManager } from '../core/audio';
+import { createBossExplosion } from '../systems/explosionSystem';
 
 export function checkCollisions(state: GameState): void {
   const { bullets, boss, player, hearts } = state;
@@ -43,7 +45,9 @@ export function checkCollisions(state: GameState): void {
         bullets.splice(i, 1);
         
         if (boss.hp <= 0) {
-          state.status = 'won';
+          // Create explosion animation at boss current position and start victory timer
+          createBossExplosion(state, boss.pos.x, boss.pos.y, boss.w, boss.h);
+          state.victoryTimer = 1.5; // 1.5 seconds delay before victory screen
         }
       }
     } else if (bullet.from === 'boss') {
@@ -58,6 +62,9 @@ export function checkCollisions(state: GameState): void {
 
 function damagePlayer(state: GameState): void {
   state.player.health--;
+  
+  // Play hit sound effect with random pitch variation
+  audioManager.playRandomPitch('hit', 0.4, 0.8, 1.2);
   
   if (state.player.health <= 0) {
     state.player.alive = false;

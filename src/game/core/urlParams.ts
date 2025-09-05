@@ -19,3 +19,4 @@ export function updateUrlLevel(level: number): void {
   url.searchParams.set('nivel', level.toString());
   window.history.pushState(null, '', url.toString());
 }
+

@@ -1,6 +1,7 @@
 import type { Player, GameState } from '../core/types';
 import { LOGICAL_W, LOGICAL_H, PLAYER_SPEED, FIRE_COOLDOWN } from '../core/config';
 import { clamp } from '../engine/math';
+import { audioManager } from '../core/audio';
 
 export function updatePlayer(player: Player, keys: Record<string, boolean>, dt: number): void {
   if (!player.alive) return;
@@ -44,4 +45,7 @@ export function firePlayerBullet(state: GameState): void {
   });
 
   player.cooldown = FIRE_COOLDOWN;
+  
+  // Play shoot sound effect with random pitch variation
+  audioManager.playSound('shoot', 0.3, 0.4);
 }

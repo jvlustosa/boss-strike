@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback } from 'react';
 import type { GameState } from '../game/core/types';
 import { createInitialState } from '../game/core/state';
 import { LOGICAL_W, LOGICAL_H } from '../game/core/config';
@@ -10,13 +10,24 @@ import { bulletSystem } from '../game/systems/bulletSystem';
 import { collisionSystem } from '../game/systems/collisionSystem';
 import { heartSystem } from '../game/systems/heartSystem';
 import { renderSystem } from '../game/systems/renderSystem';
+import { updateExplosionSystem } from '../game/systems/explosionSystem';
 import { getLevelFromUrl, updateUrlLevel } from '../game/core/urlParams';
 
-export function GameCanvas() {
+interface GameCanvasProps {
+  isPaused: boolean;
+}
+
+export function GameCanvas({ isPaused }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<GameState>(createInitialState(getLevelFromUrl()));
-  const restartTimerRef = useRef<number>(0);
   const scaleRef = useRef<number>(1);
+
+  // Start the game when component mounts
+  React.useEffect(() => {
+    if (stateRef.current.status === 'menu') {
+      stateRef.current.status = 'playing';
+    }
+  }, []);
 
   const setupCanvas = useCallback((canvas: HTMLCanvasElement) => {
     const ctx = canvas.getContext('2d')!;
@@ -43,19 +54,41 @@ export function GameCanvas() {
     // Input setup
     const cleanupInput = registerInput(state.keys);
 
+    // Handle ESC key for pause
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        // Toggle pause - this will be handled by the parent component
+        // We'll dispatch a custom event
+        window.dispatchEvent(new CustomEvent('togglePause'));
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+
     // Game loop
     const update = (dt: number) => {
-      if (state.status === 'playing') {
+      if (state.status === 'playing' && !isPaused) {
         state.time += dt;
         playerSystem(state, dt);
         bossSystem(state, dt);
         bulletSystem(state, dt);
         heartSystem(state, dt);
         collisionSystem(state);
+        
+        // Handle victory timer
+        if (state.victoryTimer > 0) {
+          state.victoryTimer -= dt;
+          if (state.victoryTimer <= 0) {
+            state.status = 'won';
+            // Increment victory count
+            const currentVictories = parseInt(localStorage.getItem('bossAttackVictories') || '0', 10);
+            localStorage.setItem('bossAttackVictories', (currentVictories + 1).toString());
+          }
+        }
       } else if (state.status === 'lost') {
         // Auto-restart after 2 seconds when player loses
-        restartTimerRef.current += dt;
-        if (restartTimerRef.current >= 2) {
+        state.restartTimer += dt;
+        if (state.restartTimer >= 2) {
           // Reset game state, mantendo o mesmo nível
           const next = createInitialState(state.level);
           
@@ -69,13 +102,13 @@ export function GameCanvas() {
             keysRef[key] = false;
           }
           
-          restartTimerRef.current = 0;
+          state.restartTimer = 0;
         }
       }
     };
 
     const render = () => {
-      renderSystem(ctx, state);
+      renderSystem(ctx, state, isPaused);
     };
 
     const cleanupLoop = createGameLoop(update, render);
@@ -111,6 +144,9 @@ export function GameCanvas() {
         
         restartTimerRef.current = 0;
       }
+      
+      // Always update explosion system (even when game is won/lost)
+      updateExplosionSystem(state, dt);
     };
     canvas.addEventListener('click', onClick);
 
@@ -118,9 +154,10 @@ export function GameCanvas() {
       cleanupInput();
       cleanupLoop();
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('keydown', handleKeyDown);
       canvas.removeEventListener('click', onClick);
     };
-  }, [setupCanvas]);
+  }, [setupCanvas, isPaused]);
 
   return (
     <canvas

@@ -2,7 +2,7 @@ import type { GameState } from '../core/types';
 import { colors } from '../core/assets';
 import { LOGICAL_W, LOGICAL_H } from '../core/config';
 
-export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState): void {
+export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, isPaused: boolean = false): void {
   // Clear screen
   ctx.fillStyle = colors.background;
   ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
@@ -53,17 +53,77 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState): v
     }
   }
 
+  // Explosion particles
+  for (const particle of state.explosionParticles) {
+    const alpha = particle.life / particle.maxLife;
+    const size = particle.size * alpha;
+    
+    ctx.fillStyle = particle.color;
+    ctx.fillRect(
+      Math.floor(particle.pos.x - size / 2),
+      Math.floor(particle.pos.y - size / 2),
+      Math.max(1, Math.floor(size)),
+      Math.max(1, Math.floor(size))
+    );
+  }
+
+  // Smoke particles (pixelated)
+  for (const smoke of state.smokeParticles) {
+    const size = Math.floor(smoke.size);
+    const alpha = smoke.alpha;
+    
+    // Create pixelated smoke effect with multiple small squares
+    ctx.fillStyle = `rgba(100, 100, 100, ${alpha})`;
+    
+    // Main smoke particle
+    ctx.fillRect(
+      Math.floor(smoke.pos.x - size / 2),
+      Math.floor(smoke.pos.y - size / 2),
+      size,
+      size
+    );
+    
+    // Add smaller particles around for more realistic smoke
+    if (size > 2) {
+      ctx.fillStyle = `rgba(120, 120, 120, ${alpha * 0.6})`;
+      ctx.fillRect(
+        Math.floor(smoke.pos.x - size / 2 - 1),
+        Math.floor(smoke.pos.y - size / 2),
+        1,
+        1
+      );
+      ctx.fillRect(
+        Math.floor(smoke.pos.x + size / 2),
+        Math.floor(smoke.pos.y - size / 2),
+        1,
+        1
+      );
+      ctx.fillRect(
+        Math.floor(smoke.pos.x - size / 2),
+        Math.floor(smoke.pos.y + size / 2),
+        1,
+        1
+      );
+      ctx.fillRect(
+        Math.floor(smoke.pos.x + size / 2),
+        Math.floor(smoke.pos.y + size / 2),
+        1,
+        1
+      );
+    }
+  }
+
   // Level Info
   ctx.fillStyle = '#fff';
-  ctx.font = '6px monospace';
+  ctx.font = '6px "Pixelify Sans", monospace';
   ctx.textBaseline = 'top';
   ctx.fillText(`Nível ${state.level}: ${state.levelConfig.name}`, 4, 4);
 
-  // Boss HP Bar
-  const hpBarW = 40;
-  const hpBarH = 4;
-  const hpBarX = (LOGICAL_W - hpBarW) / 2;
-  const hpBarY = 16;
+  // Boss HP Bar (follows boss position)
+  const hpBarW = 32;
+  const hpBarH = 2;
+  const hpBarX = state.boss.pos.x + state.boss.w / 2 - hpBarW / 2;
+  const hpBarY = state.boss.pos.y - 6;
   
   // HP Background
   ctx.fillStyle = '#333';
@@ -103,7 +163,7 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState): v
 
     // Title
     ctx.fillStyle = '#0f0';
-    ctx.font = '8px monospace';
+    ctx.font = '8px "Pixelify Sans", monospace';
     ctx.textBaseline = 'top';
     ctx.fillText('VITÓRIA!', boxX + 8, boxY + 8);
 
@@ -117,6 +177,7 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState): v
     ctx.strokeStyle = '#0f0';
     ctx.strokeRect(btnX, btnY, btnW, btnH);
     ctx.fillStyle = '#0f0';
+    ctx.font = '6px "Pixelify Sans", monospace';
     ctx.fillText('Próxima Fase', btnX + 8, btnY + 4);
 
     // Expor bounds do botão no estado para clique
@@ -125,5 +186,57 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState): v
   } else {
     // @ts-ignore
     (state as any)._nextBtn = undefined;
+  }
+
+  // Show pause indicator
+  if (isPaused) {
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+    
+    ctx.fillStyle = '#fff';
+    ctx.font = '12px "Pixelify Sans", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('PAUSADO', LOGICAL_W / 2, LOGICAL_H / 2);
+  }
+
+  // Game Over Screen
+  if (state.status === 'lost') {
+    // Dark overlay
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+    ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+
+    // Game Over Box
+    const boxW = 140;
+    const boxH = 80;
+    const boxX = (LOGICAL_W - boxW) / 2;
+    const boxY = (LOGICAL_H - boxH) / 2;
+    
+    ctx.fillStyle = '#111';
+    ctx.fillRect(boxX, boxY, boxW, boxH);
+    ctx.strokeStyle = '#f00';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(boxX, boxY, boxW, boxH);
+
+    // Game Over Title
+    ctx.fillStyle = '#f00';
+    ctx.font = '16px "Pixelify Sans", monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('GAME OVER', boxX + boxW / 2, boxY + 8);
+
+    // Restart message
+    ctx.fillStyle = '#fff';
+    ctx.font = '8px "Pixelify Sans", monospace';
+    ctx.fillText('Reiniciando em...', boxX + boxW / 2, boxY + 32);
+
+    // Countdown based on restart timer
+    const restartTime = 2.0; // 2 seconds from GameCanvas
+    const timeLeft = Math.max(0, restartTime - state.restartTimer);
+    const countdown = Math.ceil(timeLeft);
+    
+    ctx.fillStyle = '#ff0';
+    ctx.font = '12px "Pixelify Sans", monospace';
+    ctx.fillText(countdown.toString(), boxX + boxW / 2, boxY + 48);
   }
 }

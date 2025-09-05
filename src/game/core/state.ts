@@ -51,7 +51,11 @@ export function createInitialState(level: number = 1): GameState {
     bullets: [],
     hearts: [],
     heartsSpawnedThisLevel: 0,
+    explosionParticles: [],
+    smokeParticles: [],
     keys: {},
-    status: 'playing',
+    status: 'menu',
+    victoryTimer: 0,
+    restartTimer: 0,
   };
 }

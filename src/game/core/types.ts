@@ -49,6 +49,25 @@ export type Heart = {
   collected: boolean;
 };
 
+export type ExplosionParticle = {
+  pos: Vec2;
+  vel: Vec2;
+  life: number;
+  maxLife: number;
+  size: number;
+  color: string;
+};
+
+export type SmokeParticle = {
+  pos: Vec2;
+  vel: Vec2;
+  life: number;
+  maxLife: number;
+  size: number;
+  alpha: number;
+  drift: number;
+};
+
 export type BulletPattern = 
   | { type: 'single' }
   | { type: 'double'; spread: number }
@@ -84,6 +103,10 @@ export type GameState = {
   bullets: Bullet[];
   hearts: Heart[];
   heartsSpawnedThisLevel: number;
+  explosionParticles: ExplosionParticle[];
+  smokeParticles: SmokeParticle[];
   keys: Record<string, boolean>;
-  status: 'playing' | 'won' | 'lost';
+  status: 'menu' | 'playing' | 'paused' | 'won' | 'lost';
+  victoryTimer: number;
+  restartTimer: number;
 };
