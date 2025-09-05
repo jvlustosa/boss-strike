@@ -15,13 +15,15 @@ import { getLevelFromUrl, updateUrlLevel } from '../game/core/urlParams';
 import { MobileControlsLayout } from './MobileControlsLayout';
 import { MobileCredits } from './MobileCredits';
 import { SubtleLogger } from './SubtleLogger';
+import { multiplayerSession } from '../game/core/multiplayerSession';
 
 interface GameCanvasProps {
   isPaused: boolean;
   onGameStateChange?: (gameState: GameState) => void;
+  isMultiplayer?: boolean;
 }
 
-export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
+export function GameCanvas({ isPaused, onGameStateChange, isMultiplayer = false }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<GameState>(createInitialState(1)); // Always start at level 1
   const scaleRef = useRef<number>(1);
@@ -32,7 +34,12 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
     if (stateRef.current.status === 'menu') {
       stateRef.current.status = 'playing';
     }
-  }, []);
+    
+    // Set multiplayer flag in game state
+    if (isMultiplayer) {
+      stateRef.current.isMultiplayer = true;
+    }
+  }, [isMultiplayer]);
 
   const setupCanvas = useCallback((canvas: HTMLCanvasElement) => {
     const ctx = canvas.getContext('2d')!;
@@ -74,7 +81,24 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
     const update = (dt: number) => {
       if (state.status === 'playing' && !isPaused) {
         state.time += dt;
-        playerSystem(state, dt);
+        
+        // In multiplayer mode, sync with multiplayer session
+        if (isMultiplayer && multiplayerSession.isConnected()) {
+          // Set the game state in multiplayer session
+          multiplayerSession.setGameState(state);
+          
+          // Get updated game state from multiplayer session
+          const multiplayerState = multiplayerSession.getGameState();
+          if (multiplayerState) {
+            // Merge multiplayer state with local state
+            state.players = multiplayerState.players;
+            state.bullets = multiplayerState.bullets;
+          }
+        } else {
+          // Single player mode - use normal systems
+          playerSystem(state, dt);
+        }
+        
         bossSystem(state, dt);
         bulletSystem(state, dt);
         heartSystem(state, dt);

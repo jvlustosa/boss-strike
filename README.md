@@ -47,6 +47,7 @@ Um jogo de batalha contra boss em estilo retro, desenvolvido com React + TypeScr
 
 - ✅ Controles de teclado (WASD/Arrow Keys + Space)
 - ✅ Controles touch para mobile (Playroom Joystick)
+- ✅ **MULTIPLAYER** - Jogue com amigos via Playroom
 - ✅ Sistema de níveis progressivos
 - ✅ Sistema de pontuação e vitórias
 - ✅ Efeitos sonoros
@@ -80,10 +81,18 @@ npm run preview
 
 ## 🎮 Como Jogar
 
+### Modo Single Player
 1. **Movimento**: WASD ou Arrow Keys
 2. **Atirar**: Space
 3. **Pausar**: ESC
 4. **Objetivo**: Destrua o boss atirando no ponto fraco (amarelo)
+
+### Modo Multiplayer
+1. **Selecione "MULTIPLAYER"** no menu principal
+2. **Compartilhe o link** com seus amigos
+3. **Cada jogador** controla seu próprio personagem
+4. **Trabalhem juntos** para derrotar o boss
+5. **Jogadores têm cores diferentes** para identificação
 
 ## 🔧 Tecnologias
 

@@ -1,6 +1,7 @@
 export type Vec2 = { x: number; y: number };
 
 export type Player = {
+  id?: string;
   pos: Vec2;
   w: number;
   h: number;
@@ -40,6 +41,7 @@ export type Bullet = {
   h: number;
   vel: Vec2;
   from: 'player' | 'boss';
+  playerId?: string;
 };
 
 export type Heart = {
@@ -99,6 +101,7 @@ export type GameState = {
   level: number;
   levelConfig: LevelConfig;
   player: Player;
+  players?: Player[]; // For multiplayer mode
   boss: Boss;
   bullets: Bullet[];
   hearts: Heart[];
@@ -109,4 +112,5 @@ export type GameState = {
   status: 'menu' | 'playing' | 'paused' | 'won' | 'lost';
   victoryTimer: number;
   restartTimer: number;
+  isMultiplayer?: boolean;
 };

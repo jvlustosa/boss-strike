@@ -5,6 +5,7 @@ import { PauseButton } from './components/PauseButton';
 import { PauseMenu } from './components/PauseMenu';
 import { LevelTitle } from './components/LevelTitle';
 import { PlayroomSessionScreen } from './components/PlayroomSessionScreen';
+import { MultiplayerSessionScreen } from './components/MultiplayerSessionScreen';
 import { updateUrlLevel } from './game/core/urlParams';
 
 export default function App() {
@@ -12,9 +13,17 @@ export default function App() {
   const [isPaused, setIsPaused] = useState(false);
   const [gameState, setGameState] = useState<any>(null);
   const [showPlayroomSession, setShowPlayroomSession] = useState(false);
+  const [showMultiplayerSession, setShowMultiplayerSession] = useState(false);
+  const [isMultiplayer, setIsMultiplayer] = useState(false);
 
   const handleStartGame = () => {
+    setIsMultiplayer(false);
     setShowPlayroomSession(true);
+  };
+
+  const handleStartMultiplayer = () => {
+    setIsMultiplayer(true);
+    setShowMultiplayerSession(true);
   };
 
   const handlePause = () => {
@@ -30,6 +39,8 @@ export default function App() {
     updateUrlLevel(1);
     setGameStarted(false);
     setIsPaused(false);
+    setIsMultiplayer(false);
+    setShowMultiplayerSession(false);
   };
 
   const handleGameStateChange = (state: any) => {
@@ -38,8 +49,9 @@ export default function App() {
 
   const handleSessionReady = () => {
     console.log('🎮 App: handleSessionReady called');
-    console.log('🎮 App: Current state - showPlayroomSession:', showPlayroomSession, 'gameStarted:', gameStarted);
+    console.log('🎮 App: Current state - showPlayroomSession:', showPlayroomSession, 'showMultiplayerSession:', showMultiplayerSession, 'gameStarted:', gameStarted);
     setShowPlayroomSession(false);
+    setShowMultiplayerSession(false);
     setGameStarted(true);
     setIsPaused(false);
     console.log('🎮 App: State updated - gameStarted should be true now');
@@ -63,15 +75,18 @@ export default function App() {
     };
   }, [gameStarted, isPaused]);
 
-  console.log('🎮 App: Render - gameStarted:', gameStarted, 'showPlayroomSession:', showPlayroomSession);
+  console.log('🎮 App: Render - gameStarted:', gameStarted, 'showPlayroomSession:', showPlayroomSession, 'showMultiplayerSession:', showMultiplayerSession);
   
   if (!gameStarted) {
-    console.log('🎮 App: Rendering MainMenu and/or PlayroomSessionScreen');
+    console.log('🎮 App: Rendering MainMenu and/or SessionScreen');
     return (
       <>
-        <MainMenu onStartGame={handleStartGame} />
+        <MainMenu onStartGame={handleStartGame} onStartMultiplayer={handleStartMultiplayer} />
         {showPlayroomSession && (
           <PlayroomSessionScreen onSessionReady={handleSessionReady} />
+        )}
+        {showMultiplayerSession && (
+          <MultiplayerSessionScreen onSessionReady={handleSessionReady} />
         )}
       </>
     );
@@ -89,7 +104,7 @@ export default function App() {
     }}>
       <div style={{ position: 'relative' }}>
         {gameState && <LevelTitle gameState={gameState} />}
-        <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} />
+        <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} isMultiplayer={isMultiplayer} />
       </div>
       {!isPaused && <PauseButton onPause={handlePause} />}
       {isPaused && (

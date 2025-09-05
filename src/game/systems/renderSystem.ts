@@ -7,10 +7,28 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
   ctx.fillStyle = colors.background;
   ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
 
-  // Player
-  if (state.player.alive) {
-    ctx.fillStyle = colors.player;
-    ctx.fillRect(state.player.pos.x, state.player.pos.y, state.player.w, state.player.h);
+  // Players (single player or multiplayer)
+  if (state.isMultiplayer && state.players) {
+    // Multiplayer mode - render all players
+    state.players.forEach((player, index) => {
+      if (player.alive) {
+        // Different colors for different players
+        const playerColors = [colors.player, '#00ff00', '#ff00ff', '#ffff00', '#00ffff'];
+        ctx.fillStyle = playerColors[index % playerColors.length];
+        ctx.fillRect(player.pos.x, player.pos.y, player.w, player.h);
+        
+        // Draw player ID above player
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '6px monospace';
+        ctx.fillText(`P${index + 1}`, player.pos.x, player.pos.y - 2);
+      }
+    });
+  } else {
+    // Single player mode
+    if (state.player.alive) {
+      ctx.fillStyle = colors.player;
+      ctx.fillRect(state.player.pos.x, state.player.pos.y, state.player.w, state.player.h);
+    }
   }
 
   // Boss

@@ -3,10 +3,12 @@ import { AnimatedBackground } from './AnimatedBackground';
 
 interface MainMenuProps {
   onStartGame: () => void;
+  onStartMultiplayer: () => void;
 }
 
-export function MainMenu({ onStartGame }: MainMenuProps) {
+export function MainMenu({ onStartGame, onStartMultiplayer }: MainMenuProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [isMultiplayerHovered, setIsMultiplayerHovered] = useState(false);
   const [victoryCount, setVictoryCount] = useState(0);
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
@@ -122,6 +124,22 @@ export function MainMenu({ onStartGame }: MainMenuProps) {
           onClick={onStartGame}
         >
           JOGAR
+        </button>
+        
+        <button
+          style={{
+            ...buttonStyle,
+            backgroundColor: isMultiplayerHovered ? '#444' : '#222',
+            marginTop: isMobile ? '15px' : '20px',
+            boxShadow: isMultiplayerHovered 
+              ? 'inset 0 0 0 3px #fff, 0 0 0 3px #fff, 4px 4px 0px #333' 
+              : 'inset 0 0 0 3px #fff, 4px 4px 0px #333',
+          }}
+          onMouseEnter={() => setIsMultiplayerHovered(true)}
+          onMouseLeave={() => setIsMultiplayerHovered(false)}
+          onClick={onStartMultiplayer}
+        >
+          MULTIPLAYER
         </button>
       </div>
     </>
