@@ -63,3 +63,4 @@ export const audioManager = new AudioManager();
 audioManager.loadSound('shoot', '/audio/mixkit-explainer-video-game-alert-sweep-236.wav');
 audioManager.loadSound('boss_shoot', '/audio/mixkit-explainer-video-game-alert-sweep-236.wav');
 audioManager.loadSound('hit', '/audio/mixkit-fast-blow-2144.wav');
+audioManager.loadSound('heal', '/audio/heal-health.mp3');

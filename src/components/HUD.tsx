@@ -17,7 +17,6 @@ export function HUD({ gameState, onRestart }: HUDProps) {
         fontSize: '14px',
       }}>
         <div>HP: {gameState.boss.hp}/{gameState.boss.hpMax}</div>
-        <div>Controls: A/D or ←/→ to move, SPACE to fire</div>
       </div>
     );
   }

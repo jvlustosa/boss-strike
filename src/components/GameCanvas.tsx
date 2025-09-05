@@ -12,7 +12,9 @@ import { heartSystem } from '../game/systems/heartSystem';
 import { renderSystem } from '../game/systems/renderSystem';
 import { updateExplosionSystem } from '../game/systems/explosionSystem';
 import { getLevelFromUrl, updateUrlLevel } from '../game/core/urlParams';
-import { TouchControls } from './TouchControls';
+import { MobileControlsLayout } from './MobileControlsLayout';
+import { MobileCredits } from './MobileCredits';
+import { SubtleLogger } from './SubtleLogger';
 
 interface GameCanvasProps {
   isPaused: boolean;
@@ -22,6 +24,7 @@ export function GameCanvas({ isPaused }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<GameState>(createInitialState(getLevelFromUrl()));
   const scaleRef = useRef<number>(1);
+  const isTransitioningRef = useRef(false);
 
   // Start the game when component mounts
   React.useEffect(() => {
@@ -90,6 +93,8 @@ export function GameCanvas({ isPaused }: GameCanvasProps) {
         // Auto-restart after 2 seconds when player loses
         state.restartTimer += dt;
         if (state.restartTimer >= 2) {
+          console.log('Game: Restarting game...');
+          
           // Reset game state, mantendo o mesmo nível
           const next = createInitialState(state.level);
           
@@ -103,7 +108,16 @@ export function GameCanvas({ isPaused }: GameCanvasProps) {
             keysRef[key] = false;
           }
           
+          // Force joystick cleanup on restart
+          forceJoystickCleanup();
+          
+          // Reset all timers and state
           state.restartTimer = 0;
+          state.victoryTimer = 0;
+          state.time = 0;
+          state.status = 'playing';
+          
+          console.log('Game: Restart completed');
         }
       }
     };
@@ -122,20 +136,33 @@ export function GameCanvas({ isPaused }: GameCanvasProps) {
 
     // Click handling for next level button
     const onClick = (e: MouseEvent) => {
-      if (state.status !== 'won') return;
+      if (state.status !== 'won' || isTransitioningRef.current) return;
       const rect = canvas.getBoundingClientRect();
       const x = (e.clientX - rect.left) / scaleRef.current;
       const y = (e.clientY - rect.top) / scaleRef.current;
       const btn = (state as any)._nextBtn as { x: number; y: number; w: number; h: number } | undefined;
       if (btn && x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+        isTransitioningRef.current = true;
+        console.log('Game: Transitioning to next level...');
+        
         // Avançar para próxima fase
         const nextLevel = state.level + 1;
         updateUrlLevel(nextLevel);
-        const next = createInitialState(nextLevel);
         
-        // Preservar a referência do objeto keys para não quebrar o input
+        // Criar novo estado completamente
+        const newState = createInitialState(nextLevel);
+        
+        // Preservar apenas o que é necessário
         const keysRef = state.keys;
-        Object.assign(state, next);
+        
+        // Limpar estado atual
+        state.bullets.length = 0;
+        state.hearts.length = 0;
+        state.explosionParticles.length = 0;
+        state.smokeParticles.length = 0;
+        
+        // Aplicar novo estado
+        Object.assign(state, newState);
         state.keys = keysRef;
         
         // Limpar qualquer tecla pressionada
@@ -143,7 +170,31 @@ export function GameCanvas({ isPaused }: GameCanvasProps) {
           keysRef[key] = false;
         }
         
+        // Force joystick cleanup on level transition
+        forceJoystickCleanup();
+        
+        // Reset timers
         state.restartTimer = 0;
+        state.victoryTimer = 0;
+        state.time = 0;
+        
+        // Garantir que o status seja 'playing'
+        state.status = 'playing';
+        
+        // Forçar uma atualização do canvas
+        if (canvas) {
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            renderSystem(ctx, state, isPaused);
+          }
+        }
+        
+        console.log(`Game: Transition to level ${nextLevel} completed`);
+        
+        // Reset transition flag after a short delay
+        setTimeout(() => {
+          isTransitioningRef.current = false;
+        }, 100);
       }
       
       // Always update explosion system (even when game is won/lost)
@@ -160,16 +211,28 @@ export function GameCanvas({ isPaused }: GameCanvasProps) {
     };
   }, [setupCanvas, isPaused]);
 
-  const handleTouchMove = (direction: 'left' | 'right' | 'up' | 'down' | null) => {
-    if ((window as any).handleTouchMove) {
-      (window as any).handleTouchMove(direction);
-    }
-  };
-
-  const handleTouchFire = () => {
+  const handlePlayroomFire = () => {
     if ((window as any).handleTouchFire) {
       (window as any).handleTouchFire();
     }
+  };
+
+  // Soft restart joystick on game restart/level change (keep session alive)
+  const forceJoystickCleanup = () => {
+    // Clear input first
+    if ((window as any).forceClearInput) {
+      (window as any).forceClearInput();
+    }
+    
+    // Dispatch custom event for soft restart (keeps Playroom session alive)
+    window.dispatchEvent(new CustomEvent('forceJoystickCleanup'));
+    
+    // Reinitialize input system after a short delay
+    setTimeout(() => {
+      if ((window as any).forceReinitInput) {
+        (window as any).forceReinitInput();
+      }
+    }, 100); // Shorter delay since we're keeping session alive
   };
 
   return (
@@ -183,7 +246,9 @@ export function GameCanvas({ isPaused }: GameCanvasProps) {
           maxHeight: '100%',
         }}
       />
-      <TouchControls onMove={handleTouchMove} onFire={handleTouchFire} />
+      <MobileControlsLayout onFire={handlePlayroomFire} />
+      <MobileCredits visible={true} position="top-left" />
+      {/* <SubtleLogger enabled={true} position="bottom-right" maxLogs={2} /> */}
     </>
   );
 }

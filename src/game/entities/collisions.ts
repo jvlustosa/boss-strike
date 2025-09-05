@@ -31,6 +31,7 @@ export function checkCollisions(state: GameState): void {
       if (!heart.collected && aabbCollision(toAABB(player), toAABB(heart))) {
         heart.collected = true;
         player.health++;
+        audioManager.playSound('heal', 0.8);
       }
     }
   }

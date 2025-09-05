@@ -1,0 +1,39 @@
+# Cursor Rules for Boss Attack Game
+
+## General Rules
+- Treat the user as a senior dev — no need to explain basics
+- Be concise. One-liners > paragraphs. Use code blocks where useful
+- Skip setup steps unless explicitly asked
+- Assume context — don't repeat what the user knows
+- Suggest the most direct path to implementation
+- Default to performance and scalability best practices
+- Prefer native browser APIs and Next.js built-ins unless asked otherwise
+- Only comment code if absolutely necessary to clarify logic
+- Don't ask questions — infer intent and deliver
+- Use TS/ESLint/Prettier friendly code by default
+
+## Specific Rules for This Project
+
+### Game Canvas Visualization
+- **NEVER** attempt to draw or represent the game canvas in ASCII art
+- **NEVER** create ASCII representations of the game layout
+- **NEVER** use ASCII characters to show game elements like:
+  - Canvas boundaries
+  - Game objects positioning
+  - UI element layouts
+  - Screen layouts with ASCII characters
+- When describing game layouts, use text descriptions only
+- Focus on code implementation, not visual representations
+
+### Game Development
+- This is a React/TypeScript game using Canvas API
+- Uses PlayroomKit for mobile joystick controls
+- Has desktop/mobile environment detection
+- Focus on functionality over visual explanations
+
+### Code Style
+- Use TypeScript strict mode
+- Prefer functional components with hooks
+- Use proper error handling
+- Keep components focused and single-purpose
+- Use meaningful variable and function names

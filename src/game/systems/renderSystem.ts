@@ -200,6 +200,7 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     ctx.fillText('PAUSADO', LOGICAL_W / 2, LOGICAL_H / 2);
   }
 
+
   // Game Over Screen
   if (state.status === 'lost') {
     // Dark overlay

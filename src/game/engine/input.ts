@@ -73,9 +73,76 @@ export function registerInput(keys: Record<string, boolean>) {
     }, 100);
   };
 
+  // Handle continuous joystick input (x, y values from -1 to 1)
+  const handleJoystickMove = (x: number, y: number) => {
+    // Clear all movement keys first
+    keys['a'] = false;
+    keys['d'] = false;
+    keys['w'] = false;
+    keys['s'] = false;
+    keys['arrowleft'] = false;
+    keys['arrowright'] = false;
+    keys['arrowup'] = false;
+    keys['arrowdown'] = false;
+
+    // Use smaller deadzone for more responsive movement
+    const deadzone = 0.05;
+    
+    // Set keys based on joystick values - allow simultaneous movement
+    if (Math.abs(x) > deadzone) {
+      if (x < 0) {
+        keys['a'] = true;
+        keys['arrowleft'] = true;
+      } else {
+        keys['d'] = true;
+        keys['arrowright'] = true;
+      }
+    }
+    
+    if (Math.abs(y) > deadzone) {
+      if (y < 0) {
+        keys['w'] = true;
+        keys['arrowup'] = true;
+      } else {
+        keys['s'] = true;
+        keys['arrowdown'] = true;
+      }
+    }
+  };
+
+  // Force clear all input keys
+  const forceClearInput = () => {
+    console.log('Input: Force clearing all keys');
+    for (const key in keys) {
+      keys[key] = false;
+    }
+  };
+
+  // Force reinitialize input system
+  const forceReinitInput = () => {
+    console.log('Input: Force reinitializing input system');
+    
+    // Clear all keys first
+    for (const key in keys) {
+      keys[key] = false;
+    }
+    
+    // Re-expose handlers to ensure they're available
+    (window as any).handleTouchMove = handleTouchMove;
+    (window as any).handleTouchFire = handleTouchFire;
+    (window as any).handleJoystickMove = handleJoystickMove;
+    (window as any).forceClearInput = forceClearInput;
+    (window as any).forceReinitInput = forceReinitInput;
+    
+    console.log('Input: Input system reinitialized');
+  };
+
   // Expose touch handlers globally
   (window as any).handleTouchMove = handleTouchMove;
   (window as any).handleTouchFire = handleTouchFire;
+  (window as any).handleJoystickMove = handleJoystickMove;
+  (window as any).forceClearInput = forceClearInput;
+  (window as any).forceReinitInput = forceReinitInput;
   
   window.addEventListener('keydown', onDown);
   window.addEventListener('keyup', onUp);
@@ -87,5 +154,8 @@ export function registerInput(keys: Record<string, boolean>) {
     window.removeEventListener('blur', onBlur);
     delete (window as any).handleTouchMove;
     delete (window as any).handleTouchFire;
+    delete (window as any).handleJoystickMove;
+    delete (window as any).forceClearInput;
+    delete (window as any).forceReinitInput;
   };
 }
