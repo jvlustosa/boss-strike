@@ -6,8 +6,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:check": "tsc && vite build",
-    "preview": "vite preview",
-    "vercel-build": "vite build"
+    "preview": "vite preview"
   },
   "dependencies": {
     "playroomkit": "^0.0.91",

@@ -60,7 +60,7 @@ O Vercel detectará automaticamente:
 - **Code Splitting**: Vendor, Playroom e App separados
 - **Minificação**: ESBuild (mais rápido que Terser)
 - **Assets**: Cache de 1 ano para arquivos estáticos
-- **Build Otimizado**: Apenas Vite build (sem TypeScript check no deploy)
+- **Build Otimizado**: Script `build` usa apenas Vite (sem TypeScript check no deploy)
 
 ### Bundle Sizes
 - **Vendor**: ~141KB (React + React-DOM)
@@ -115,14 +115,14 @@ O Vercel detectará automaticamente:
 ## 🚨 Troubleshooting
 
 ### Se o deploy falhar:
-1. Verifique se `npm run vercel-build` funciona localmente
+1. Verifique se `npm run build` funciona localmente
 2. Confirme que todos os arquivos estão commitados
 3. Verifique os logs no Vercel Dashboard
 
 ### Erro de permissão TypeScript:
 - **Problema**: `sh: line 1: /vercel/path0/node_modules/.bin/tsc: Permission denied`
-- **Solução**: Use `npm run vercel-build` (apenas Vite build)
-- **Local**: Use `npm run build:check` para verificação completa
+- **Solução**: Script `build` agora usa apenas `vite build`
+- **Local**: Use `npm run build:check` para verificação completa com TypeScript
 
 ### Se os áudios não carregarem:
 1. Confirme que os arquivos estão em `public/audio/`

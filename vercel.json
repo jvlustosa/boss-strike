@@ -1,9 +1,5 @@
 {
   "version": 2,
-  "framework": "vite",
-  "buildCommand": "npm run vercel-build",
-  "outputDirectory": "dist",
-  "installCommand": "npm install",
   "routes": [
     {
       "src": "/audio/(.*)",
