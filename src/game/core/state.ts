@@ -11,6 +11,8 @@ export function createInitialState(): GameState {
       speed: 60,
       cooldown: 0,
       alive: true,
+      health: 5,
+      maxHealth: 5,
     },
     boss: {
       pos: { x: LOGICAL_W / 2 - BOSS_W / 2, y: 8 },
@@ -19,6 +21,24 @@ export function createInitialState(): GameState {
       weakSpot: { x: LOGICAL_W / 2 - 4, y: 12, w: 8, h: 8 },
       hp: BOSS_HP,
       hpMax: BOSS_HP,
+      arms: [
+        {
+          pos: { x: LOGICAL_W / 2 - BOSS_W / 2 - 8, y: 16 },
+          w: 6,
+          h: 3,
+          angle: 0,
+          shootCooldown: 0,
+          moveSpeed: 1.5,
+        },
+        {
+          pos: { x: LOGICAL_W / 2 + BOSS_W / 2 + 2, y: 16 },
+          w: 6,
+          h: 3,
+          angle: 0,
+          shootCooldown: 0,
+          moveSpeed: 1.5,
+        },
+      ],
     },
     bullets: [],
     keys: {},

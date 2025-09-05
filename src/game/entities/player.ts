@@ -1,5 +1,5 @@
 import type { Player, GameState } from '../core/types';
-import { LOGICAL_W, PLAYER_SPEED, FIRE_COOLDOWN } from '../core/config';
+import { LOGICAL_W, LOGICAL_H, PLAYER_SPEED, FIRE_COOLDOWN } from '../core/config';
 import { clamp } from '../engine/math';
 
 export function updatePlayer(player: Player, keys: Record<string, boolean>, dt: number): void {
@@ -12,6 +12,14 @@ export function updatePlayer(player: Player, keys: Record<string, boolean>, dt: 
 
   player.pos.x += moveX * PLAYER_SPEED * dt;
   player.pos.x = clamp(player.pos.x, 0, LOGICAL_W - player.w);
+
+  // Movimento vertical
+  let moveY = 0;
+  if (keys['w'] || keys['arrowup']) moveY -= 1;
+  if (keys['s'] || keys['arrowdown']) moveY += 1;
+
+  player.pos.y += moveY * PLAYER_SPEED * dt;
+  player.pos.y = clamp(player.pos.y, 0, LOGICAL_H - player.h);
 
   // Cooldown do tiro
   if (player.cooldown > 0) {

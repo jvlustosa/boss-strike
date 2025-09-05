@@ -13,6 +13,7 @@ import { renderSystem } from '../game/systems/renderSystem';
 export function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<GameState>(createInitialState());
+  const restartTimerRef = useRef<number>(0);
 
   const setupCanvas = useCallback((canvas: HTMLCanvasElement) => {
     const ctx = canvas.getContext('2d')!;
@@ -40,13 +41,21 @@ export function GameCanvas() {
 
     // Game loop
     const update = (dt: number) => {
-      if (state.status !== 'playing') return;
-
-      state.time += dt;
-      playerSystem(state, dt);
-      bossSystem(state, dt);
-      bulletSystem(state, dt);
-      collisionSystem(state);
+      if (state.status === 'playing') {
+        state.time += dt;
+        playerSystem(state, dt);
+        bossSystem(state, dt);
+        bulletSystem(state, dt);
+        collisionSystem(state);
+      } else if (state.status === 'lost') {
+        // Auto-restart after 2 seconds when player loses
+        restartTimerRef.current += dt;
+        if (restartTimerRef.current >= 2) {
+          // Reset game state
+          Object.assign(state, createInitialState());
+          restartTimerRef.current = 0;
+        }
+      }
     };
 
     const render = () => {

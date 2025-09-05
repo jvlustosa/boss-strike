@@ -7,6 +7,17 @@ export type Player = {
   speed: number;
   cooldown: number;
   alive: boolean;
+  health: number;
+  maxHealth: number;
+};
+
+export type BossArm = {
+  pos: Vec2;
+  w: number;
+  h: number;
+  angle: number;
+  shootCooldown: number;
+  moveSpeed: number;
 };
 
 export type Boss = {
@@ -16,6 +27,7 @@ export type Boss = {
   weakSpot: { x: number; y: number; w: number; h: number };
   hp: number;
   hpMax: number;
+  arms: BossArm[];
 };
 
 export type Bullet = {
