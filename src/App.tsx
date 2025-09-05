@@ -4,16 +4,17 @@ import { MainMenu } from './components/MainMenu';
 import { PauseButton } from './components/PauseButton';
 import { PauseMenu } from './components/PauseMenu';
 import { LevelTitle } from './components/LevelTitle';
+import { PlayroomSessionScreen } from './components/PlayroomSessionScreen';
 import { updateUrlLevel } from './game/core/urlParams';
 
 export default function App() {
   const [gameStarted, setGameStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [gameState, setGameState] = useState<any>(null);
+  const [showPlayroomSession, setShowPlayroomSession] = useState(false);
 
   const handleStartGame = () => {
-    setGameStarted(true);
-    setIsPaused(false);
+    setShowPlayroomSession(true);
   };
 
   const handlePause = () => {
@@ -35,6 +36,12 @@ export default function App() {
     setGameState(state);
   };
 
+  const handleSessionReady = () => {
+    setShowPlayroomSession(false);
+    setGameStarted(true);
+    setIsPaused(false);
+  };
+
   const togglePause = () => {
     if (gameStarted) {
       setIsPaused(!isPaused);
@@ -54,7 +61,14 @@ export default function App() {
   }, [gameStarted, isPaused]);
 
   if (!gameStarted) {
-    return <MainMenu onStartGame={handleStartGame} />;
+    return (
+      <>
+        <MainMenu onStartGame={handleStartGame} />
+        {showPlayroomSession && (
+          <PlayroomSessionScreen onSessionReady={handleSessionReady} />
+        )}
+      </>
+    );
   }
 
   return (

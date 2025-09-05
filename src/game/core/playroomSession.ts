@@ -21,11 +21,15 @@ class PlayroomSessionManager {
     onFire?: () => void;
   } = {};
 
+  private connectionStatus: 'disconnected' | 'connecting' | 'connected' = 'disconnected';
+
   async initialize(): Promise<void> {
     if (this.session.isInitialized) {
       console.log('Playroom session already initialized');
       return;
     }
+
+    this.connectionStatus = 'connecting';
 
     try {
       // Start the game
@@ -58,9 +62,12 @@ class PlayroomSessionManager {
       });
 
       this.session.isInitialized = true;
+      this.connectionStatus = 'connected';
       this.startGameLoop();
     } catch (error) {
       console.error('Failed to initialize Playroom session:', error);
+      this.connectionStatus = 'disconnected';
+      throw error; // Re-throw to let caller handle the error
     }
   }
 
@@ -149,6 +156,14 @@ class PlayroomSessionManager {
 
   isReady(): boolean {
     return this.session.isInitialized && this.session.currentPlayerJoystick !== null;
+  }
+
+  getConnectionStatus(): 'disconnected' | 'connecting' | 'connected' {
+    return this.connectionStatus;
+  }
+
+  isConnected(): boolean {
+    return this.connectionStatus === 'connected' && this.session.isInitialized;
   }
 }
 
