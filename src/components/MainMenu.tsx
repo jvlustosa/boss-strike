@@ -8,10 +8,11 @@ interface MainMenuProps {
 export function MainMenu({ onStartGame }: MainMenuProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [victoryCount, setVictoryCount] = useState(0);
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   // Load victory count from localStorage
   useEffect(() => {
-    const savedVictories = localStorage.getItem('bossAttackVictories');
+    const savedVictories = localStorage.getItem('bossStrikeVictories');
     if (savedVictories) {
       setVictoryCount(parseInt(savedVictories, 10));
     }
@@ -19,24 +20,22 @@ export function MainMenu({ onStartGame }: MainMenuProps) {
 
   const buttonStyle: React.CSSProperties = {
     fontFamily: "'Pixelify Sans', monospace",
-    fontSize: '20px',
+    fontSize: isMobile ? '18px' : '20px',
     fontWeight: '600',
     color: '#fff',
     backgroundColor: isHovered ? '#444' : '#222',
-    border: '4px solid #fff',
-    padding: '16px 32px',
+    border: isMobile ? '3px solid #fff' : '4px solid #fff',
+    padding: isMobile ? '14px 28px' : '16px 32px',
     cursor: 'pointer',
     textTransform: 'uppercase',
-    letterSpacing: '3px',
-    imageRendering: 'pixelated',
-    imageRendering: '-moz-crisp-edges',
-    imageRendering: 'crisp-edges',
+    letterSpacing: isMobile ? '2px' : '3px',
+    imageRendering: 'pixelated' as any,
     boxShadow: isHovered 
       ? 'inset 0 0 0 3px #fff, 0 0 0 3px #fff, 4px 4px 0px #333' 
       : 'inset 0 0 0 3px #fff, 4px 4px 0px #333',
     transition: 'none', // No smooth transitions for pixelated look
     outline: 'none',
-    minWidth: '140px',
+    minWidth: isMobile ? '120px' : '140px',
     textShadow: '1px 1px 0px #333',
   };
 
@@ -49,51 +48,44 @@ export function MainMenu({ onStartGame }: MainMenuProps) {
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     color: '#fff',
     fontFamily: "'Pixelify Sans', monospace",
-    imageRendering: 'pixelated',
-    imageRendering: '-moz-crisp-edges',
-    imageRendering: 'crisp-edges',
+    imageRendering: 'pixelated' as any,
     position: 'relative',
     zIndex: 1,
+    padding: isMobile ? '20px' : '0',
   };
 
   const titleStyle: React.CSSProperties = {
-    fontSize: '48px',
+    fontSize: isMobile ? '32px' : '48px',
     fontWeight: '700',
-    marginBottom: '30px',
+    marginBottom: isMobile ? '20px' : '30px',
     textAlign: 'center',
-    letterSpacing: '8px',
+    letterSpacing: isMobile ? '4px' : '8px',
     textShadow: '4px 4px 0px #333, 8px 8px 0px #666',
-    imageRendering: 'pixelated',
-    imageRendering: '-moz-crisp-edges',
-    imageRendering: 'crisp-edges',
+    imageRendering: 'pixelated' as any,
     color: '#fff',
     lineHeight: '1.2',
   };
 
   const creditStyle: React.CSSProperties = {
-    fontSize: '16px',
-    marginBottom: '40px',
+    fontSize: isMobile ? '14px' : '16px',
+    marginBottom: isMobile ? '30px' : '40px',
     textAlign: 'center',
-    letterSpacing: '3px',
+    letterSpacing: isMobile ? '2px' : '3px',
     color: '#aaa',
     fontFamily: "'Pixelify Sans', monospace",
     fontWeight: '400',
-    imageRendering: 'pixelated',
-    imageRendering: '-moz-crisp-edges',
-    imageRendering: 'crisp-edges',
+    imageRendering: 'pixelated' as any,
     textShadow: '1px 1px 0px #333',
   };
 
   const trophyStyle: React.CSSProperties = {
-    fontSize: '18px',
-    marginBottom: '30px',
+    fontSize: isMobile ? '16px' : '18px',
+    marginBottom: isMobile ? '25px' : '30px',
     textAlign: 'center',
     color: '#ffd700',
     fontFamily: "'Pixelify Sans', monospace",
     fontWeight: '600',
-    imageRendering: 'pixelated',
-    imageRendering: '-moz-crisp-edges',
-    imageRendering: 'crisp-edges',
+    imageRendering: 'pixelated' as any,
     textShadow: '2px 2px 0px #333',
     letterSpacing: '1px',
   };
@@ -113,7 +105,7 @@ export function MainMenu({ onStartGame }: MainMenuProps) {
     <>
       <AnimatedBackground />
       <div style={containerStyle}>
-        <h1 style={titleStyle}>BossAttack</h1>
+        <h1 style={titleStyle}>Boss Strike</h1>
         
         <div style={subtitleStyle}>Retro Boss Battle</div>
         

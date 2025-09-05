@@ -12,6 +12,7 @@ import { heartSystem } from '../game/systems/heartSystem';
 import { renderSystem } from '../game/systems/renderSystem';
 import { updateExplosionSystem } from '../game/systems/explosionSystem';
 import { getLevelFromUrl, updateUrlLevel } from '../game/core/urlParams';
+import { TouchControls } from './TouchControls';
 
 interface GameCanvasProps {
   isPaused: boolean;
@@ -81,8 +82,8 @@ export function GameCanvas({ isPaused }: GameCanvasProps) {
           if (state.victoryTimer <= 0) {
             state.status = 'won';
             // Increment victory count
-            const currentVictories = parseInt(localStorage.getItem('bossAttackVictories') || '0', 10);
-            localStorage.setItem('bossAttackVictories', (currentVictories + 1).toString());
+            const currentVictories = parseInt(localStorage.getItem('bossStrikeVictories') || '0', 10);
+            localStorage.setItem('bossStrikeVictories', (currentVictories + 1).toString());
           }
         }
       } else if (state.status === 'lost') {
@@ -142,11 +143,11 @@ export function GameCanvas({ isPaused }: GameCanvasProps) {
           keysRef[key] = false;
         }
         
-        restartTimerRef.current = 0;
+        state.restartTimer = 0;
       }
       
       // Always update explosion system (even when game is won/lost)
-      updateExplosionSystem(state, dt);
+      updateExplosionSystem(state, 0);
     };
     canvas.addEventListener('click', onClick);
 
@@ -159,13 +160,30 @@ export function GameCanvas({ isPaused }: GameCanvasProps) {
     };
   }, [setupCanvas, isPaused]);
 
+  const handleTouchMove = (direction: 'left' | 'right' | 'up' | 'down' | null) => {
+    if ((window as any).handleTouchMove) {
+      (window as any).handleTouchMove(direction);
+    }
+  };
+
+  const handleTouchFire = () => {
+    if ((window as any).handleTouchFire) {
+      (window as any).handleTouchFire();
+    }
+  };
+
   return (
-    <canvas
-      ref={canvasRef}
-      style={{
-        border: '2px solid #333',
-        display: 'block',
-      }}
-    />
+    <>
+      <canvas
+        ref={canvasRef}
+        style={{
+          border: '2px solid #333',
+          display: 'block',
+          maxWidth: '100%',
+          maxHeight: '100%',
+        }}
+      />
+      <TouchControls onMove={handleTouchMove} onFire={handleTouchFire} />
+    </>
   );
 }

@@ -4,6 +4,8 @@ interface PauseMenuProps {
 }
 
 export function PauseMenu({ onContinue, onMainMenu }: PauseMenuProps) {
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
   const overlayStyle: React.CSSProperties = {
     position: 'fixed',
     top: 0,
@@ -16,6 +18,7 @@ export function PauseMenu({ onContinue, onMainMenu }: PauseMenuProps) {
     justifyContent: 'center',
     zIndex: 2000,
     fontFamily: "'Pixelify Sans', monospace",
+    padding: isMobile ? '20px' : '0',
   };
 
   const menuStyle: React.CSSProperties = {
@@ -24,9 +27,7 @@ export function PauseMenu({ onContinue, onMainMenu }: PauseMenuProps) {
     padding: '30px',
     textAlign: 'center',
     minWidth: '200px',
-    imageRendering: 'pixelated',
-    imageRendering: '-moz-crisp-edges',
-    imageRendering: 'crisp-edges',
+    imageRendering: 'pixelated' as any,
   };
 
   const titleStyle: React.CSSProperties = {
@@ -49,9 +50,7 @@ export function PauseMenu({ onContinue, onMainMenu }: PauseMenuProps) {
     cursor: 'pointer',
     textTransform: 'uppercase',
     letterSpacing: '1px',
-    imageRendering: 'pixelated',
-    imageRendering: '-moz-crisp-edges',
-    imageRendering: 'crisp-edges',
+    imageRendering: 'pixelated' as any,
     transition: 'none',
     outline: 'none',
     minWidth: '120px',

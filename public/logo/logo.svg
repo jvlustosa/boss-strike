@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 64 64" shape-rendering="crispEdges">
+  <title>Logo — Primeiro Contato (pixel)</title>
+  <!-- opcional: fundo transparente explícito -->
+  <rect x="0" y="0" width="64" height="64" fill="none"/>
+
+  <!-- barra superior (verde) -->
+  <rect x="14" y="8" width="36" height="4" fill="#00FF00"/>
+
+  <!-- corpo (vermelho) -->
+  <rect x="20" y="22" width="24" height="18" fill="#FF0000"/>
+
+  <!-- núcleo (amarelo) -->
+  <rect x="28" y="27" width="8" height="8" fill="#FFD400"/>
+
+  <!-- aletas laterais (vermelho) -->
+  <rect x="14" y="28" width="4" height="6" fill="#FF0000"/>
+  <rect x="46" y="28" width="4" height="6" fill="#FF0000"/>
+</svg>

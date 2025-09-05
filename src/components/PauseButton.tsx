@@ -3,26 +3,27 @@ interface PauseButtonProps {
 }
 
 export function PauseButton({ onPause }: PauseButtonProps) {
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
   const buttonStyle: React.CSSProperties = {
     position: 'absolute',
-    top: '10px',
-    right: '10px',
-    width: '40px',
-    height: '40px',
+    top: isMobile ? '15px' : '10px',
+    right: isMobile ? '15px' : '10px',
+    width: isMobile ? '50px' : '40px',
+    height: isMobile ? '50px' : '40px',
     backgroundColor: '#222',
     border: '2px solid #fff',
     color: '#fff',
     fontFamily: "'Pixelify Sans', monospace",
-    fontSize: '16px',
+    fontSize: isMobile ? '20px' : '16px',
     fontWeight: 'bold',
     cursor: 'pointer',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    imageRendering: 'pixelated',
-    imageRendering: '-moz-crisp-edges',
-    imageRendering: 'crisp-edges',
+    imageRendering: 'pixelated' as any,
     zIndex: 1000,
+    touchAction: 'none',
   };
 
   return (
