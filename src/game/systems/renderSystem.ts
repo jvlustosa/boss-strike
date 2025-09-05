@@ -113,17 +113,21 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     }
   }
 
-  // Level Info
-  ctx.fillStyle = '#fff';
-  ctx.font = '6px "Pixelify Sans", monospace';
-  ctx.textBaseline = 'top';
-  ctx.fillText(`Nível ${state.level}: ${state.levelConfig.name}`, 4, 4);
+  // Level Info removed from canvas - now displayed above canvas
 
-  // Boss HP Bar (follows boss position)
+  // Boss HP Bar (always visible)
   const hpBarW = 32;
   const hpBarH = 2;
   const hpBarX = state.boss.pos.x + state.boss.w / 2 - hpBarW / 2;
-  const hpBarY = state.boss.pos.y - 6;
+  
+  // Position HP bar above boss, but ensure it's always visible
+  let hpBarY = state.boss.pos.y - 6;
+  const minY = 2; // Minimum Y position to keep bar visible
+  
+  // If boss is too high, position bar at minimum Y
+  if (hpBarY < minY) {
+    hpBarY = minY;
+  }
   
   // HP Background
   ctx.fillStyle = '#333';

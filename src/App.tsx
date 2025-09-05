@@ -3,10 +3,13 @@ import { GameCanvas } from './components/GameCanvas';
 import { MainMenu } from './components/MainMenu';
 import { PauseButton } from './components/PauseButton';
 import { PauseMenu } from './components/PauseMenu';
+import { LevelTitle } from './components/LevelTitle';
+import { updateUrlLevel } from './game/core/urlParams';
 
 export default function App() {
   const [gameStarted, setGameStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [gameState, setGameState] = useState<any>(null);
 
   const handleStartGame = () => {
     setGameStarted(true);
@@ -22,8 +25,14 @@ export default function App() {
   };
 
   const handleMainMenu = () => {
+    // Reset progress to level 1 when returning to main menu from pause
+    updateUrlLevel(1);
     setGameStarted(false);
     setIsPaused(false);
+  };
+
+  const handleGameStateChange = (state: any) => {
+    setGameState(state);
   };
 
   const togglePause = () => {
@@ -57,7 +66,10 @@ export default function App() {
       background: '#000',
       position: 'relative',
     }}>
-      <GameCanvas isPaused={isPaused} />
+      <div style={{ position: 'relative' }}>
+        {gameState && <LevelTitle gameState={gameState} />}
+        <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} />
+      </div>
       {!isPaused && <PauseButton onPause={handlePause} />}
       {isPaused && (
         <PauseMenu 

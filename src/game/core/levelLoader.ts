@@ -55,9 +55,9 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
     armMoveSpeed: 3.2,
     armAmplitude: 7,
     armShootCooldown: 0.9,
-    bossBulletSpeed: 113,
+    bossBulletSpeed: 60, // Reduced by 30% (85 * 0.7 = 59.5 ≈ 60)
     bulletPattern: { type: 'alternating', patterns: ['single', 'spread'], spreadAngle: 45 },
-    bossMovement: { type: 'circular', speed: 25, amplitude: 35 }
+    bossMovement: { type: 'circular', speed: 10, amplitude: 35 } // Reduced by 60% (25 * 0.4 = 10)
   },
   7: {
     name: "Tempestade",

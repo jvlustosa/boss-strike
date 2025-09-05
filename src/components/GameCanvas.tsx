@@ -18,11 +18,12 @@ import { SubtleLogger } from './SubtleLogger';
 
 interface GameCanvasProps {
   isPaused: boolean;
+  onGameStateChange?: (gameState: GameState) => void;
 }
 
-export function GameCanvas({ isPaused }: GameCanvasProps) {
+export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const stateRef = useRef<GameState>(createInitialState(getLevelFromUrl()));
+  const stateRef = useRef<GameState>(createInitialState(1)); // Always start at level 1
   const scaleRef = useRef<number>(1);
   const isTransitioningRef = useRef(false);
 
@@ -119,6 +120,11 @@ export function GameCanvas({ isPaused }: GameCanvasProps) {
           
           console.log('Game: Restart completed');
         }
+      }
+      
+      // Notify parent component of state changes
+      if (onGameStateChange) {
+        onGameStateChange(state);
       }
     };
 
