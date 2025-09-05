@@ -21,11 +21,16 @@ export function MobileControlsLayout({
   // Check environment on mount
   useEffect(() => {
     const usePlayroom = shouldUsePlayroom();
+    const envInfo = getEnvironmentInfo();
+    
+    console.log('MobileControlsLayout: Environment check:', envInfo);
+    console.log('MobileControlsLayout: shouldUsePlayroom:', usePlayroom);
+    
     setShouldRender(usePlayroom);
     
     if (usePlayroom) {
       console.log('MobileControlsLayout: Mobile/Touch detected - Rendering controls');
-      // emitSubtleLog('📱', 'system');
+      emitSubtleLog('📱', 'system');
       
       // Auto-detect layout based on screen size
       const screenWidth = window.innerWidth;
@@ -38,7 +43,7 @@ export function MobileControlsLayout({
       }
     } else {
       console.log('MobileControlsLayout: Desktop detected - Keyboard controls only');
-      // emitSubtleLog('🖥️', 'system');
+      emitSubtleLog('🖥️', 'system');
     }
   }, []);
 

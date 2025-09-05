@@ -9,20 +9,25 @@ interface PlayroomJoystickProps {
 export function PlayroomJoystick({ onFire }: PlayroomJoystickProps) {
   useEffect(() => {
     console.log('🎮 PlayroomJoystick: useEffect started');
+    const envInfo = getEnvironmentInfo();
+    console.log('🎮 PlayroomJoystick: Environment info:', envInfo);
+    
     // Check if we should use Playroom (only on mobile/touch devices)
     if (!shouldUsePlayroom()) {
-      console.log('🎮 PlayroomJoystick: Desktop detected - Playroom disabled:', getEnvironmentInfo());
+      console.log('🎮 PlayroomJoystick: Desktop detected - Playroom disabled:', envInfo);
       return;
     }
 
-    console.log('🎮 PlayroomJoystick: Mobile/Touch detected - Initializing Playroom:', getEnvironmentInfo());
+    console.log('🎮 PlayroomJoystick: Mobile/Touch detected - Initializing Playroom:', envInfo);
     
     // Initialize the persistent Playroom session
     console.log('🎮 PlayroomJoystick: About to call playroomSession.initialize()');
     playroomSession.initialize().then(() => {
       console.log('🎮 PlayroomJoystick: playroomSession.initialize() completed successfully');
+      console.log('🎮 PlayroomJoystick: Session is ready:', playroomSession.isReady());
     }).catch((error) => {
       console.error('🎮 PlayroomJoystick: playroomSession.initialize() failed:', error);
+      console.error('🎮 PlayroomJoystick: Error details:', error.message, error.stack);
     });
     
     // Set callbacks for this component

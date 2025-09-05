@@ -23,7 +23,21 @@ export function isTouchDevice(): boolean {
 
 export function shouldUsePlayroom(): boolean {
   // Use Playroom only on mobile/touch devices
-  return isMobile() || (isTouchDevice() && !isDesktop());
+  const mobile = isMobile();
+  const touch = isTouchDevice();
+  const desktop = isDesktop();
+  const result = mobile || (touch && !desktop);
+  
+  console.log('shouldUsePlayroom check:', {
+    mobile,
+    touch,
+    desktop,
+    result,
+    userAgent: navigator.userAgent,
+    maxTouchPoints: navigator.maxTouchPoints
+  });
+  
+  return result;
 }
 
 export function getEnvironmentInfo() {

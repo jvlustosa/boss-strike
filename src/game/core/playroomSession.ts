@@ -30,12 +30,34 @@ class PlayroomSessionManager {
       return;
     }
 
+    // Check if PlayroomKit is available
+    if (!PlayroomKit) {
+      console.error('🎮 playroomSession: PlayroomKit is not available!');
+      throw new Error('PlayroomKit is not available');
+    }
+    
+    console.log('🎮 playroomSession: PlayroomKit is available:', typeof PlayroomKit);
+    console.log('🎮 playroomSession: PlayroomKit methods:', Object.keys(PlayroomKit));
+    
+    // Check if required methods are available
+    if (typeof PlayroomKit.insertCoin !== 'function') {
+      console.error('🎮 playroomSession: PlayroomKit.insertCoin is not a function!');
+      throw new Error('PlayroomKit.insertCoin is not available');
+    }
+    
+    if (typeof PlayroomKit.onPlayerJoin !== 'function') {
+      console.error('🎮 playroomSession: PlayroomKit.onPlayerJoin is not a function!');
+      throw new Error('PlayroomKit.onPlayerJoin is not available');
+    }
+
     this.connectionStatus = 'connecting';
+    console.log('🎮 playroomSession: Starting connection...');
 
     try {
       // Start the game
+      console.log('🎮 playroomSession: Calling PlayroomKit.insertCoin()...');
       await PlayroomKit.insertCoin();
-      console.log('Playroom session initialized successfully');
+      console.log('🎮 playroomSession: PlayroomKit.insertCoin() completed successfully');
 
       // Create a joystick controller for each joining player
       PlayroomKit.onPlayerJoin((state) => {
@@ -66,7 +88,8 @@ class PlayroomSessionManager {
       this.connectionStatus = 'connected';
       this.startGameLoop();
     } catch (error) {
-      console.error('Failed to initialize Playroom session:', error);
+      console.error('🎮 playroomSession: Failed to initialize Playroom session:', error);
+      console.error('🎮 playroomSession: Error details:', error.message, error.stack);
       this.connectionStatus = 'disconnected';
       throw error; // Re-throw to let caller handle the error
     }
