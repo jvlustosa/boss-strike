@@ -1,34 +1,38 @@
 import * as PlayroomKit from 'playroomkit';
 import { emitSubtleLog } from '../../components/SubtleLogger';
 
-// Debug PlayroomKit import
-console.log('🎮 playroomSession: PlayroomKit import check:', {
-  PlayroomKit: typeof PlayroomKit,
-  hasInsertCoin: typeof PlayroomKit?.insertCoin,
-  hasOnPlayerJoin: typeof PlayroomKit?.onPlayerJoin,
-  hasJoystick: typeof PlayroomKit?.Joystick,
-  hasMyPlayer: typeof PlayroomKit?.myPlayer,
-  keys: PlayroomKit ? Object.keys(PlayroomKit) : 'undefined'
-});
+// Debug flag - set to false to disable logs in production
+const DEBUG_LOGS = false;
+
+// Debug PlayroomKit import (only in development)
+if (DEBUG_LOGS) {
+  console.log('🎮 playroomSession: PlayroomKit import check:', {
+    PlayroomKit: typeof PlayroomKit,
+    hasInsertCoin: typeof PlayroomKit?.insertCoin,
+    hasOnPlayerJoin: typeof PlayroomKit?.onPlayerJoin,
+    hasJoystick: typeof PlayroomKit?.Joystick,
+    hasMyPlayer: typeof PlayroomKit?.myPlayer,
+    keys: PlayroomKit ? Object.keys(PlayroomKit) : 'undefined'
+  });
+}
 
 // Function to ensure PlayroomKit is loaded
 async function ensurePlayroomKitLoaded(): Promise<typeof PlayroomKit> {
   if (PlayroomKit && typeof PlayroomKit.insertCoin === 'function') {
-    console.log('🎮 playroomSession: PlayroomKit is already loaded');
+    if (DEBUG_LOGS) {
+      console.log('🎮 playroomSession: PlayroomKit is already loaded');
+    }
     return PlayroomKit;
   }
   
-  console.log('🎮 playroomSession: PlayroomKit not loaded, attempting dynamic import...');
+  if (DEBUG_LOGS) {
+    console.log('🎮 playroomSession: PlayroomKit not loaded, attempting dynamic import...');
+  }
   try {
     const dynamicPlayroomKit = await import('playroomkit');
-    console.log('🎮 playroomSession: Dynamic import successful:', {
-      PlayroomKit: typeof dynamicPlayroomKit,
-      hasInsertCoin: typeof dynamicPlayroomKit?.insertCoin,
-      hasOnPlayerJoin: typeof dynamicPlayroomKit?.onPlayerJoin,
-      hasJoystick: typeof dynamicPlayroomKit?.Joystick,
-      hasMyPlayer: typeof dynamicPlayroomKit?.myPlayer,
-      keys: dynamicPlayroomKit ? Object.keys(dynamicPlayroomKit) : 'undefined'
-    });
+    if (DEBUG_LOGS) {
+      console.log('🎮 playroomSession: Dynamic import successful');
+    }
     return dynamicPlayroomKit;
   } catch (error) {
     console.error('🎮 playroomSession: Dynamic import failed:', error);
@@ -59,21 +63,23 @@ class PlayroomSessionManager {
   private connectionStatus: 'disconnected' | 'connecting' | 'connected' = 'disconnected';
 
   async initialize(): Promise<void> {
-    console.log('🎮 playroomSession: initialize() called');
+    if (DEBUG_LOGS) {
+      console.log('🎮 playroomSession: initialize() called');
+    }
     if (this.session.isInitialized) {
-      console.log('🎮 playroomSession: Already initialized, returning');
+      if (DEBUG_LOGS) {
+        console.log('🎮 playroomSession: Already initialized, returning');
+      }
       return;
     }
 
     // Ensure PlayroomKit is loaded
     const kit = await ensurePlayroomKitLoaded();
     
-    console.log('🎮 playroomSession: PlayroomKit is available:', typeof kit);
-    console.log('🎮 playroomSession: PlayroomKit methods:', Object.keys(kit));
-    console.log('🎮 playroomSession: PlayroomKit.insertCoin type:', typeof kit.insertCoin);
-    console.log('🎮 playroomSession: PlayroomKit.onPlayerJoin type:', typeof kit.onPlayerJoin);
-    console.log('🎮 playroomSession: PlayroomKit.Joystick type:', typeof kit.Joystick);
-    console.log('🎮 playroomSession: PlayroomKit.myPlayer type:', typeof kit.myPlayer);
+    if (DEBUG_LOGS) {
+      console.log('🎮 playroomSession: PlayroomKit is available:', typeof kit);
+      console.log('🎮 playroomSession: PlayroomKit methods:', Object.keys(kit));
+    }
     
     // Check if required methods are available
     if (typeof kit.insertCoin !== 'function') {
@@ -96,32 +102,24 @@ class PlayroomSessionManager {
 
     try {
       // Start the game
-      console.log('🎮 playroomSession: Calling kit.insertCoin()...');
-      console.log('🎮 playroomSession: Before insertCoin - kit state:', {
-        insertCoin: typeof kit.insertCoin,
-        onPlayerJoin: typeof kit.onPlayerJoin,
-        Joystick: typeof kit.Joystick,
-        myPlayer: typeof kit.myPlayer
-      });
+      if (DEBUG_LOGS) {
+        console.log('🎮 playroomSession: Calling kit.insertCoin()...');
+      }
       
       await kit.insertCoin({
         streamMode: true,
         allowGamepads: true
       });
-      console.log('🎮 playroomSession: kit.insertCoin() completed successfully');
       
-      console.log('🎮 playroomSession: After insertCoin - kit state:', {
-        insertCoin: typeof kit.insertCoin,
-        onPlayerJoin: typeof kit.onPlayerJoin,
-        Joystick: typeof kit.Joystick,
-        myPlayer: typeof kit.myPlayer
-      });
+      if (DEBUG_LOGS) {
+        console.log('🎮 playroomSession: kit.insertCoin() completed successfully');
+      }
 
       // Create a joystick controller for each joining player
       kit.onPlayerJoin((state) => {
-        console.log('🎮 playroomSession: Player joined:', state);
-        console.log('🎮 playroomSession: My player:', kit.myPlayer());
-        console.log('🎮 playroomSession: Is current player:', state === kit.myPlayer());
+        if (DEBUG_LOGS) {
+          console.log('🎮 playroomSession: Player joined:', state);
+        }
         
         try {
           // Joystick will only create UI for current player (myPlayer)
@@ -138,14 +136,14 @@ class PlayroomSessionManager {
             opacity: 0.8 // Make it slightly transparent
           });
           
-          console.log('🎮 playroomSession: Joystick created successfully:', joystick);
-          
           this.session.players.push({ state, joystick });
           
           // Store reference to current player's joystick
           if (state === kit.myPlayer()) {
             this.session.currentPlayerJoystick = joystick;
-            console.log('🎮 playroomSession: Current player joystick created and stored');
+            if (DEBUG_LOGS) {
+              console.log('🎮 playroomSession: Current player joystick created and stored');
+            }
           }
         } catch (error) {
           console.error('🎮 playroomSession: Error creating joystick:', error);
@@ -187,26 +185,14 @@ class PlayroomSessionManager {
             window.handleJoystickMove(x, y);
           }
           
-          // Only log when there's actual movement
-          if (x !== 0 || y !== 0) {
-            const direction = dpad.x && dpad.y ? `${dpad.x}+${dpad.y}` : (dpad.x || dpad.y || 'unknown');
-            console.log('🎮 playroomSession: Joystick movement:', direction, 'x:', x, 'y:', y);
-          }
-          
           // Check if fire button is pressed
           if (joystick.isPressed("fire")) {
-            console.log('🎮 playroomSession: Fire button pressed');
             if (this.callbacks.onFire) {
               this.callbacks.onFire();
             }
           }
         } catch (error) {
           console.error('🎮 playroomSession: Error in game loop:', error);
-        }
-      } else {
-        // Log when joystick is not available
-        if (this.session.isInitialized && !this.session.currentPlayerJoystick) {
-          console.log('🎮 playroomSession: Game loop running but no joystick available');
         }
       }
       

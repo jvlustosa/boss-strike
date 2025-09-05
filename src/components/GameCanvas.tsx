@@ -14,7 +14,6 @@ import { updateExplosionSystem } from '../game/systems/explosionSystem';
 import { getLevelFromUrl, updateUrlLevel } from '../game/core/urlParams';
 import { MobileControlsLayout } from './MobileControlsLayout';
 import { MobileCredits } from './MobileCredits';
-import { PlayroomDebug } from './PlayroomDebug';
 
 interface GameCanvasProps {
   isPaused: boolean;
@@ -28,7 +27,7 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
   const getInitialLevel = () => {
     try {
       const level = getLevelFromUrl();
-      console.log('🎮 GameCanvas Debug - Initializing with level:', level);
+      // Debug logs disabled for production
       return level;
     } catch (error) {
       console.warn('🎮 GameCanvas Debug - Error getting level from URL, defaulting to 1:', error);
@@ -298,7 +297,7 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
       />
       <MobileControlsLayout onFire={handlePlayroomFire} />
       <MobileCredits visible={true} position="top-left" />
-      <PlayroomDebug />
+      {/* <PlayroomDebug /> */}
       {/* <SubtleLogger enabled={true} position="bottom-right" maxLogs={2} /> */}
     </>
   );

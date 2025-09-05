@@ -1,3 +1,6 @@
+// Debug flag - set to false to disable logs in production
+const DEBUG_LOGS = false;
+
 // Environment detection utilities
 export function isDesktop(): boolean {
   // Check if running on desktop (not mobile/tablet)
@@ -28,18 +31,20 @@ export function shouldUsePlayroom(): boolean {
   const desktop = isDesktop();
   const result = mobile || (touch && !desktop);
   
-  console.log('🔍 shouldUsePlayroom check:', {
-    mobile,
-    touch,
-    desktop,
-    result,
-    userAgent: navigator.userAgent,
-    maxTouchPoints: navigator.maxTouchPoints,
-    windowInnerWidth: window.innerWidth,
-    windowInnerHeight: window.innerHeight,
-    screenWidth: screen.width,
-    screenHeight: screen.height
-  });
+  if (DEBUG_LOGS) {
+    console.log('🔍 shouldUsePlayroom check:', {
+      mobile,
+      touch,
+      desktop,
+      result,
+      userAgent: navigator.userAgent,
+      maxTouchPoints: navigator.maxTouchPoints,
+      windowInnerWidth: window.innerWidth,
+      windowInnerHeight: window.innerHeight,
+      screenWidth: screen.width,
+      screenHeight: screen.height
+    });
+  }
   
   return result;
 }
