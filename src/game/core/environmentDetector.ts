@@ -28,13 +28,17 @@ export function shouldUsePlayroom(): boolean {
   const desktop = isDesktop();
   const result = mobile || (touch && !desktop);
   
-  console.log('shouldUsePlayroom check:', {
+  console.log('🔍 shouldUsePlayroom check:', {
     mobile,
     touch,
     desktop,
     result,
     userAgent: navigator.userAgent,
-    maxTouchPoints: navigator.maxTouchPoints
+    maxTouchPoints: navigator.maxTouchPoints,
+    windowInnerWidth: window.innerWidth,
+    windowInnerHeight: window.innerHeight,
+    screenWidth: screen.width,
+    screenHeight: screen.height
   });
   
   return result;

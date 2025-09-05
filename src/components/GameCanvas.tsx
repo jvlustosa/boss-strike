@@ -14,7 +14,7 @@ import { updateExplosionSystem } from '../game/systems/explosionSystem';
 import { getLevelFromUrl, updateUrlLevel } from '../game/core/urlParams';
 import { MobileControlsLayout } from './MobileControlsLayout';
 import { MobileCredits } from './MobileCredits';
-import { SubtleLogger } from './SubtleLogger';
+import { PlayroomDebug } from './PlayroomDebug';
 
 interface GameCanvasProps {
   isPaused: boolean;
@@ -23,7 +23,21 @@ interface GameCanvasProps {
 
 export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const stateRef = useRef<GameState>(createInitialState(1)); // Always start at level 1
+  
+  // Get initial level from URL with error handling
+  const getInitialLevel = () => {
+    try {
+      const level = getLevelFromUrl();
+      console.log('🎮 GameCanvas Debug - Initializing with level:', level);
+      return level;
+    } catch (error) {
+      console.warn('🎮 GameCanvas Debug - Error getting level from URL, defaulting to 1:', error);
+      return 1;
+    }
+  };
+  
+  const initialLevel = getInitialLevel();
+  const stateRef = useRef<GameState>(createInitialState(initialLevel)); // Start with level from URL
   const scaleRef = useRef<number>(1);
   const isTransitioningRef = useRef(false);
 
@@ -101,8 +115,23 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
           
           // Preservar a referência do objeto keys para não quebrar o input
           const keysRef = state.keys;
-          Object.assign(state, next);
+          
+          // Aplicar novo estado - atualizar propriedades específicas
+          state.time = next.time;
+          state.level = next.level;
+          state.levelConfig = next.levelConfig;
+          state.player = next.player;
+          state.boss = next.boss;
+          state.heartsSpawnedThisLevel = next.heartsSpawnedThisLevel;
+          state.status = next.status;
+          state.victoryTimer = next.victoryTimer;
+          state.restartTimer = next.restartTimer;
           state.keys = keysRef;
+          
+          // Atualizar moveSpeed dos braços do boss com a nova configuração
+          for (let i = 0; i < state.boss.arms.length; i++) {
+            state.boss.arms[i].moveSpeed = state.levelConfig.armMoveSpeed;
+          }
           
           // Limpar qualquer tecla pressionada
           for (const key in keysRef) {
@@ -153,10 +182,12 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         
         // Avançar para próxima fase
         const nextLevel = state.level + 1;
+        console.log('🎮 Level Transition Debug - Moving from level', state.level, 'to level', nextLevel);
         updateUrlLevel(nextLevel);
         
         // Criar novo estado completamente
         const newState = createInitialState(nextLevel);
+        console.log('🎮 Level Transition Debug - New state created with config:', newState.levelConfig);
         
         // Preservar apenas o que é necessário
         const keysRef = state.keys;
@@ -167,9 +198,22 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         state.explosionParticles.length = 0;
         state.smokeParticles.length = 0;
         
-        // Aplicar novo estado
-        Object.assign(state, newState);
+        // Aplicar novo estado - atualizar propriedades específicas
+        state.time = newState.time;
+        state.level = newState.level;
+        state.levelConfig = newState.levelConfig;
+        state.player = newState.player;
+        state.boss = newState.boss;
+        state.heartsSpawnedThisLevel = newState.heartsSpawnedThisLevel;
+        state.status = newState.status;
+        state.victoryTimer = newState.victoryTimer;
+        state.restartTimer = newState.restartTimer;
         state.keys = keysRef;
+        
+        // Atualizar moveSpeed dos braços do boss com a nova configuração
+        for (let i = 0; i < state.boss.arms.length; i++) {
+          state.boss.arms[i].moveSpeed = state.levelConfig.armMoveSpeed;
+        }
         
         // Limpar qualquer tecla pressionada
         for (const key in keysRef) {
@@ -254,6 +298,7 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
       />
       <MobileControlsLayout onFire={handlePlayroomFire} />
       <MobileCredits visible={true} position="top-left" />
+      <PlayroomDebug />
       {/* <SubtleLogger enabled={true} position="bottom-right" maxLogs={2} /> */}
     </>
   );
