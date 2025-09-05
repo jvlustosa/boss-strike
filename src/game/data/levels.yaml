@@ -1,0 +1,123 @@
+levels:
+  1:
+    name: "Primeiro Contato"
+    bossHp: 20
+    armMoveSpeed: 1.5
+    armAmplitude: 3
+    armShootCooldown: 1.5
+    bossBulletSpeed: 50
+    bulletPattern:
+      type: "single"
+    
+  2:
+    name: "Duplo Perigo"
+    bossHp: 25
+    armMoveSpeed: 2.0
+    armAmplitude: 4
+    armShootCooldown: 1.2
+    bossBulletSpeed: 55
+    bulletPattern:
+      type: "double"
+      spread: 15
+    
+  3:
+    name: "Rajada Veloz"
+    bossHp: 30
+    armMoveSpeed: 2.5
+    armAmplitude: 5
+    armShootCooldown: 1.0
+    bossBulletSpeed: 60
+    bulletPattern:
+      type: "burst"
+      burstCount: 3
+      burstDelay: 0.1
+    
+  4:
+    name: "Spread Mortal"
+    bossHp: 35
+    armMoveSpeed: 2.8
+    armAmplitude: 6
+    armShootCooldown: 1.3
+    bossBulletSpeed: 65
+    bulletPattern:
+      type: "spread"
+      numBullets: 3
+      spreadAngle: 30
+    
+  5:
+    name: "Círculo de Fogo"
+    bossHp: 40
+    armMoveSpeed: 3.0
+    armAmplitude: 4
+    armShootCooldown: 1.1
+    bossBulletSpeed: 70
+    bulletPattern:
+      type: "circular"
+      numBullets: 8
+    
+  6:
+    name: "Fúria Alternada"
+    bossHp: 45
+    armMoveSpeed: 3.2
+    armAmplitude: 7
+    armShootCooldown: 0.9
+    bossBulletSpeed: 75
+    bulletPattern:
+      type: "alternating"
+      patterns: ["single", "spread"]
+      spreadAngle: 45
+    
+  7:
+    name: "Tempestade"
+    bossHp: 50
+    armMoveSpeed: 3.5
+    armAmplitude: 5
+    armShootCooldown: 0.8
+    bossBulletSpeed: 80
+    bulletPattern:
+      type: "spread"
+      numBullets: 5
+      spreadAngle: 60
+    
+  8:
+    name: "Caos Controlado"
+    bossHp: 55
+    armMoveSpeed: 3.8
+    armAmplitude: 8
+    armShootCooldown: 0.7
+    bossBulletSpeed: 85
+    bulletPattern:
+      type: "wave"
+      waveCount: 2
+      delayBetweenWaves: 0.3
+    
+  9:
+    name: "Inferno"
+    bossHp: 60
+    armMoveSpeed: 4.0
+    armAmplitude: 6
+    armShootCooldown: 0.6
+    bossBulletSpeed: 90
+    bulletPattern:
+      type: "multi"
+      patterns: ["circular", "spread", "burst"]
+      cycleDelay: 2.0
+    
+  10:
+    name: "Boss Final"
+    bossHp: 75
+    armMoveSpeed: 4.5
+    armAmplitude: 10
+    armShootCooldown: 0.5
+    bossBulletSpeed: 100
+    bulletPattern:
+      type: "ultimate"
+      phases:
+        - type: "circular"
+          numBullets: 12
+        - type: "spread"
+          numBullets: 7
+          spreadAngle: 90
+        - type: "burst"
+          burstCount: 5
+          burstDelay: 0.05

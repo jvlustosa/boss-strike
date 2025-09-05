@@ -3,7 +3,7 @@ import { aabbCollision } from '../engine/math';
 import { damageBoss } from './boss';
 
 export function checkCollisions(state: GameState): void {
-  const { bullets, boss, player } = state;
+  const { bullets, boss, player, hearts } = state;
 
   // Helper para converter entidades com { pos, w, h } em AABB plano { x, y, w, h }
   const toAABB = (o: { pos: { x: number; y: number }; w: number; h: number }) => ({
@@ -19,6 +19,16 @@ export function checkCollisions(state: GameState): void {
       if (aabbCollision(toAABB(player), toAABB(arm))) {
         damagePlayer(state);
         return;
+      }
+    }
+  }
+
+  // Verificar colisão player com corações
+  if (player.alive && player.health < player.maxHealth) {
+    for (const heart of hearts) {
+      if (!heart.collected && aabbCollision(toAABB(player), toAABB(heart))) {
+        heart.collected = true;
+        player.health++;
       }
     }
   }

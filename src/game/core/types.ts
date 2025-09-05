@@ -38,11 +38,43 @@ export type Bullet = {
   from: 'player' | 'boss';
 };
 
+export type Heart = {
+  pos: Vec2;
+  w: number;
+  h: number;
+  collected: boolean;
+};
+
+export type BulletPattern = 
+  | { type: 'single' }
+  | { type: 'double'; spread: number }
+  | { type: 'burst'; burstCount: number; burstDelay: number }
+  | { type: 'spread'; numBullets: number; spreadAngle: number }
+  | { type: 'circular'; numBullets: number }
+  | { type: 'alternating'; patterns: string[]; spreadAngle?: number }
+  | { type: 'wave'; waveCount: number; delayBetweenWaves: number }
+  | { type: 'multi'; patterns: string[]; cycleDelay: number }
+  | { type: 'ultimate'; phases: Array<{ type: string; [key: string]: any }> };
+
+export type LevelConfig = {
+  name: string;
+  bossHp: number;
+  armMoveSpeed: number;
+  armAmplitude: number;
+  armShootCooldown: number;
+  bossBulletSpeed: number;
+  bulletPattern: BulletPattern;
+};
+
 export type GameState = {
   time: number;
+  level: number;
+  levelConfig: LevelConfig;
   player: Player;
   boss: Boss;
   bullets: Bullet[];
+  hearts: Heart[];
+  heartsSpawnedThisLevel: number;
   keys: Record<string, boolean>;
   status: 'playing' | 'won' | 'lost';
 };

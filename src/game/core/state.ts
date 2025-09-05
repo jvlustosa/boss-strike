@@ -1,9 +1,13 @@
 import type { GameState } from './types';
-import { LOGICAL_W, LOGICAL_H, PLAYER_W, PLAYER_H, BOSS_W, BOSS_H, BOSS_HP } from './config';
+import { LOGICAL_W, LOGICAL_H, PLAYER_W, PLAYER_H, BOSS_W, BOSS_H } from './config';
+import { getLevelConfig } from './levelLoader';
 
-export function createInitialState(): GameState {
+export function createInitialState(level: number = 1): GameState {
+  const levelConfig = getLevelConfig(level);
   return {
     time: 0,
+    level,
+    levelConfig,
     player: {
       pos: { x: LOGICAL_W / 2 - PLAYER_W / 2, y: LOGICAL_H - PLAYER_H - 4 },
       w: PLAYER_W,
@@ -19,8 +23,8 @@ export function createInitialState(): GameState {
       w: BOSS_W,
       h: BOSS_H,
       weakSpot: { x: LOGICAL_W / 2 - 4, y: 12, w: 8, h: 8 },
-      hp: BOSS_HP,
-      hpMax: BOSS_HP,
+      hp: levelConfig.bossHp,
+      hpMax: levelConfig.bossHp,
       arms: [
         {
           pos: { x: LOGICAL_W / 2 - BOSS_W / 2 - 8, y: 16 },
@@ -28,7 +32,7 @@ export function createInitialState(): GameState {
           h: 3,
           angle: 0,
           shootCooldown: 0,
-          moveSpeed: 1.5,
+          moveSpeed: levelConfig.armMoveSpeed,
         },
         {
           pos: { x: LOGICAL_W / 2 + BOSS_W / 2 + 2, y: 16 },
@@ -36,11 +40,13 @@ export function createInitialState(): GameState {
           h: 3,
           angle: 0,
           shootCooldown: 0,
-          moveSpeed: 1.5,
+          moveSpeed: levelConfig.armMoveSpeed,
         },
       ],
     },
     bullets: [],
+    hearts: [],
+    heartsSpawnedThisLevel: 0,
     keys: {},
     status: 'playing',
   };

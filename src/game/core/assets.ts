@@ -6,5 +6,6 @@ export const colors = {
   bossArm: '#cc0000',
   playerBullet: '#ffffff',
   bossBullet: '#ff8800',
+  heart: '#ff0066',
   background: '#000000',
 } as const;
