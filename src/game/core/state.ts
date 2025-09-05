@@ -25,6 +25,10 @@ export function createInitialState(level: number = 1): GameState {
       weakSpot: { x: LOGICAL_W / 2 - 4, y: 12, w: 8, h: 8 },
       hp: levelConfig.bossHp,
       hpMax: levelConfig.bossHp,
+      moveAngle: 0,
+      moveTimer: 0,
+      shootTimer: 0,
+      patternPhase: 0,
       arms: [
         {
           pos: { x: LOGICAL_W / 2 - BOSS_W / 2 - 8, y: 16 },

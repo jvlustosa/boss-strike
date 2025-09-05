@@ -10,10 +10,11 @@ import { bulletSystem } from '../game/systems/bulletSystem';
 import { collisionSystem } from '../game/systems/collisionSystem';
 import { heartSystem } from '../game/systems/heartSystem';
 import { renderSystem } from '../game/systems/renderSystem';
+import { getLevelFromUrl, updateUrlLevel } from '../game/core/urlParams';
 
 export function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const stateRef = useRef<GameState>(createInitialState());
+  const stateRef = useRef<GameState>(createInitialState(getLevelFromUrl()));
   const restartTimerRef = useRef<number>(0);
   const scaleRef = useRef<number>(1);
 
@@ -95,6 +96,7 @@ export function GameCanvas() {
       if (btn && x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
         // Avançar para próxima fase
         const nextLevel = state.level + 1;
+        updateUrlLevel(nextLevel);
         const next = createInitialState(nextLevel);
         
         // Preservar a referência do objeto keys para não quebrar o input

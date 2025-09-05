@@ -31,12 +31,13 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
   },
   4: {
     name: "Spread Mortal",
-    bossHp: 26, // 35 * 0.75 = 26.25 ≈ 26 (redução de 25% na vida)
-    armMoveSpeed: 2.1, // 2.8 * 0.75 = 2.1 (redução de 25% na velocidade dos braços)
-    armAmplitude: 4.5, // 6 * 0.75 = 4.5 (redução de 25% na amplitude)
-    armShootCooldown: 1.6, // 1.3 * 1.25 = 1.625 ≈ 1.6 (aumento de 25% no cooldown = tiros mais lentos)
-    bossBulletSpeed: 41, // 55 * 0.75 = 41.25 ≈ 41 (redução de 25% na velocidade dos tiros)
-    bulletPattern: { type: 'spread', numBullets: 3, spreadAngle: 22 } // 30 * 0.75 = 22.5 ≈ 22 (redução de 25% no spread)
+    bossHp: 26,
+    armMoveSpeed: 2.1,
+    armAmplitude: 4.5,
+    armShootCooldown: 1.6,
+    bossBulletSpeed: 41,
+    bulletPattern: { type: 'spread', numBullets: 3, spreadAngle: 22 },
+    bossMovement: { type: 'horizontal', speed: 3, amplitude: 40 }
   },
   5: {
     name: "Círculo de Fogo",
@@ -45,7 +46,8 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
     armAmplitude: 4,
     armShootCooldown: 1.1,
     bossBulletSpeed: 70,
-    bulletPattern: { type: 'circular', numBullets: 8 }
+    bulletPattern: { type: 'circular', numBullets: 8 },
+    bossMovement: { type: 'vertical', speed: 20, amplitude: 30 }
   },
   6: {
     name: "Fúria Alternada",
@@ -53,8 +55,9 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
     armMoveSpeed: 3.2,
     armAmplitude: 7,
     armShootCooldown: 0.9,
-    bossBulletSpeed: 113, // 75 * 1.5 = 112.5 ≈ 113 (aumento de 50%)
-    bulletPattern: { type: 'alternating', patterns: ['single', 'spread'], spreadAngle: 45 }
+    bossBulletSpeed: 113,
+    bulletPattern: { type: 'alternating', patterns: ['single', 'spread'], spreadAngle: 45 },
+    bossMovement: { type: 'circular', speed: 25, amplitude: 35 }
   },
   7: {
     name: "Tempestade",
@@ -63,7 +66,8 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
     armAmplitude: 5,
     armShootCooldown: 0.8,
     bossBulletSpeed: 80,
-    bulletPattern: { type: 'spread', numBullets: 5, spreadAngle: 60 }
+    bulletPattern: { type: 'spread', numBullets: 2, spreadAngle: 60 },
+    bossMovement: { type: 'figure8', speed: 6, amplitude: 45 }
   },
   8: {
     name: "Caos Controlado",
@@ -72,7 +76,8 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
     armAmplitude: 8,
     armShootCooldown: 0.7,
     bossBulletSpeed: 85,
-    bulletPattern: { type: 'wave', waveCount: 2, delayBetweenWaves: 0.3 }
+    bulletPattern: { type: 'wave', waveCount: 2, delayBetweenWaves: 0.3 },
+    bossMovement: { type: 'horizontal', speed: 5, amplitude: 50 }
   },
   9: {
     name: "Inferno",
@@ -81,7 +86,8 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
     armAmplitude: 6,
     armShootCooldown: 0.6,
     bossBulletSpeed: 90,
-    bulletPattern: { type: 'multi', patterns: ['circular', 'spread', 'burst'], cycleDelay: 2.0 }
+    bulletPattern: { type: 'multi', patterns: ['circular', 'spread', 'burst'], cycleDelay: 2.0 },
+    bossMovement: { type: 'circular', speed: 5, amplitude: 60 }
   },
   10: {
     name: "Boss Final",
@@ -89,7 +95,7 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
     armMoveSpeed: 4.5,
     armAmplitude: 10,
     armShootCooldown: 0.5,
-    bossBulletSpeed: 100,
+    bossBulletSpeed: 82,
     bulletPattern: { 
       type: 'ultimate', 
       phases: [
@@ -97,7 +103,8 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
         { type: 'spread', numBullets: 7, spreadAngle: 90 },
         { type: 'burst', burstCount: 5, burstDelay: 0.05 }
       ]
-    }
+    },
+    bossMovement: { type: 'figure8', speed: 6, amplitude: 70 }
   }
 };
 

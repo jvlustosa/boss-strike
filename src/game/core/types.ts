@@ -28,6 +28,10 @@ export type Boss = {
   hp: number;
   hpMax: number;
   arms: BossArm[];
+  moveAngle: number;
+  moveTimer: number;
+  shootTimer: number;
+  patternPhase: number;
 };
 
 export type Bullet = {
@@ -64,6 +68,11 @@ export type LevelConfig = {
   armShootCooldown: number;
   bossBulletSpeed: number;
   bulletPattern: BulletPattern;
+  bossMovement?: {
+    type: 'static' | 'horizontal' | 'vertical' | 'circular' | 'figure8';
+    speed?: number;
+    amplitude?: number;
+  };
 };
 
 export type GameState = {
