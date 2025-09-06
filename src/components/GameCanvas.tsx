@@ -12,6 +12,7 @@ import { heartSystem } from '../game/systems/heartSystem';
 import { renderSystem } from '../game/systems/renderSystem';
 import { updateExplosionSystem } from '../game/systems/explosionSystem';
 import { getLevelFromUrl, updateUrlLevel } from '../game/core/urlParams';
+import { saveProgress, saveVictory } from '../game/core/progressCache';
 import { MobileControlsLayout } from './MobileControlsLayout';
 import { MobileCredits } from './MobileCredits';
 
@@ -42,6 +43,13 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
 
   // Start the game when component mounts
   React.useEffect(() => {
+    // Recriar estado se o nível mudou na URL
+    const currentLevel = getLevelFromUrl();
+    if (stateRef.current.level !== currentLevel) {
+      console.log('🎮 GameCanvas Debug - Level changed in URL, recreating state from', stateRef.current.level, 'to', currentLevel);
+      stateRef.current = createInitialState(currentLevel);
+    }
+    
     if (stateRef.current.status === 'menu') {
       stateRef.current.status = 'playing';
     }
@@ -75,8 +83,11 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
     // Handle ESC key for pause
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        // Save progress when pausing
+        if (state.status === 'playing') {
+          saveProgress(state);
+        }
         // Toggle pause - this will be handled by the parent component
-        // We'll dispatch a custom event
         window.dispatchEvent(new CustomEvent('togglePause'));
       }
     };
@@ -98,9 +109,9 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
           state.victoryTimer -= dt;
           if (state.victoryTimer <= 0) {
             state.status = 'won';
-            // Increment victory count
-            const currentVictories = parseInt(localStorage.getItem('bossStrikeVictories') || '0', 10);
-            localStorage.setItem('bossStrikeVictories', (currentVictories + 1).toString());
+            // Save victory and progress
+            saveVictory();
+            saveProgress(state);
           }
         }
       } else if (state.status === 'lost') {

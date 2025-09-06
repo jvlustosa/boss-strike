@@ -6,6 +6,7 @@ import { PauseMenu } from './components/PauseMenu';
 import { LevelTitle } from './components/LevelTitle';
 import { PlayroomSessionScreen } from './components/PlayroomSessionScreen';
 import { updateUrlLevel } from './game/core/urlParams';
+import { saveProgress } from './game/core/progressCache';
 
 export default function App() {
   const [gameStarted, setGameStarted] = useState(false);
@@ -13,7 +14,10 @@ export default function App() {
   const [gameState, setGameState] = useState<any>(null);
   const [showPlayroomSession, setShowPlayroomSession] = useState(false);
 
-  const handleStartGame = () => {
+  const handleStartGame = (level?: number) => {
+    if (level) {
+      updateUrlLevel(level);
+    }
     setShowPlayroomSession(true);
   };
 
@@ -34,6 +38,11 @@ export default function App() {
 
   const handleGameStateChange = (state: any) => {
     setGameState(state);
+    
+    // Salvar progresso automaticamente quando o jogador avança de fase
+    if (state.status === 'won' && state.victoryTimer > 0) {
+      saveProgress(state);
+    }
   };
 
   const handleSessionReady = () => {

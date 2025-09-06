@@ -1,43 +1,49 @@
 import { useState, useEffect } from 'react';
 import { AnimatedBackground } from './AnimatedBackground';
+import { hasProgress, getLastLevel, getNextLevel, getVictoryCount } from '../game/core/progressCache';
 
 interface MainMenuProps {
-  onStartGame: () => void;
+  onStartGame: (level?: number) => void;
 }
 
 export function MainMenu({ onStartGame }: MainMenuProps) {
   const [isHovered, setIsHovered] = useState(false);
+  const [continueHovered, setContinueHovered] = useState(false);
   const [victoryCount, setVictoryCount] = useState(0);
+  const [canContinue, setCanContinue] = useState(false);
+  const [lastLevel, setLastLevel] = useState(1);
+  const [nextLevel, setNextLevel] = useState(1);
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-  // Load victory count from localStorage
+  // Load progress and victory count
   useEffect(() => {
-    const savedVictories = localStorage.getItem('bossStrikeVictories');
-    if (savedVictories) {
-      setVictoryCount(parseInt(savedVictories, 10));
-    }
+    setVictoryCount(getVictoryCount());
+    setCanContinue(hasProgress());
+    setLastLevel(getLastLevel());
+    setNextLevel(getNextLevel());
   }, []);
 
-  const buttonStyle: React.CSSProperties = {
+  const getButtonStyle = (hovered: boolean): React.CSSProperties => ({
     fontFamily: "'Pixelify Sans', monospace",
     fontSize: isMobile ? '18px' : '20px',
     fontWeight: '600',
     color: '#fff',
-    backgroundColor: isHovered ? '#444' : '#222',
+    backgroundColor: hovered ? '#444' : '#222',
     border: isMobile ? '3px solid #fff' : '4px solid #fff',
     padding: isMobile ? '14px 28px' : '16px 32px',
     cursor: 'pointer',
     textTransform: 'uppercase',
     letterSpacing: isMobile ? '2px' : '3px',
     imageRendering: 'pixelated' as any,
-    boxShadow: isHovered 
+    boxShadow: hovered 
       ? 'inset 0 0 0 3px #fff, 0 0 0 3px #fff, 4px 4px 0px #333' 
       : 'inset 0 0 0 3px #fff, 4px 4px 0px #333',
-    transition: 'none', // No smooth transitions for pixelated look
+    transition: 'none',
     outline: 'none',
     minWidth: isMobile ? '120px' : '140px',
     textShadow: '1px 1px 0px #333',
-  };
+    marginBottom: isMobile ? '12px' : '16px',
+  });
 
   const containerStyle: React.CSSProperties = {
     display: 'flex',
@@ -115,13 +121,24 @@ export function MainMenu({ onStartGame }: MainMenuProps) {
           🏆 {victoryCount} Vitórias
         </div>
         
+        {canContinue && (
+          <button
+            style={getButtonStyle(continueHovered)}
+            onMouseEnter={() => setContinueHovered(true)}
+            onMouseLeave={() => setContinueHovered(false)}
+            onClick={() => onStartGame(nextLevel)}
+          >
+            CONTINUAR (FASE {nextLevel})
+          </button>
+        )}
+        
         <button
-          style={buttonStyle}
+          style={getButtonStyle(isHovered)}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
-          onClick={onStartGame}
+          onClick={() => onStartGame(1)}
         >
-          JOGAR
+          {canContinue ? 'RECOMEÇAR' : 'JOGAR'}
         </button>
       </div>
     </>
