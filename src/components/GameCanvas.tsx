@@ -53,7 +53,12 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
     if (stateRef.current.status === 'menu') {
       stateRef.current.status = 'playing';
     }
-  }, []);
+    
+    // Notify parent component of initial state to show level title
+    if (onGameStateChange) {
+      onGameStateChange(stateRef.current);
+    }
+  }, [onGameStateChange]);
 
   const setupCanvas = useCallback((canvas: HTMLCanvasElement) => {
     const ctx = canvas.getContext('2d')!;
@@ -157,6 +162,11 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
           state.time = 0;
           state.status = 'playing';
           
+          // Notify parent component of state changes to update level title
+          if (onGameStateChange) {
+            onGameStateChange(state);
+          }
+          
           console.log('Game: Restart completed');
         }
       }
@@ -249,6 +259,11 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
           }
         }
         
+        // Notify parent component of state changes to update level title
+        if (onGameStateChange) {
+          onGameStateChange(state);
+        }
+        
         console.log(`Game: Transition to level ${nextLevel} completed`);
         
         // Reset transition flag after a short delay
@@ -287,12 +302,12 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
     // Dispatch custom event for soft restart (keeps Playroom session alive)
     window.dispatchEvent(new CustomEvent('forceJoystickCleanup'));
     
-    // Reinitialize input system after a short delay
+    // Reinitialize input system after Playroom session has restarted
     setTimeout(() => {
       if ((window as any).forceReinitInput) {
         (window as any).forceReinitInput();
       }
-    }, 100); // Shorter delay since we're keeping session alive
+    }, 200); // Increased delay to ensure Playroom session is ready
   };
 
   return (

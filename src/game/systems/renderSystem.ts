@@ -1,6 +1,7 @@
 import type { GameState } from '../core/types';
 import { colors } from '../core/assets';
 import { LOGICAL_W, LOGICAL_H } from '../core/config';
+import { isDesktop } from '../core/environmentDetector';
 
 export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, isPaused: boolean = false): void {
   // Clear screen
@@ -113,7 +114,7 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     }
   }
 
-  // Level Info removed from canvas - now displayed above canvas
+  // Level Info removed from canvas - now displayed outside canvas
 
   // Boss HP Bar (always visible)
   const hpBarW = 32;

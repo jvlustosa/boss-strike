@@ -218,12 +218,12 @@ class PlayroomSessionManager {
       this.session.animationFrame = null;
     }
     
-    // Restart game loop after a short delay
+    // Restart game loop after a short delay to ensure proper cleanup
     setTimeout(() => {
       if (this.session.isInitialized) {
         this.startGameLoop();
       }
-    }, 100);
+    }, 150); // Slightly increased delay for better stability
   }
 
   // Full cleanup - only when component unmounts

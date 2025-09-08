@@ -96,8 +96,8 @@ export default function App() {
       background: '#000',
       position: 'relative',
     }}>
+      {gameState && <LevelTitle gameState={gameState} />}
       <div style={{ position: 'relative' }}>
-        {gameState && <LevelTitle gameState={gameState} />}
         <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} />
       </div>
       {!isPaused && <PauseButton onPause={handlePause} />}
