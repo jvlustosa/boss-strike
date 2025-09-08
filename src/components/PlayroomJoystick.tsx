@@ -8,35 +8,36 @@ interface PlayroomJoystickProps {
 
 export function PlayroomJoystick({ onFire }: PlayroomJoystickProps) {
   useEffect(() => {
-    console.log('🎮 PlayroomJoystick: useEffect started');
-    const envInfo = getEnvironmentInfo();
-    console.log('🎮 PlayroomJoystick: Environment info:', envInfo);
-    
     // Check if we should use Playroom (only on mobile/touch devices)
     if (!shouldUsePlayroom()) {
-      console.log('🎮 PlayroomJoystick: Desktop detected - Playroom disabled:', envInfo);
       return;
     }
 
-    console.log('🎮 PlayroomJoystick: Mobile/Touch detected - Initializing Playroom:', envInfo);
+    // Check if session is already initialized or initializing
+    if (playroomSession.isReady()) {
+      playroomSession.setCallbacks({ onFire });
+      return;
+    }
+    
+    if (playroomSession.isInitializing()) {
+      // Wait for initialization to complete, then set callbacks
+      playroomSession.initialize().then(() => {
+        playroomSession.setCallbacks({ onFire });
+      }).catch((error) => {
+        console.error('PlayroomJoystick initialization failed:', error);
+      });
+      return;
+    }
     
     // Initialize the persistent Playroom session
-    console.log('🎮 PlayroomJoystick: About to call playroomSession.initialize()');
     playroomSession.initialize().then(() => {
-      console.log('🎮 PlayroomJoystick: playroomSession.initialize() completed successfully');
-      console.log('🎮 PlayroomJoystick: Session is ready:', playroomSession.isReady());
+      playroomSession.setCallbacks({ onFire });
     }).catch((error) => {
-      console.error('🎮 PlayroomJoystick: playroomSession.initialize() failed:', error);
-      console.error('🎮 PlayroomJoystick: Error details:', error.message, error.stack);
+      console.error('PlayroomJoystick initialization failed:', error);
     });
-    
-    // Set callbacks for this component
-    console.log('🎮 PlayroomJoystick: Setting callbacks');
-    playroomSession.setCallbacks({ onFire });
 
     // Listen for soft restart events (game restart/level change)
     const handleSoftRestart = () => {
-      console.log('PlayroomJoystick: Soft restart triggered');
       playroomSession.softRestart();
     };
 

@@ -11,21 +11,34 @@ export function PlayroomAngularJoystick({ onMove, onFire }: PlayroomAngularJoyst
   useEffect(() => {
     // Check if we should use Playroom (only on mobile/touch devices)
     if (!shouldUsePlayroom()) {
-      console.log('Desktop detected - Playroom Angular disabled:', getEnvironmentInfo());
       return;
     }
 
-    console.log('Mobile/Touch detected - Initializing Playroom Angular:', getEnvironmentInfo());
+    // Check if session is already initialized or initializing
+    if (playroomAngularSession.isReady()) {
+      playroomAngularSession.setCallbacks({ onMove, onFire });
+      return;
+    }
+    
+    if (playroomAngularSession.isInitializing()) {
+      // Wait for initialization to complete, then set callbacks
+      playroomAngularSession.initialize().then(() => {
+        playroomAngularSession.setCallbacks({ onMove, onFire });
+      }).catch((error) => {
+        console.error('PlayroomAngularJoystick initialization failed:', error);
+      });
+      return;
+    }
     
     // Initialize the persistent Playroom Angular session
-    playroomAngularSession.initialize();
-    
-    // Set callbacks for this component
-    playroomAngularSession.setCallbacks({ onMove, onFire });
+    playroomAngularSession.initialize().then(() => {
+      playroomAngularSession.setCallbacks({ onMove, onFire });
+    }).catch((error) => {
+      console.error('PlayroomAngularJoystick initialization failed:', error);
+    });
 
     // Listen for soft restart events (game restart/level change)
     const handleSoftRestart = () => {
-      console.log('PlayroomAngularJoystick: Soft restart triggered');
       playroomAngularSession.softRestart();
     };
 

@@ -1,20 +1,7 @@
 import * as PlayroomKit from 'playroomkit';
-import { emitSubtleLog } from '../../components/SubtleLogger';
 
 // Debug flag - set to false to disable logs in production
 const DEBUG_LOGS = false;
-
-// Debug PlayroomKit import (only in development)
-if (DEBUG_LOGS) {
-  console.log('🎮 playroomSession: PlayroomKit import check:', {
-    PlayroomKit: typeof PlayroomKit,
-    hasInsertCoin: typeof PlayroomKit?.insertCoin,
-    hasOnPlayerJoin: typeof PlayroomKit?.onPlayerJoin,
-    hasJoystick: typeof PlayroomKit?.Joystick,
-    hasMyPlayer: typeof PlayroomKit?.myPlayer,
-    keys: PlayroomKit ? Object.keys(PlayroomKit) : 'undefined'
-  });
-}
 
 // Function to ensure PlayroomKit is loaded
 async function ensurePlayroomKitLoaded(): Promise<typeof PlayroomKit> {
@@ -61,103 +48,84 @@ class PlayroomSessionManager {
   } = {};
 
   private connectionStatus: 'disconnected' | 'connecting' | 'connected' = 'disconnected';
+  private initializationPromise: Promise<void> | null = null;
 
   async initialize(): Promise<void> {
-    if (DEBUG_LOGS) {
-      console.log('🎮 playroomSession: initialize() called');
-    }
+    // If already initialized, return immediately
     if (this.session.isInitialized) {
-      if (DEBUG_LOGS) {
-        console.log('🎮 playroomSession: Already initialized, returning');
-      }
       return;
     }
+    
+    // If initialization is in progress, wait for it to complete
+    if (this.initializationPromise) {
+      return this.initializationPromise;
+    }
+    
+    // Start new initialization
+    this.initializationPromise = this._doInitialize();
+    return this.initializationPromise;
+  }
 
-    // Ensure PlayroomKit is loaded
-    const kit = await ensurePlayroomKitLoaded();
-    
-    if (DEBUG_LOGS) {
-      console.log('🎮 playroomSession: PlayroomKit is available:', typeof kit);
-      console.log('🎮 playroomSession: PlayroomKit methods:', Object.keys(kit));
-    }
-    
-    // Check if required methods are available
-    if (typeof kit.insertCoin !== 'function') {
-      console.error('🎮 playroomSession: PlayroomKit.insertCoin is not a function!');
-      throw new Error('PlayroomKit.insertCoin is not available');
-    }
-    
-    if (typeof kit.onPlayerJoin !== 'function') {
-      console.error('🎮 playroomSession: PlayroomKit.onPlayerJoin is not a function!');
-      throw new Error('PlayroomKit.onPlayerJoin is not available');
-    }
-    
-    if (typeof kit.Joystick !== 'function') {
-      console.error('🎮 playroomSession: PlayroomKit.Joystick is not a function!');
-      throw new Error('PlayroomKit.Joystick is not available');
-    }
-
-    this.connectionStatus = 'connecting';
-    console.log('🎮 playroomSession: Starting connection...');
-
+  private async _doInitialize(): Promise<void> {
     try {
-      // Start the game
-      if (DEBUG_LOGS) {
-        console.log('🎮 playroomSession: Calling kit.insertCoin()...');
+      // Ensure PlayroomKit is loaded
+      const kit = await ensurePlayroomKitLoaded();
+    
+      // Check if required methods are available
+      if (typeof kit.insertCoin !== 'function') {
+        throw new Error('PlayroomKit.insertCoin is not available');
       }
       
+      if (typeof kit.onPlayerJoin !== 'function') {
+        throw new Error('PlayroomKit.onPlayerJoin is not available');
+      }
+      
+      if (typeof kit.Joystick !== 'function') {
+        throw new Error('PlayroomKit.Joystick is not available');
+      }
+
+      this.connectionStatus = 'connecting';
+
+      // Start the game
       await kit.insertCoin({
         streamMode: true,
         allowGamepads: true
       });
-      
-      if (DEBUG_LOGS) {
-        console.log('🎮 playroomSession: kit.insertCoin() completed successfully');
-      }
 
-      // Create a joystick controller for each joining player
-      kit.onPlayerJoin((state) => {
-        if (DEBUG_LOGS) {
-          console.log('🎮 playroomSession: Player joined:', state);
-        }
+    // Create a joystick controller for each joining player
+    kit.onPlayerJoin((state) => {
+      try {
+        // Joystick will only create UI for current player (myPlayer)
+        // For others, it will only sync their state
+        const joystick = new kit.Joystick(state, {
+          type: "dpad",
+          buttons: [
+            { id: "fire", label: "Fire" }
+          ],
+          keyboard: true // Enable W,A,S and D keys which controls joystick
+        });
         
-        try {
-          // Joystick will only create UI for current player (myPlayer)
-          // For others, it will only sync their state
-          const joystick = new kit.Joystick(state, {
-            type: "dpad",
-            buttons: [
-              { id: "fire", label: "Fire" }
-            ],
-            keyboard: true, // Enable W,A,S and D keys which controls joystick
-            size: 120, // Custom size for the joystick
-            deadzone: 0.05, // Smaller deadzone for more responsive movement
-            position: "bottom-left", // Explicit position
-            opacity: 0.8 // Make it slightly transparent
-          });
-          
-          this.session.players.push({ state, joystick });
-          
-          // Store reference to current player's joystick
-          if (state === kit.myPlayer()) {
-            this.session.currentPlayerJoystick = joystick;
-            if (DEBUG_LOGS) {
-              console.log('🎮 playroomSession: Current player joystick created and stored');
-            }
-          }
-        } catch (error) {
-          console.error('🎮 playroomSession: Error creating joystick:', error);
+        this.session.players.push({ state, joystick });
+        
+        // Store reference to current player's joystick
+        if (state === kit.myPlayer()) {
+          this.session.currentPlayerJoystick = joystick;
         }
-      });
+      } catch (error) {
+        console.error('Error creating joystick:', error);
+      }
+    });
 
-      this.session.isInitialized = true;
-      this.connectionStatus = 'connected';
-      this.startGameLoop();
+    this.session.isInitialized = true;
+    this.connectionStatus = 'connected';
+    this.startGameLoop();
     } catch (error) {
-      console.error('🎮 playroomSession: Failed to initialize Playroom session:', error);
-      console.error('🎮 playroomSession: Error details:', error.message, error.stack);
+      console.error('Failed to initialize Playroom session:', error);
       this.connectionStatus = 'disconnected';
+      this.initializationPromise = null; // Reset promise on error
       throw error; // Re-throw to let caller handle the error
+    } finally {
+      this.initializationPromise = null; // Clear promise when done
     }
   }
 
@@ -181,8 +149,8 @@ class PlayroomSessionManager {
           else if (dpad.y === "down") y = 1;
           
           // Use the continuous joystick handler for smooth simultaneous movement
-          if (window.handleJoystickMove) {
-            window.handleJoystickMove(x, y);
+          if ((window as any).handleJoystickMove) {
+            (window as any).handleJoystickMove(x, y);
           }
           
           // Check if fire button is pressed
@@ -192,7 +160,7 @@ class PlayroomSessionManager {
             }
           }
         } catch (error) {
-          console.error('🎮 playroomSession: Error in game loop:', error);
+          console.error('Error in game loop:', error);
         }
       }
       
@@ -228,7 +196,6 @@ class PlayroomSessionManager {
 
   // Full cleanup - only when component unmounts
   cleanup(): void {
-    console.log('Playroom session: Full cleanup');
     this.session.isInitialized = false;
     
     if (this.session.animationFrame) {
@@ -252,7 +219,12 @@ class PlayroomSessionManager {
   isConnected(): boolean {
     return this.connectionStatus === 'connected' && this.session.isInitialized;
   }
+
+  isInitializing(): boolean {
+    return this.initializationPromise !== null;
+  }
 }
 
 // Global singleton instance
 export const playroomSession = new PlayroomSessionManager();
+

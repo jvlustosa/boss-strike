@@ -15,13 +15,10 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
 
   // Only show on mobile/touch devices
   const shouldUsePlayroomResult = shouldUsePlayroom();
-  console.log('🎮 PlayroomSessionScreen: shouldUsePlayroom() =', shouldUsePlayroomResult);
   
   if (!shouldUsePlayroomResult) {
     // Skip session screen on desktop
-    console.log('🎮 PlayroomSessionScreen: Desktop detected, skipping session screen');
     useEffect(() => {
-      console.log('🎮 PlayroomSessionScreen: Desktop - calling onSessionReady immediately');
       onSessionReady();
     }, [onSessionReady]);
     return null;
@@ -41,9 +38,7 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
 
   // Track Playroom loading state
   useEffect(() => {
-    if (playroomLoaded) {
-      console.log('🎮 Playroom screen is now loaded and visible');
-    }
+    // Playroom loaded state tracking
   }, [playroomLoaded]);
 
   // Advanced Playroom detection with MutationObserver
@@ -70,7 +65,6 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
                                    id.includes('joystick');
               
               if (playroomElements.length > 0 || isPlayroomElement || isPlayroomLike) {
-                console.log('🎮 Playroom element detected via MutationObserver:', element);
                 if (!playroomLoaded) {
                   setPlayroomLoaded(true);
                 }
@@ -94,31 +88,24 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
 
   // Wait for Playroom connection and Launch button click
   useEffect(() => {
-    console.log('🎮 PlayroomSessionScreen: useEffect started');
     let isCompleted = false;
 
     const checkConnection = async () => {
       try {
-        console.log('🎮 Starting Playroom connection...');
         // Initialize Playroom session
         await playroomSession.initialize();
-        console.log('🎮 Playroom session initialized successfully');
         if (!isCompleted) {
           setStatus('connected');
-          console.log('🎮 Status set to connected');
         }
 
         // Wait for Playroom UI to be ready and then hide loading screen
         const checkPlayroomUI = () => {
-          console.log('🎮 checkPlayroomUI called, isCompleted:', isCompleted);
           if (isCompleted) {
-            console.log('🎮 checkPlayroomUI: Already completed, returning');
             return;
           }
           
           // Check if Playroom has rendered its UI elements
           const playroomElements = document.querySelectorAll('[data-playroom], .playroom-joystick, [class*="playroom"], [class*="joystick"], .bootstrap-wrapper, [class*="bootstrap"]');
-          console.log('🎮 checkPlayroomUI: Found', playroomElements.length, 'Playroom elements');
           
           // Also check for any elements that might be Playroom UI
           const allElements = document.querySelectorAll('*');
@@ -131,29 +118,21 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
                    id.includes('playroom') ||
                    id.includes('joystick');
           });
-          console.log('🎮 checkPlayroomUI: Found', playroomLikeElements.length, 'Playroom-like elements:', playroomLikeElements);
           
           if (playroomElements.length > 0 || playroomLikeElements.length > 0) {
             // Playroom UI is visible, track that it's loaded
             if (!playroomLoaded) {
               setPlayroomLoaded(true);
-              console.log('🎮 Playroom UI detected and loaded:', playroomElements.length, 'elements');
             }
             
             // Playroom UI is visible, start game automatically
-            console.log('🎮 Setting isCompleted = true');
             isCompleted = true;
             setStatus('ready');
             
             // Start game immediately after Playroom is connected
-            console.log('🎮 Playroom connected! Starting game automatically...');
-            console.log('🎮 onSessionReady callback:', onSessionReady);
             setTimeout(() => {
-              console.log('🎮 About to call setIsHidden(true) and onSessionReady()');
               setIsHidden(true);
-              console.log('🎮 Calling onSessionReady()...');
               onSessionReady();
-              console.log('🎮 onSessionReady() called successfully');
             }, 1000); // Small delay to show "ready" status
           } else {
             // Check again in 200ms
@@ -189,8 +168,6 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
       }
     };
 
-
-    console.log('🎮 PlayroomSessionScreen: About to call checkConnection()');
     checkConnection();
 
     // Cleanup function

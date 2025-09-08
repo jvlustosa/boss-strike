@@ -15,6 +15,8 @@ import { getLevelFromUrl, updateUrlLevel } from '../game/core/urlParams';
 import { saveProgress, saveVictory } from '../game/core/progressCache';
 import { MobileControlsLayout } from './MobileControlsLayout';
 import { MobileCredits } from './MobileCredits';
+import { DesktopControls } from './DesktopControls';
+import { DesktopCredits } from './DesktopCredits';
 
 interface GameCanvasProps {
   isPaused: boolean;
@@ -323,6 +325,8 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
       />
       <MobileControlsLayout onFire={handlePlayroomFire} />
       <MobileCredits visible={true} position="top-left" />
+      <DesktopControls />
+      <DesktopCredits />
       {/* <PlayroomDebug /> */}
       {/* <SubtleLogger enabled={true} position="bottom-right" maxLogs={2} /> */}
     </>
