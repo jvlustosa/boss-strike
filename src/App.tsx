@@ -37,6 +37,7 @@ export default function App() {
   };
 
   const handleGameStateChange = (state: any) => {
+    console.log('App: Game state changed to level', state.level, 'with config:', state.levelConfig?.name);
     setGameState(state);
     
     // Salvar progresso automaticamente quando o jogador avança de fase
@@ -88,7 +89,7 @@ export default function App() {
       background: '#000',
       position: 'relative',
     }}>
-      {gameState && <LevelTitle gameState={gameState} />}
+      {gameState && <LevelTitle key={gameState.level} gameState={gameState} />}
       <div style={{ position: 'relative' }}>
         <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} />
       </div>

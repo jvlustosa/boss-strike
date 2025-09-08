@@ -193,18 +193,19 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
 
     // Click handling for next level button
     const onClick = (e: MouseEvent) => {
-      if (state.status !== 'won' || isTransitioningRef.current) return;
+      const currentState = stateRef.current;
+      if (currentState.status !== 'won' || isTransitioningRef.current) return;
       const rect = canvas.getBoundingClientRect();
       const x = (e.clientX - rect.left) / scaleRef.current;
       const y = (e.clientY - rect.top) / scaleRef.current;
-      const btn = (state as any)._nextBtn as { x: number; y: number; w: number; h: number } | undefined;
+      const btn = (currentState as any)._nextBtn as { x: number; y: number; w: number; h: number } | undefined;
       if (btn && x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
         isTransitioningRef.current = true;
         console.log('Game: Transitioning to next level...');
         
         // Avançar para próxima fase
-        const nextLevel = state.level + 1;
-        console.log('🎮 Level Transition Debug - Moving from level', state.level, 'to level', nextLevel);
+        const nextLevel = currentState.level + 1;
+        console.log('🎮 Level Transition Debug - Moving from level', currentState.level, 'to level', nextLevel);
         updateUrlLevel(nextLevel);
         
         // Criar novo estado completamente
@@ -212,29 +213,29 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         console.log('🎮 Level Transition Debug - New state created with config:', newState.levelConfig);
         
         // Preservar apenas o que é necessário
-        const keysRef = state.keys;
+        const keysRef = currentState.keys;
         
         // Limpar estado atual
-        state.bullets.length = 0;
-        state.hearts.length = 0;
-        state.explosionParticles.length = 0;
-        state.smokeParticles.length = 0;
+        currentState.bullets.length = 0;
+        currentState.hearts.length = 0;
+        currentState.explosionParticles.length = 0;
+        currentState.smokeParticles.length = 0;
         
         // Aplicar novo estado - atualizar propriedades específicas
-        state.time = newState.time;
-        state.level = newState.level;
-        state.levelConfig = newState.levelConfig;
-        state.player = newState.player;
-        state.boss = newState.boss;
-        state.heartsSpawnedThisLevel = newState.heartsSpawnedThisLevel;
-        state.status = newState.status;
-        state.victoryTimer = newState.victoryTimer;
-        state.restartTimer = newState.restartTimer;
-        state.keys = keysRef;
+        currentState.time = newState.time;
+        currentState.level = newState.level;
+        currentState.levelConfig = { ...newState.levelConfig }; // Create new object
+        currentState.player = newState.player;
+        currentState.boss = newState.boss;
+        currentState.heartsSpawnedThisLevel = newState.heartsSpawnedThisLevel;
+        currentState.status = newState.status;
+        currentState.victoryTimer = newState.victoryTimer;
+        currentState.restartTimer = newState.restartTimer;
+        currentState.keys = keysRef;
         
         // Atualizar moveSpeed dos braços do boss com a nova configuração
-        for (let i = 0; i < state.boss.arms.length; i++) {
-          state.boss.arms[i].moveSpeed = state.levelConfig.armMoveSpeed;
+        for (let i = 0; i < currentState.boss.arms.length; i++) {
+          currentState.boss.arms[i].moveSpeed = currentState.levelConfig.armMoveSpeed;
         }
         
         // Limpar qualquer tecla pressionada
@@ -246,24 +247,30 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         forceJoystickCleanup();
         
         // Reset timers
-        state.restartTimer = 0;
-        state.victoryTimer = 0;
-        state.time = 0;
+        currentState.restartTimer = 0;
+        currentState.victoryTimer = 0;
+        currentState.time = 0;
         
         // Garantir que o status seja 'playing'
-        state.status = 'playing';
+        currentState.status = 'playing';
+        
+        // Notify parent component of state changes to update level title FIRST
+        if (onGameStateChange) {
+          console.log('GameCanvas: Notifying level change to', currentState.level, 'with config:', currentState.levelConfig?.name);
+          // Create a new object to ensure React detects the change
+          const stateToNotify = {
+            ...currentState,
+            levelConfig: { ...currentState.levelConfig }
+          };
+          onGameStateChange(stateToNotify);
+        }
         
         // Forçar uma atualização do canvas
         if (canvas) {
           const ctx = canvas.getContext('2d');
           if (ctx) {
-            renderSystem(ctx, state, isPaused);
+            renderSystem(ctx, currentState, isPaused);
           }
-        }
-        
-        // Notify parent component of state changes to update level title
-        if (onGameStateChange) {
-          onGameStateChange(state);
         }
         
         console.log(`Game: Transition to level ${nextLevel} completed`);

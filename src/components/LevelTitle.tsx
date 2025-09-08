@@ -1,4 +1,4 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
 import type { GameState } from '../game/core/types';
 import { isDesktop } from '../game/core/environmentDetector';
 
@@ -7,8 +7,15 @@ interface LevelTitleProps {
 }
 
 export function LevelTitle({ gameState }: LevelTitleProps) {
-  const levelText = `Nível ${gameState.level}: ${gameState.levelConfig.name}`;
+  const [levelText, setLevelText] = useState(`Nível ${gameState.level}: ${gameState.levelConfig.name}`);
   const desktop = isDesktop();
+
+  // Force update when gameState changes
+  useEffect(() => {
+    const newLevelText = `Nível ${gameState.level}: ${gameState.levelConfig.name}`;
+    console.log('LevelTitle: Updating level text to:', newLevelText);
+    setLevelText(newLevelText);
+  }, [gameState.level, gameState.levelConfig.name]);
 
   return (
     <div style={{
