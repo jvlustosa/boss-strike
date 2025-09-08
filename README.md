@@ -2,6 +2,24 @@
 
 Um jogo de batalha contra boss em estilo retro, desenvolvido com React + TypeScript + Vite.
 
+## 💖 História do Projeto
+
+Este jogo foi **idealizado pelo meu irmãozinho Dudu Lustosa** e desenvolvido em apenas **1 dia**! 🚀
+
+A versão inicial nasceu da criatividade e imaginação de uma criança, mostrando como ideias simples podem se transformar em projetos incríveis quando colocamos amor e dedicação.
+
+### 👨‍👩‍👧‍👦 Para Famílias
+
+**Se você também tem um irmãozinho, filho ou filha e quer incentivar ele ou ela, aproveite esse repositório!** 
+
+Este projeto é um exemplo perfeito de como:
+- Transformar ideias de crianças em realidade
+- Ensinar programação de forma divertida
+- Criar memórias especiais em família
+- Mostrar que qualquer ideia pode virar um jogo real
+
+Sinta-se à vontade para usar este código como base para criar jogos com as crianças da sua vida. A programação pode ser uma ferramenta incrível para dar vida aos sonhos! ✨
+
 ## 🚀 Deploy no Vercel
 
 ### Opção 1: Deploy via GitHub (Recomendado)

@@ -110,7 +110,7 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
           // Also check for any elements that might be Playroom UI
           const allElements = document.querySelectorAll('*');
           const playroomLikeElements = Array.from(allElements).filter(el => {
-            const className = el.className || '';
+            const className = typeof el.className === 'string' ? el.className : (el.className?.toString() || '');
             const id = el.id || '';
             return className.includes('playroom') || 
                    className.includes('joystick') || 

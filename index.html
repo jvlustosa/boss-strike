@@ -13,15 +13,30 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@400..700&display=swap" rel="stylesheet">
     <style>
-      body {
+      html, body {
         margin: 0;
         padding: 0;
         background: #000;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
         font-family: 'Pixelify Sans', monospace;
+        position: fixed;
+      }
+      
+      body::-webkit-scrollbar {
+        display: none;
+      }
+      
+      body {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      
+      #root {
+        height: 100vh;
+        width: 100vw;
+        overflow: hidden;
       }
     </style>
   </head>
