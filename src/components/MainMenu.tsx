@@ -42,10 +42,10 @@ export function MainMenu({ onStartGame }: MainMenuProps) {
     outline: 'none',
     minWidth: isMobile ? '200px' : '220px',
     textShadow: '1px 1px 0px #333',
-    marginBottom: isMobile ? '20px' : '25px',
+    marginBottom: isMobile ? '25px' : '30px',
     display: 'block',
     margin: '0 auto',
-    marginBottom: isMobile ? '20px' : '25px',
+    marginBottom: isMobile ? '25px' : '30px',
   });
 
   const containerStyle: React.CSSProperties = {
@@ -66,11 +66,11 @@ export function MainMenu({ onStartGame }: MainMenuProps) {
   };
 
   const titleStyle: React.CSSProperties = {
-    fontSize: isMobile ? '28px' : '42px',
+    fontSize: isMobile ? '32px' : '48px',
     fontWeight: '700',
-    marginBottom: isMobile ? '8px' : '12px',
+    marginBottom: isMobile ? '12px' : '18px',
     textAlign: 'center',
-    letterSpacing: isMobile ? '3px' : '6px',
+    letterSpacing: isMobile ? '4px' : '8px',
     textShadow: '4px 4px 0px #333, 8px 8px 0px #666',
     imageRendering: 'pixelated' as any,
     color: '#fff',
@@ -79,7 +79,7 @@ export function MainMenu({ onStartGame }: MainMenuProps) {
 
   const creditStyle: React.CSSProperties = {
     fontSize: isMobile ? '13px' : '15px',
-    marginBottom: isMobile ? '8px' : '10px',
+    marginBottom: isMobile ? '25px' : '35px',
     textAlign: 'center',
     letterSpacing: isMobile ? '2px' : '3px',
     color: '#aaa',
@@ -91,7 +91,7 @@ export function MainMenu({ onStartGame }: MainMenuProps) {
 
   const trophyStyle: React.CSSProperties = {
     fontSize: isMobile ? '15px' : '17px',
-    marginBottom: isMobile ? '15px' : '18px',
+    marginBottom: isMobile ? '25px' : '30px',
     textAlign: 'center',
     color: '#ffd700',
     fontFamily: "'Pixelify Sans', monospace",
@@ -103,7 +103,7 @@ export function MainMenu({ onStartGame }: MainMenuProps) {
 
   const subtitleStyle: React.CSSProperties = {
     fontSize: isMobile ? '11px' : '13px',
-    marginBottom: isMobile ? '15px' : '18px',
+    marginBottom: isMobile ? '20px' : '25px',
     textAlign: 'center',
     color: '#666',
     fontFamily: "'Pixelify Sans', monospace",
@@ -116,7 +116,7 @@ export function MainMenu({ onStartGame }: MainMenuProps) {
     <>
       <AnimatedBackground />
       <div style={containerStyle}>
-        <div style={{ textAlign: 'center', marginBottom: isMobile ? '15px' : '18px' }}>
+        <div style={{ textAlign: 'center' }}>
           <h1 style={titleStyle}>
             Boss <span style={{ color: '#4ade80' }}>Strike</span>
           </h1>
