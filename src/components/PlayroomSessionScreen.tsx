@@ -1,23 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { shouldUsePlayroom } from '../game/core/environmentDetector';
-// Note: Warning about createRoot import comes from PlayroomKit internally, not our code
 import { playroomSession } from '../game/core/playroomSession';
 
 interface PlayroomSessionScreenProps {
   onSessionReady: () => void;
+  isMultiplayer?: boolean;
 }
 
-export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenProps) {
-  const [status, setStatus] = useState<'connecting' | 'connected' | 'ready'>('connecting');
+export function PlayroomSessionScreen({ onSessionReady, isMultiplayer = false }: PlayroomSessionScreenProps) {
+  const [status, setStatus] = useState<'connecting' | 'connected' | 'waiting' | 'ready'>('connecting');
   const [dots, setDots] = useState('');
   const [isHidden, setIsHidden] = useState(false);
-  const [playroomLoaded, setPlayroomLoaded] = useState(false);
+  const [connectedPlayers, setConnectedPlayers] = useState(0);
+  const [roomCode, setRoomCode] = useState<string | null>(null);
+  const [showManualStart, setShowManualStart] = useState(false);
 
-  // Only show on mobile/touch devices
+  // Show Playroom for multiplayer or mobile devices
   const shouldUsePlayroomResult = shouldUsePlayroom();
   
-  if (!shouldUsePlayroomResult) {
-    // Skip session screen on desktop
+  if (!shouldUsePlayroomResult && !isMultiplayer) {
+    // Skip session screen on desktop single player
     useEffect(() => {
       onSessionReady();
     }, [onSessionReady]);
@@ -28,7 +30,7 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
   useEffect(() => {
     const interval = setInterval(() => {
       setDots(prev => {
-        if (prev === '...') return '';
+        if (prev.length >= 3) return '';
         return prev + '.';
       });
     }, 500);
@@ -36,154 +38,131 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
     return () => clearInterval(interval);
   }, []);
 
-  // Track Playroom loading state
-  useEffect(() => {
-    // Playroom loaded state tracking
-  }, [playroomLoaded]);
-
-  // Advanced Playroom detection with MutationObserver
-  useEffect(() => {
-    if (!shouldUsePlayroom()) return;
-
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'childList') {
-          mutation.addedNodes.forEach((node) => {
-            if (node.nodeType === Node.ELEMENT_NODE) {
-              const element = node as Element;
-              // Check if the added element or its children contain Playroom elements
-              const playroomElements = element.querySelectorAll?.('[data-playroom], .playroom-joystick, [class*="playroom"], [class*="joystick"], .bootstrap-wrapper, [class*="bootstrap"]') || [];
-              const isPlayroomElement = element.matches?.('[data-playroom], .playroom-joystick, [class*="playroom"], [class*="joystick"], .bootstrap-wrapper, [class*="bootstrap"]') || false;
-              
-              // Also check if element has Playroom-like classes or IDs
-              const className = element.className || '';
-              const id = element.id || '';
-              const isPlayroomLike = className.includes('playroom') || 
-                                   className.includes('joystick') || 
-                                   className.includes('bootstrap') ||
-                                   id.includes('playroom') ||
-                                   id.includes('joystick');
-              
-              if (playroomElements.length > 0 || isPlayroomElement || isPlayroomLike) {
-                if (!playroomLoaded) {
-                  setPlayroomLoaded(true);
-                }
-              }
-            }
-          });
-        }
-      });
-    });
-
-    // Start observing
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [playroomLoaded]);
-
-  // Wait for Playroom connection and Launch button click
+  // Simplified lobby handling with timeout
   useEffect(() => {
     let isCompleted = false;
 
-    const checkConnection = async () => {
+    const handleLobby = async () => {
       try {
-        // Initialize Playroom session
-        await playroomSession.initialize();
-        if (!isCompleted) {
-          setStatus('connected');
-        }
-
-        // Wait for Playroom UI to be ready and then hide loading screen
-        const checkPlayroomUI = () => {
-          if (isCompleted) {
-            return;
+        if (isMultiplayer) {
+          console.log('🎮 Multiplayer: Starting lobby process...');
+          setStatus('waiting');
+          
+          // Initialize Playroom first
+          try {
+            await playroomSession.initialize();
+            console.log('🎮 Multiplayer: Playroom initialized');
+            setStatus('connected');
+          } catch (error) {
+            console.error('🎮 Multiplayer: Failed to initialize Playroom:', error);
+            // Continue anyway with manual start
+            setStatus('connected');
           }
           
-          // Check if Playroom has rendered its UI elements
-          const playroomElements = document.querySelectorAll('[data-playroom], .playroom-joystick, [class*="playroom"], [class*="joystick"], .bootstrap-wrapper, [class*="bootstrap"]');
-          
-          // Also check for any elements that might be Playroom UI
-          const allElements = document.querySelectorAll('*');
-          const playroomLikeElements = Array.from(allElements).filter(el => {
-            const className = typeof el.className === 'string' ? el.className : (el.className?.toString() || '');
-            const id = el.id || '';
-            return className.includes('playroom') || 
-                   className.includes('joystick') || 
-                   className.includes('bootstrap') ||
-                   id.includes('playroom') ||
-                   id.includes('joystick');
-          });
-          
-          if (playroomElements.length > 0 || playroomLikeElements.length > 0) {
-            // Playroom UI is visible, track that it's loaded
-            if (!playroomLoaded) {
-              setPlayroomLoaded(true);
+          // Timeout de segurança - inicia o jogo após 20 segundos
+          const safetyTimeout = setTimeout(() => {
+            if (!isCompleted) {
+              console.log('🎮 Multiplayer: Safety timeout - starting game anyway');
+              isCompleted = true;
+              setStatus('ready');
+              setTimeout(() => {
+                setIsHidden(true);
+                onSessionReady();
+              }, 500);
+            }
+          }, 20000);
+
+          // Start checking for players immediately after initialization
+          const checkPlayers = () => {
+            if (isCompleted) return;
+            
+            const playroomSession = (window as any).playroomSession;
+            let playerCount = 1; // Default to 1 (host)
+            let roomCodeValue = null;
+            
+            if (playroomSession && playroomSession.getPlayerCount) {
+              playerCount = playroomSession.getPlayerCount();
+              roomCodeValue = playroomSession.getRoomCode?.() || null;
+            } else {
+              console.warn('🎮 Multiplayer: PlayroomSession not available, using fallback');
             }
             
-            // Playroom UI is visible, start game automatically
-            isCompleted = true;
-            setStatus('ready');
+            setConnectedPlayers(playerCount);
+            setRoomCode(roomCodeValue);
             
-            // Start game immediately after Playroom is connected
-            setTimeout(() => {
-              setIsHidden(true);
-              onSessionReady();
-            }, 1000); // Small delay to show "ready" status
-          } else {
-            // Check again in 200ms
-            setTimeout(checkPlayroomUI, 200);
-          }
-        };
+            console.log(`🎮 Multiplayer: Players connected: ${playerCount}/2`);
+            
+            // Start game only when 2 players are connected
+            if (playerCount >= 2) {
+              console.log('🎮 Multiplayer: 2 players connected! Starting game...');
+              isCompleted = true;
+              clearTimeout(safetyTimeout);
+              setStatus('ready');
+              setTimeout(() => {
+                setIsHidden(true);
+                onSessionReady();
+              }, 2000);
+            } else {
+              // Check again in 1 second
+              setTimeout(checkPlayers, 1000);
+            }
+          };
+          
+          // Start checking for players after a short delay
+          setTimeout(checkPlayers, 2000);
 
-        // Start checking for Playroom UI after a short delay
-        setTimeout(checkPlayroomUI, 1000);
-
-      } catch (error) {
-        console.error('Failed to connect to Playroom:', error);
-        if (!isCompleted) {
-          // Fallback: start game anyway after delay
+          // Mostra botão manual após 5 segundos
           setTimeout(() => {
             if (!isCompleted) {
-              setStatus('connected');
-              setTimeout(() => {
-                if (!isCompleted) {
-                  setStatus('ready');
-                  setTimeout(() => {
-                    if (!isCompleted) {
-                      isCompleted = true;
-                      setIsHidden(true);
-                      onSessionReady();
-                    }
-                  }, 1000);
-                }
-              }, 1000);
+              setShowManualStart(true);
             }
-          }, 2000);
+          }, 5000);
+          
+        } else {
+          // Single player - start immediately
+          console.log('🎮 Single player: Starting immediately');
+          setStatus('ready');
+          setTimeout(() => {
+            if (!isCompleted) {
+              isCompleted = true;
+              setIsHidden(true);
+              onSessionReady();
+            }
+          }, 1000);
+        }
+
+      } catch (error) {
+        console.error('Error handling lobby:', error);
+        // Start anyway on error
+        if (!isCompleted) {
+          isCompleted = true;
+          setStatus('ready');
+          setTimeout(() => {
+            setIsHidden(true);
+            onSessionReady();
+          }, 1000);
         }
       }
     };
 
-    checkConnection();
+    handleLobby();
 
-    // Cleanup function
     return () => {
-      // No cleanup needed for this implementation
+      // No cleanup needed
     };
-  }, [onSessionReady]);
+  }, [onSessionReady, isMultiplayer]);
 
   const getStatusText = () => {
+    const multiplayerText = isMultiplayer ? ' (Multiplayer)' : '';
     switch (status) {
       case 'connecting':
-        return `Conectando ao Playroom${dots}`;
+        return `Conectando ao Playroom${multiplayerText}${dots}`;
+      case 'waiting':
+        return `Aguardando lobby do Playroom${dots}`;
       case 'connected':
-        return 'Conectado! Configurando controles...';
+        return `Lobby ativo! Jogadores: ${connectedPlayers}/2${dots}`;
       case 'ready':
-        return 'Playroom conectado! Iniciando jogo...';
+        return `Iniciando jogo${multiplayerText}...`;
       default:
         return 'Conectando...';
     }
@@ -193,6 +172,8 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
     switch (status) {
       case 'connecting':
         return '#ffa500'; // Orange
+      case 'waiting':
+        return '#ffff00'; // Yellow
       case 'connected':
         return '#00ff00'; // Green
       case 'ready':
@@ -208,7 +189,22 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
   }
 
   return (
-    <div style={{
+    <>
+      <style>
+        {`
+          @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+          }
+          @keyframes glow {
+            0% { box-shadow: 0 0 5px rgba(74, 222, 128, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(74, 222, 128, 0.8); }
+            100% { box-shadow: 0 0 5px rgba(74, 222, 128, 0.5); }
+          }
+        `}
+      </style>
+      <div style={{
       position: 'fixed',
       top: 0,
       left: 0,
@@ -219,15 +215,15 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
       flexDirection: 'column',
       alignItems: 'center',
       justifyContent: 'center',
-      zIndex: 1, // Very low z-index to stay below Playroom
+      zIndex: 1,
       fontFamily: "'Pixelify Sans', monospace",
       color: '#fff',
-      pointerEvents: status === 'ready' ? 'none' : 'auto', // Allow clicks through when ready
+      pointerEvents: status === 'ready' ? 'none' : 'auto',
     }}>
       <div style={{
         textAlign: 'center',
         padding: '20px',
-        pointerEvents: 'auto', // Keep content interactive
+        pointerEvents: 'auto',
       }}>
         <div style={{
           fontSize: '24px',
@@ -236,7 +232,7 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
           textShadow: '3px 3px 0px #000',
           letterSpacing: '2px',
         }}>
-          🎮 PLAYROOM
+          🎮 BOSS STRIKE
         </div>
         
         <div style={{
@@ -248,18 +244,136 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
         }}>
           {getStatusText()}
         </div>
-        
-        {/* Playroom loaded indicator */}
-        {playroomLoaded && (
+
+        {/* Player Counter */}
+        {isMultiplayer && status === 'connected' && (
+          <div style={{
+            marginBottom: '20px',
+          }}>
+            {/* Main Counter */}
+            <div style={{
+              fontSize: '24px',
+              color: connectedPlayers >= 2 ? '#4ade80' : '#ffa500',
+              textShadow: '2px 2px 0px #000',
+              letterSpacing: '3px',
+              marginBottom: '10px',
+              fontWeight: 'bold',
+              backgroundColor: connectedPlayers >= 2 ? 'rgba(74, 222, 128, 0.2)' : 'rgba(255, 165, 0, 0.2)',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              border: `3px solid ${connectedPlayers >= 2 ? '#4ade80' : '#ffa500'}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '10px',
+              animation: connectedPlayers >= 2 ? 'pulse 1s infinite' : 'none',
+            }}>
+              <span>👥</span>
+              <span>{connectedPlayers}/2</span>
+              <span>JOGADORES</span>
+            </div>
+            
+            {/* Progress Bar */}
+            <div style={{
+              width: '200px',
+              height: '8px',
+              backgroundColor: 'rgba(0, 0, 0, 0.3)',
+              borderRadius: '4px',
+              overflow: 'hidden',
+              border: '1px solid #333',
+              margin: '0 auto',
+            }}>
+              <div style={{
+                width: `${(connectedPlayers / 2) * 100}%`,
+                height: '100%',
+                backgroundColor: connectedPlayers >= 2 ? '#4ade80' : '#ffa500',
+                transition: 'width 0.5s ease-in-out',
+                animation: connectedPlayers >= 2 ? 'glow 2s infinite' : 'none',
+              }} />
+            </div>
+            
+            {/* Player Status */}
+            <div style={{
+              fontSize: '12px',
+              color: connectedPlayers >= 2 ? '#4ade80' : '#ffa500',
+              textAlign: 'center',
+              marginTop: '8px',
+              fontWeight: 'bold',
+              textShadow: '1px 1px 0px #000',
+            }}>
+              {connectedPlayers === 0 && 'Aguardando jogadores...'}
+              {connectedPlayers === 1 && '1 jogador conectado - Aguardando mais 1...'}
+              {connectedPlayers >= 2 && '✅ Pronto para iniciar!'}
+            </div>
+          </div>
+        )}
+
+        {/* Room Code Display */}
+        {isMultiplayer && roomCode && (
           <div style={{
             fontSize: '14px',
-            color: '#00ff00',
+            color: '#4ade80',
+            textShadow: '1px 1px 0px #000',
+            letterSpacing: '2px',
             marginBottom: '10px',
             fontWeight: 'bold',
-            textShadow: '1px 1px 0px #000',
+            backgroundColor: 'rgba(74, 222, 128, 0.1)',
+            padding: '8px 16px',
+            borderRadius: '4px',
+            border: '1px solid #4ade80',
           }}>
-            ✅ Playroom carregado
+            Código da Sala: {roomCode}
           </div>
+        )}
+
+        {/* Manual Start Button */}
+        {showManualStart && isMultiplayer && (
+          <button
+            onClick={(event) => {
+              const playroomSession = (window as any).playroomSession;
+              const playerCount = playroomSession?.getPlayerCount?.() || 1;
+              
+              // Allow starting with 1 player for testing (hold Shift for test mode)
+              const isTestMode = event.shiftKey;
+              
+              if (playerCount >= 2 || isTestMode) {
+                console.log(`🎮 Multiplayer: Manual start clicked with ${playerCount} players${isTestMode ? ' (TEST MODE)' : ''}`);
+                setIsHidden(true);
+                onSessionReady();
+              } else {
+                console.log(`🎮 Multiplayer: Manual start clicked but only ${playerCount} players connected`);
+                alert(`Aguarde! Apenas ${playerCount} jogador(es) conectado(s). Necessário 2 jogadores para iniciar.\n\nDica: Segure Shift + clique para modo teste (1 jogador).`);
+              }
+            }}
+            style={{
+              fontSize: '16px',
+              fontWeight: 'bold',
+              color: '#fff',
+              backgroundColor: '#4ade80',
+              border: '3px solid #22c55e',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              marginBottom: '20px',
+              textShadow: '1px 1px 0px #000',
+              boxShadow: '0 4px 0px #22c55e',
+              transition: 'all 0.1s ease',
+            }}
+            onMouseDown={(e) => {
+              e.currentTarget.style.transform = 'translateY(2px)';
+              e.currentTarget.style.boxShadow = '0 2px 0px #22c55e';
+            }}
+            onMouseUp={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 0px #22c55e';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 0px #22c55e';
+            }}
+          >
+            🎮 INICIAR JOGO (2 JOGADORES)
+          </button>
         )}
 
         <div style={{
@@ -268,9 +382,10 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
           textShadow: '1px 1px 0px #000',
           letterSpacing: '1px',
         }}>
-          Preparando controles móveis...
+          {isMultiplayer ? 'Modo Multiplayer - Aguarde 2 jogadores conectarem' : 'Modo Single Player'}
         </div>
       </div>
     </div>
+    </>
   );
 }

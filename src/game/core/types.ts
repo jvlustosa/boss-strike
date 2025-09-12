@@ -99,6 +99,7 @@ export type GameState = {
   level: number;
   levelConfig: LevelConfig;
   player: Player;
+  players: Player[]; // Array for multiplayer support
   boss: Boss;
   bullets: Bullet[];
   hearts: Heart[];
@@ -109,4 +110,5 @@ export type GameState = {
   status: 'menu' | 'playing' | 'paused' | 'won' | 'lost';
   victoryTimer: number;
   restartTimer: number;
+  isMultiplayer: boolean;
 };

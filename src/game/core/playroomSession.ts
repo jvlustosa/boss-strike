@@ -1,7 +1,7 @@
 import * as PlayroomKit from 'playroomkit';
 
-// Debug flag - set to false to disable logs in production
-const DEBUG_LOGS = false;
+// Debug flag - set to true to enable logs for debugging
+const DEBUG_LOGS = true;
 
 // Function to ensure PlayroomKit is loaded
 async function ensurePlayroomKitLoaded(): Promise<typeof PlayroomKit> {
@@ -68,8 +68,11 @@ class PlayroomSessionManager {
 
   private async _doInitialize(): Promise<void> {
     try {
+      console.log('🎮 PlayroomSession: Starting initialization...');
+      
       // Ensure PlayroomKit is loaded
       const kit = await ensurePlayroomKitLoaded();
+      console.log('🎮 PlayroomSession: PlayroomKit loaded successfully');
     
       // Check if required methods are available
       if (typeof kit.insertCoin !== 'function') {
@@ -84,17 +87,55 @@ class PlayroomSessionManager {
         throw new Error('PlayroomKit.Joystick is not available');
       }
 
+      console.log('🎮 PlayroomSession: All required methods available');
       this.connectionStatus = 'connecting';
 
-      // Start the game
+      // Make PlayroomKit available globally for debugging
+      (window as any).PlayroomKit = kit;
+      console.log('🎮 PlayroomSession: PlayroomKit exposed to window');
+
+      // Custom avatars for the game
+      const avatars = [
+        'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM0YWRlODAiLz4KPGNpcmNsZSBjeD0iMzIiIGN5PSIyNCIgcj0iOCIgZmlsbD0iIzMzMzMzMyIvPgo8cGF0aCBkPSJNMjAgNDhDMjAgNDAgMjUuMzcyIDM0IDMyIDM0UzQ0IDQwIDQ0IDQ4IiBmaWxsPSIjMzMzMzMzIi8+Cjwvc3ZnPgo=',
+        'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiNmZjZiNmIiLz4KPGNpcmNsZSBjeD0iMzIiIGN5PSIyNCIgcj0iOCIgZmlsbD0iIzMzMzMzMyIvPgo8cGF0aCBkPSJNMjAgNDhDMjAgNDAgMjUuMzcyIDM0IDMyIDM0UzQ0IDQwIDQ0IDQ4IiBmaWxsPSIjMzMzMzMzIi8+Cjwvc3ZnPgo=',
+        'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiM2MzY2ZjEiLz4KPGNpcmNsZSBjeD0iMzIiIGN5PSIyNCIgcj0iOCIgZmlsbD0iIzMzMzMzMyIvPgo8cGF0aCBkPSJNMjAgNDhDMjAgNDAgMjUuMzcyIDM0IDMyIDM0UzQ0IDQwIDQ0IDQ4IiBmaWxsPSIjMzMzMzMzIi8+Cjwvc3ZnPgo=',
+        'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIHZpZXdCb3g9IjAgMCA2NCA2NCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGNpcmNsZSBjeD0iMzIiIGN5PSIzMiIgcj0iMzIiIGZpbGw9IiNmYmJjMDUiLz4KPGNpcmNsZSBjeD0iMzIiIGN5PSIyNCIgcj0iOCIgZmlsbD0iIzMzMzMzMyIvPgo8cGF0aCBkPSJNMjAgNDhDMjAgNDAgMjUuMzcyIDM0IDMyIDM0UzQ0IDQwIDQ0IDQ4IiBmaWxsPSIjMzMzMzMzIi8+Cjwvc3ZnPgo='
+      ];
+
+      // Start the game with lobby UI for multiplayer
+      console.log('🎮 PlayroomSession: Starting insertCoin with lobby...');
       await kit.insertCoin({
         streamMode: true,
-        allowGamepads: true
+        allowGamepads: true,
+        avatars, // Custom avatars for the lobby
+        // Ensure lobby is shown
+        skipLobby: false
       });
+      console.log('🎮 PlayroomSession: insertCoin completed, lobby should be visible');
+      
+      // Check if lobby was created
+      setTimeout(() => {
+        const lobbyElements = document.querySelectorAll('*');
+        const hasLobby = Array.from(lobbyElements).some(el => {
+          const className = el.className?.toString() || '';
+          const id = el.id || '';
+          return className.includes('playroom') || 
+                 className.includes('lobby') || 
+                 className.includes('room') ||
+                 id.includes('playroom');
+        });
+        console.log('🎮 PlayroomSession: Lobby check result:', hasLobby);
+        
+        if (!hasLobby) {
+          console.warn('🎮 PlayroomSession: No lobby elements found, this might be an issue');
+        }
+      }, 2000);
 
     // Create a joystick controller for each joining player
     kit.onPlayerJoin((state) => {
       try {
+        console.log(`🎮 PlayroomSession: Player joined! Total players: ${this.session.players.length + 1}`);
+        
         // Joystick will only create UI for current player (myPlayer)
         // For others, it will only sync their state
         const joystick = new kit.Joystick(state, {
@@ -111,6 +152,8 @@ class PlayroomSessionManager {
         if (state === kit.myPlayer()) {
           this.session.currentPlayerJoystick = joystick;
         }
+        
+        console.log(`🎮 PlayroomSession: Player added! Total players now: ${this.session.players.length}`);
       } catch (error) {
         console.error('Error creating joystick:', error);
       }
@@ -119,6 +162,9 @@ class PlayroomSessionManager {
     this.session.isInitialized = true;
     this.connectionStatus = 'connected';
     this.startGameLoop();
+    
+    // Expose session to window for GameCanvas to check
+    (window as any).playroomSession = this;
     } catch (error) {
       console.error('Failed to initialize Playroom session:', error);
       this.connectionStatus = 'disconnected';
@@ -174,6 +220,28 @@ class PlayroomSessionManager {
 
   setCallbacks(callbacks: { onMove?: (x: number, y: number) => void; onFire?: () => void }): void {
     this.callbacks = { ...this.callbacks, ...callbacks };
+  }
+
+  getPlayerCount(): number {
+    const count = this.session.players.length;
+    console.log(`🎮 PlayroomSession: Player count = ${count}`);
+    console.log(`🎮 PlayroomSession: Session initialized = ${this.session.isInitialized}`);
+    console.log(`🎮 PlayroomSession: Connection status = ${this.connectionStatus}`);
+    return count;
+  }
+
+  getRoomCode(): string | null {
+    try {
+      // Try to get room code from Playroom
+      const kit = (window as any).PlayroomKit;
+      if (kit && kit.getRoomCode) {
+        return kit.getRoomCode();
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting room code:', error);
+      return null;
+    }
   }
 
   // Soft restart - only restart the game loop, keep Playroom session

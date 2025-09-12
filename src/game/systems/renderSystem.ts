@@ -8,10 +8,22 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
   ctx.fillStyle = colors.background;
   ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
 
-  // Player
-  if (state.player.alive) {
-    ctx.fillStyle = colors.player;
-    ctx.fillRect(state.player.pos.x, state.player.pos.y, state.player.w, state.player.h);
+  // Players
+  for (let i = 0; i < state.players.length; i++) {
+    const player = state.players[i];
+    if (player.alive) {
+      // Different colors for different players
+      ctx.fillStyle = i === 0 ? colors.player : '#ff6b6b'; // Player 1: original color, Player 2: red
+      ctx.fillRect(player.pos.x, player.pos.y, player.w, player.h);
+      
+      // Add player number indicator
+      if (state.isMultiplayer) {
+        ctx.fillStyle = '#fff';
+        ctx.font = '6px "Pixelify Sans", monospace';
+        ctx.textAlign = 'center';
+        ctx.fillText((i + 1).toString(), player.pos.x + player.w / 2, player.pos.y - 2);
+      }
+    }
   }
 
   // Boss
@@ -140,15 +152,29 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
   ctx.fillRect(hpBarX, hpBarY, hpBarW * hpPercent, hpBarH);
 
   // Player Health Display
-  ctx.fillStyle = '#0f0';
-  for (let i = 0; i < state.player.health; i++) {
-    ctx.fillRect(4 + i * 6, LOGICAL_H - 8, 4, 4);
-  }
-  
-  // Empty health slots
-  ctx.fillStyle = '#333';
-  for (let i = state.player.health; i < state.player.maxHealth; i++) {
-    ctx.fillRect(4 + i * 6, LOGICAL_H - 8, 4, 4);
+  for (let playerIndex = 0; playerIndex < state.players.length; playerIndex++) {
+    const player = state.players[playerIndex];
+    const healthY = LOGICAL_H - 8 - (playerIndex * 8); // Stack health bars vertically
+    
+    // Player health bars
+    ctx.fillStyle = playerIndex === 0 ? '#0f0' : '#ff6b6b';
+    for (let i = 0; i < player.health; i++) {
+      ctx.fillRect(4 + i * 6, healthY, 4, 4);
+    }
+    
+    // Empty health slots
+    ctx.fillStyle = '#333';
+    for (let i = player.health; i < player.maxHealth; i++) {
+      ctx.fillRect(4 + i * 6, healthY, 4, 4);
+    }
+    
+    // Player number label
+    if (state.isMultiplayer) {
+      ctx.fillStyle = '#fff';
+      ctx.font = '6px "Pixelify Sans", monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText(`P${playerIndex + 1}:`, 2, healthY - 1);
+    }
   }
 
   // Victory Overlay

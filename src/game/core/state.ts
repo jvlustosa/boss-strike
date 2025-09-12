@@ -2,22 +2,31 @@ import type { GameState } from './types';
 import { LOGICAL_W, LOGICAL_H, PLAYER_W, PLAYER_H, BOSS_W, BOSS_H } from './config';
 import { getLevelConfig } from './levelLoader';
 
-export function createInitialState(level: number = 1): GameState {
+export function createInitialState(level: number = 1, isMultiplayer: boolean = false): GameState {
   const levelConfig = getLevelConfig(level);
+  
+  const createPlayer = (x: number, y: number): Player => ({
+    pos: { x, y },
+    w: PLAYER_W,
+    h: PLAYER_H,
+    speed: 60,
+    cooldown: 0,
+    alive: true,
+    health: 5,
+    maxHealth: 5,
+  });
+
+  const players = isMultiplayer ? [
+    createPlayer(LOGICAL_W / 2 - PLAYER_W - 2, LOGICAL_H - PLAYER_H - 4), // Player 1 (left)
+    createPlayer(LOGICAL_W / 2 + 2, LOGICAL_H - PLAYER_H - 4), // Player 2 (right)
+  ] : [createPlayer(LOGICAL_W / 2 - PLAYER_W / 2, LOGICAL_H - PLAYER_H - 4)];
+
   return {
     time: 0,
     level,
     levelConfig,
-    player: {
-      pos: { x: LOGICAL_W / 2 - PLAYER_W / 2, y: LOGICAL_H - PLAYER_H - 4 },
-      w: PLAYER_W,
-      h: PLAYER_H,
-      speed: 60,
-      cooldown: 0,
-      alive: true,
-      health: 5,
-      maxHealth: 5,
-    },
+    player: players[0], // Keep for backward compatibility
+    players,
     boss: {
       pos: { x: LOGICAL_W / 2 - BOSS_W / 2, y: 8 },
       w: BOSS_W,
@@ -57,5 +66,6 @@ export function createInitialState(level: number = 1): GameState {
     status: 'menu',
     victoryTimer: 0,
     restartTimer: 0,
+    isMultiplayer,
   };
 }

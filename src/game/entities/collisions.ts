@@ -5,7 +5,7 @@ import { audioManager } from '../core/audio';
 import { createBossExplosion } from '../systems/explosionSystem';
 
 export function checkCollisions(state: GameState): void {
-  const { bullets, boss, player, hearts } = state;
+  const { bullets, boss, players, hearts } = state;
 
   // Helper para converter entidades com { pos, w, h } em AABB plano { x, y, w, h }
   const toAABB = (o: { pos: { x: number; y: number }; w: number; h: number }) => ({
@@ -15,23 +15,27 @@ export function checkCollisions(state: GameState): void {
     h: o.h,
   });
 
-  // Verificar colisão player com braços do boss
-  if (player.alive) {
-    for (const arm of boss.arms) {
-      if (aabbCollision(toAABB(player), toAABB(arm))) {
-        damagePlayer(state);
-        return;
+  // Verificar colisão players com braços do boss
+  for (const player of players) {
+    if (player.alive) {
+      for (const arm of boss.arms) {
+        if (aabbCollision(toAABB(player), toAABB(arm))) {
+          damagePlayer(state, player);
+          return;
+        }
       }
     }
   }
 
-  // Verificar colisão player com corações
-  if (player.alive && player.health < player.maxHealth) {
-    for (const heart of hearts) {
-      if (!heart.collected && aabbCollision(toAABB(player), toAABB(heart))) {
-        heart.collected = true;
-        player.health++;
-        audioManager.playCriticalSound('heal', 0.8);
+  // Verificar colisão players com corações
+  for (const player of players) {
+    if (player.alive && player.health < player.maxHealth) {
+      for (const heart of hearts) {
+        if (!heart.collected && aabbCollision(toAABB(player), toAABB(heart))) {
+          heart.collected = true;
+          player.health++;
+          audioManager.playCriticalSound('heal', 0.8);
+        }
       }
     }
   }
@@ -52,23 +56,31 @@ export function checkCollisions(state: GameState): void {
         }
       }
     } else if (bullet.from === 'boss') {
-      // Boss bullets vs player collision
-      if (player.alive && aabbCollision(toAABB(bullet), toAABB(player))) {
-        damagePlayer(state);
-        bullets.splice(i, 1);
+      // Boss bullets vs players collision
+      for (const player of players) {
+        if (player.alive && aabbCollision(toAABB(bullet), toAABB(player))) {
+          damagePlayer(state, player);
+          bullets.splice(i, 1);
+          break; // Only one player can be hit by a single bullet
+        }
       }
     }
   }
 }
 
-function damagePlayer(state: GameState): void {
-  state.player.health--;
+function damagePlayer(state: GameState, player: any): void {
+  player.health--;
   
   // Play hit sound effect with random pitch variation
   audioManager.playRandomPitch('hit', 0.4, 0.8, 1.2);
   
-  if (state.player.health <= 0) {
-    state.player.alive = false;
-    state.status = 'lost';
+  if (player.health <= 0) {
+    player.alive = false;
+    
+    // Check if all players are dead
+    const allPlayersDead = state.players.every(p => !p.alive);
+    if (allPlayersDead) {
+      state.status = 'lost';
+    }
   }
 }

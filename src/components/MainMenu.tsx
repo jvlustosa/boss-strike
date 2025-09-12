@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
 import { AnimatedBackground } from './AnimatedBackground';
-import { hasProgress, getLastLevel, getNextLevel, getVictoryCount } from '../game/core/progressCache';
+import { hasProgress, getNextLevel, getVictoryCount } from '../game/core/progressCache';
 
 interface MainMenuProps {
   onStartGame: (level?: number) => void;
+  onStartMultiplayer: (level?: number) => void;
 }
 
-export function MainMenu({ onStartGame }: MainMenuProps) {
+export function MainMenu({ onStartGame, onStartMultiplayer }: MainMenuProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [continueHovered, setContinueHovered] = useState(false);
+  const [multiplayerHovered, setMultiplayerHovered] = useState(false);
   const [victoryCount, setVictoryCount] = useState(0);
   const [canContinue, setCanContinue] = useState(false);
-  const [lastLevel, setLastLevel] = useState(1);
   const [nextLevel, setNextLevel] = useState(1);
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isLandscape = isMobile && window.innerHeight < window.innerWidth;
@@ -20,7 +21,6 @@ export function MainMenu({ onStartGame }: MainMenuProps) {
   useEffect(() => {
     setVictoryCount(getVictoryCount());
     setCanContinue(hasProgress());
-    setLastLevel(getLastLevel());
     setNextLevel(getNextLevel());
   }, []);
 
@@ -46,7 +46,6 @@ export function MainMenu({ onStartGame }: MainMenuProps) {
     marginBottom: isLandscape ? '12px' : (isMobile ? '25px' : '30px'),
     display: 'block',
     margin: '0 auto',
-    marginBottom: isLandscape ? '12px' : (isMobile ? '25px' : '30px'),
   });
 
   const containerStyle: React.CSSProperties = {
@@ -141,7 +140,7 @@ export function MainMenu({ onStartGame }: MainMenuProps) {
               <button
                 style={{
                   ...getButtonStyle(continueHovered, false),
-                  marginBottom: isLandscape ? '0' : getButtonStyle(continueHovered, false).marginBottom
+                  marginBottom: isLandscape ? '0' : '25px'
                 }}
                 onMouseEnter={() => setContinueHovered(true)}
                 onMouseLeave={() => setContinueHovered(false)}
@@ -154,13 +153,27 @@ export function MainMenu({ onStartGame }: MainMenuProps) {
             <button
               style={{
                 ...getButtonStyle(isHovered, canContinue),
-                marginBottom: isLandscape ? '0' : getButtonStyle(isHovered, canContinue).marginBottom
+                marginBottom: isLandscape ? '0' : '25px'
               }}
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
               onClick={() => onStartGame(1)}
             >
               {canContinue ? 'RECOMEÇAR' : 'JOGAR'}
+            </button>
+            
+            <button
+              style={{
+                ...getButtonStyle(multiplayerHovered, false),
+                marginBottom: isLandscape ? '0' : '25px',
+                backgroundColor: multiplayerHovered ? '#4ade80' : '#22c55e',
+                borderColor: '#4ade80'
+              }}
+              onMouseEnter={() => setMultiplayerHovered(true)}
+              onMouseLeave={() => setMultiplayerHovered(false)}
+              onClick={() => onStartMultiplayer(1)}
+            >
+              MULTIPLAYER
             </button>
           </div>
         </div>

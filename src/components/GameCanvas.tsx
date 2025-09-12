@@ -21,9 +21,10 @@ import { DesktopCredits } from './DesktopCredits';
 interface GameCanvasProps {
   isPaused: boolean;
   onGameStateChange?: (gameState: GameState) => void;
+  isMultiplayer?: boolean;
 }
 
-export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
+export function GameCanvas({ isPaused, onGameStateChange, isMultiplayer = false }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
   // Get initial level from URL with error handling
@@ -39,7 +40,7 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
   };
   
   const initialLevel = getInitialLevel();
-  const stateRef = useRef<GameState>(createInitialState(initialLevel)); // Start with level from URL
+  const stateRef = useRef<GameState>(createInitialState(initialLevel, isMultiplayer)); // Start with level from URL
   const scaleRef = useRef<number>(1);
   const isTransitioningRef = useRef(false);
 
@@ -49,18 +50,19 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
     const currentLevel = getLevelFromUrl();
     if (stateRef.current.level !== currentLevel) {
       console.log('🎮 GameCanvas Debug - Level changed in URL, recreating state from', stateRef.current.level, 'to', currentLevel);
-      stateRef.current = createInitialState(currentLevel);
+      stateRef.current = createInitialState(currentLevel, isMultiplayer);
     }
     
     if (stateRef.current.status === 'menu') {
       stateRef.current.status = 'playing';
     }
     
-    // Notify parent component of initial state to show level title
+    // For multiplayer mode, the PlayroomSessionScreen will handle waiting for 2 players
+    // and call onSessionReady() when ready, so we can start immediately here
     if (onGameStateChange) {
       onGameStateChange(stateRef.current);
     }
-  }, [onGameStateChange]);
+  }, [onGameStateChange, isMultiplayer]);
 
   const setupCanvas = useCallback((canvas: HTMLCanvasElement) => {
     const ctx = canvas.getContext('2d')!;
@@ -128,7 +130,7 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
           console.log('Game: Restarting game...');
           
           // Reset game state, mantendo o mesmo nível
-          const next = createInitialState(state.level);
+          const next = createInitialState(state.level, isMultiplayer);
           
           // Preservar a referência do objeto keys para não quebrar o input
           const keysRef = state.keys;
@@ -209,7 +211,7 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         updateUrlLevel(nextLevel);
         
         // Criar novo estado completamente
-        const newState = createInitialState(nextLevel);
+        const newState = createInitialState(nextLevel, isMultiplayer);
         console.log('🎮 Level Transition Debug - New state created with config:', newState.levelConfig);
         
         // Preservar apenas o que é necessário

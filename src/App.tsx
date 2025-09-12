@@ -13,11 +13,30 @@ export default function App() {
   const [isPaused, setIsPaused] = useState(false);
   const [gameState, setGameState] = useState<any>(null);
   const [showPlayroomSession, setShowPlayroomSession] = useState(false);
+  const [isMultiplayer, setIsMultiplayer] = useState(false);
 
   const handleStartGame = (level?: number) => {
     if (level) {
       updateUrlLevel(level);
     }
+    setIsMultiplayer(false);
+    // For single player, only show Playroom on mobile devices
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    if (isMobile) {
+      setShowPlayroomSession(true);
+    } else {
+      // Desktop single player - start game directly
+      setGameStarted(true);
+      setIsPaused(false);
+    }
+  };
+
+  const handleStartMultiplayer = (level?: number) => {
+    if (level) {
+      updateUrlLevel(level);
+    }
+    setIsMultiplayer(true);
+    // For multiplayer, always show Playroom session first
     setShowPlayroomSession(true);
   };
 
@@ -34,6 +53,7 @@ export default function App() {
     updateUrlLevel(1);
     setGameStarted(false);
     setIsPaused(false);
+    setIsMultiplayer(false);
   };
 
   const handleGameStateChange = (state: any) => {
@@ -73,9 +93,9 @@ export default function App() {
   if (!gameStarted) {
     return (
       <>
-        <MainMenu onStartGame={handleStartGame} />
+        <MainMenu onStartGame={handleStartGame} onStartMultiplayer={handleStartMultiplayer} />
         {showPlayroomSession && (
-          <PlayroomSessionScreen onSessionReady={handleSessionReady} />
+          <PlayroomSessionScreen onSessionReady={handleSessionReady} isMultiplayer={isMultiplayer} />
         )}
       </>
     );
@@ -91,7 +111,7 @@ export default function App() {
     }}>
       {gameState && <LevelTitle key={gameState.level} gameState={gameState} />}
       <div style={{ position: 'relative' }}>
-        <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} />
+        <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} isMultiplayer={isMultiplayer} />
       </div>
       {!isPaused && <PauseButton onPause={handlePause} />}
       {isPaused && (

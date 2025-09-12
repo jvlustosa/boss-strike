@@ -32,9 +32,9 @@ export function canPlayerFire(player: Player, keys: Record<string, boolean>): bo
   return player.alive && player.cooldown <= 0 && (keys[' '] || keys['space']);
 }
 
-export function firePlayerBullet(state: GameState): void {
-  const { player } = state;
-  if (!canPlayerFire(player, state.keys)) return;
+export function firePlayerBullet(state: GameState, playerIndex: number = 0): void {
+  const player = state.players[playerIndex];
+  if (!player || !canPlayerFire(player, state.keys)) return;
 
   state.bullets.push({
     pos: { x: player.pos.x + player.w / 2 - 1, y: player.pos.y },

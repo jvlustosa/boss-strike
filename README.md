@@ -65,6 +65,7 @@ Sinta-se à vontade para usar este código como base para criar jogos com as cri
 
 - ✅ Controles de teclado (WASD/Arrow Keys + Space)
 - ✅ Controles touch para mobile (Playroom Joystick)
+- ✅ **Modo Multiplayer** - Jogue com 2 jogadores simultaneamente!
 - ✅ Sistema de níveis progressivos
 - ✅ Sistema de pontuação e vitórias
 - ✅ Efeitos sonoros
@@ -98,10 +99,17 @@ npm run preview
 
 ## 🎮 Como Jogar
 
+### Modo Single Player
 1. **Movimento**: WASD ou Arrow Keys
 2. **Atirar**: Space
 3. **Pausar**: ESC
 4. **Objetivo**: Destrua o boss atirando no ponto fraco (amarelo)
+
+### Modo Multiplayer
+1. **Jogador 1**: WASD + Space (verde)
+2. **Jogador 2**: Arrow Keys + Space (vermelho)
+3. **Pausar**: ESC
+4. **Objetivo**: Ambos os jogadores devem destruir o boss juntos!
 
 ## 🔧 Tecnologias
 
