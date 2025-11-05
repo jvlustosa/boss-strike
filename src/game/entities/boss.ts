@@ -44,8 +44,8 @@ export function updateBoss(boss: Boss, dt: number, bullets: Bullet[], player: Pl
     // Cooldown dos tiros
     arm.shootCooldown -= dt;
     
-    // Atirar periodicamente
-    if (arm.shootCooldown <= 0 && player.alive) {
+    // Atirar periodicamente (só se o boss estiver vivo)
+    if (arm.shootCooldown <= 0 && player.alive && boss.hp > 0) {
       arm.shootCooldown = levelConfig.armShootCooldown;
       
       // Calcular direção para o jogador

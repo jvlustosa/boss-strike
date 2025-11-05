@@ -72,3 +72,7 @@ export function saveVictory(): void {
 export function getVictoryCount(): number {
   return parseInt(localStorage.getItem(VICTORIES_KEY) || '0', 10);
 }
+
+export function clearVictories(): void {
+  localStorage.removeItem(VICTORIES_KEY);
+}

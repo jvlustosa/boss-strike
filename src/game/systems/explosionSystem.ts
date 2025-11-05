@@ -55,6 +55,34 @@ export function createBossSmoke(state: GameState, bossX: number, bossY: number, 
   }
 }
 
+export function createBulletExplosion(state: GameState, bulletX: number, bulletY: number, bulletW: number, bulletH: number): void {
+  const particleCount = 8;
+  const colors = ['#ff0000', '#ff8800', '#ffff00', '#ff4400', '#ffaa00'];
+  
+  for (let i = 0; i < particleCount; i++) {
+    const angle = (Math.PI * 2 * i) / particleCount + Math.random() * 0.5;
+    const speed = 15 + Math.random() * 20;
+    const life = 0.5 + Math.random() * 0.3;
+    
+    const particle: ExplosionParticle = {
+      pos: {
+        x: bulletX + bulletW / 2 + (Math.random() - 0.5) * bulletW,
+        y: bulletY + bulletH / 2 + (Math.random() - 0.5) * bulletH,
+      },
+      vel: {
+        x: Math.cos(angle) * speed,
+        y: Math.sin(angle) * speed,
+      },
+      life,
+      maxLife: life,
+      size: 0.5 + Math.random() * 1,
+      color: colors[Math.floor(Math.random() * colors.length)],
+    };
+    
+    state.explosionParticles.push(particle);
+  }
+}
+
 export function updateExplosionSystem(state: GameState, dt: number): void {
   // Update explosion particles
   for (let i = state.explosionParticles.length - 1; i >= 0; i--) {

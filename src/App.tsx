@@ -6,7 +6,8 @@ import { PauseMenu } from './components/PauseMenu';
 import { LevelTitle } from './components/LevelTitle';
 import { PlayroomSessionScreen } from './components/PlayroomSessionScreen';
 import { updateUrlLevel } from './game/core/urlParams';
-import { saveProgress } from './game/core/progressCache';
+import { saveProgress, clearVictories } from './game/core/progressCache';
+import { createInitialState } from './game/core/state';
 
 export default function App() {
   const [gameStarted, setGameStarted] = useState(false);
@@ -14,10 +15,21 @@ export default function App() {
   const [gameState, setGameState] = useState<any>(null);
   const [showPlayroomSession, setShowPlayroomSession] = useState(false);
 
-  const handleStartGame = (level?: number) => {
-    if (level) {
-      updateUrlLevel(level);
+  const handleStartGame = (level?: number, clearTrophies?: boolean) => {
+    const targetLevel = level || 1;
+    updateUrlLevel(targetLevel);
+    
+    // Se recomeçando (nível 1), salvar o progresso como nível 1
+    if (targetLevel === 1) {
+      const initialState = createInitialState(1);
+      saveProgress(initialState);
+      
+      // Se solicitado, limpar troféus também
+      if (clearTrophies) {
+        clearVictories();
+      }
     }
+    
     setShowPlayroomSession(true);
   };
 

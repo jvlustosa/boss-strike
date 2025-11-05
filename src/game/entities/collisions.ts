@@ -1,8 +1,9 @@
-import type { GameState } from '../core/types';
+import type { GameState, Bullet } from '../core/types';
 import { aabbCollision } from '../engine/math';
 import { damageBoss } from './boss';
 import { audioManager } from '../core/audio';
-import { createBossExplosion } from '../systems/explosionSystem';
+import { createBossExplosion, createBulletExplosion } from '../systems/explosionSystem';
+import { isCheatActive } from '../core/urlParams';
 
 export function checkCollisions(state: GameState): void {
   const { bullets, boss, player, hearts } = state;
@@ -46,9 +47,27 @@ export function checkCollisions(state: GameState): void {
         bullets.splice(i, 1);
         
         if (boss.hp <= 0) {
+          // Collect boss bullets first to avoid modifying array during iteration
+          const bossBullets: Bullet[] = [];
+          for (const bullet of bullets) {
+            if (bullet.from === 'boss') {
+              bossBullets.push(bullet);
+            }
+          }
+          // Create explosions for all boss bullets
+          for (const bullet of bossBullets) {
+            createBulletExplosion(state, bullet.pos.x, bullet.pos.y, bullet.w, bullet.h);
+          }
+          // Remove all boss bullets
+          for (let j = bullets.length - 1; j >= 0; j--) {
+            if (bullets[j].from === 'boss') {
+              bullets.splice(j, 1);
+            }
+          }
           // Create explosion animation at boss current position and start victory timer
           createBossExplosion(state, boss.pos.x, boss.pos.y, boss.w, boss.h);
           state.victoryTimer = 1.5; // 1.5 seconds delay before victory screen
+          return; // Exit early to avoid processing remaining bullets
         }
       }
     } else if (bullet.from === 'boss') {
@@ -62,6 +81,11 @@ export function checkCollisions(state: GameState): void {
 }
 
 function damagePlayer(state: GameState): void {
+  // Check if immortality cheat is active
+  if (isCheatActive('imortal')) {
+    return;
+  }
+  
   state.player.health--;
   
   // Play hit sound effect with random pitch variation

@@ -35,9 +35,9 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
     armMoveSpeed: 2.1,
     armAmplitude: 4.5,
     armShootCooldown: 1.6,
-    bossBulletSpeed: 41,
+    bossBulletSpeed: 49, // 41 * 1.2 = 49.2 (aumento de 20%)
     bulletPattern: { type: 'spread', numBullets: 3, spreadAngle: 22 },
-    bossMovement: { type: 'horizontal', speed: 3, amplitude: 40 }
+    bossMovement: { type: 'horizontal', speed: 3.6, amplitude: 40 } // 3 * 1.2 = 3.6 (aumento de 20%)
   },
   5: {
     name: "Círculo de Fogo",

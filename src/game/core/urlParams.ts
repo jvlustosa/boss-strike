@@ -53,3 +53,12 @@ export function updateUrlLevel(level: number): void {
   window.history.pushState(null, '', url.toString());
 }
 
+export function isCheatActive(cheatName: string): boolean {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('cheat') === cheatName;
+  } catch (error) {
+    return false;
+  }
+}
+
