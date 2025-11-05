@@ -13,16 +13,22 @@ import { userManager } from './game/core/userManager';
 import type { SessionManager } from './game/core/sessionManager';
 
 export default function App() {
+  // Check multiplayer mode BEFORE any other state
+  const roomId = getRoomIdFromUrl();
+  const isAutoMultiplayer = !!roomId;
+
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [gameState, setGameState] = useState<any>(null);
-  const [showSessionScreen, setShowSessionScreen] = useState(false);
-  const [isMultiplayer, setIsMultiplayer] = useState(false);
+  const [showSessionScreen, setShowSessionScreen] = useState(isAutoMultiplayer);
+  const [isMultiplayer, setIsMultiplayer] = useState(isAutoMultiplayer);
   const [sessionManager, setSessionManager] = useState<SessionManager | null>(null);
 
   // Initialize user and session manager
   useEffect(() => {
+    console.log('[App] Initializing - Room ID:', roomId, 'Auto Multiplayer:', isAutoMultiplayer);
+
     // Initialize user
     userManager.init();
     setIsLoggedIn(true);
@@ -31,13 +37,13 @@ export default function App() {
     const manager = createSessionManager();
     setSessionManager(manager);
 
-    // Auto-detect multiplayer mode
-    const roomId = getRoomIdFromUrl();
-    if (roomId) {
+    // If auto-multiplayer, confirm states
+    if (isAutoMultiplayer) {
+      console.log('[App] Auto-multiplayer detected - showing session screen');
       setIsMultiplayer(true);
       setShowSessionScreen(true);
     }
-  }, []);
+  }, [isAutoMultiplayer, roomId]);
 
   const handleStartGame = (level?: number) => {
     if (level) {
@@ -112,6 +118,16 @@ export default function App() {
 
   if (!isLoggedIn) {
     return <LoginScreen onLoginComplete={() => setIsLoggedIn(true)} />;
+  }
+
+  // Priority: If multiplayer with room, show session screen ONLY
+  if (isMultiplayer && showSessionScreen) {
+    return (
+      <WebSocketSessionScreen 
+        onSessionReady={handleSessionReady}
+        sessionManager={sessionManager}
+      />
+    );
   }
 
   if (!gameStarted) {

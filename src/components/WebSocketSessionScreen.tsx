@@ -35,19 +35,26 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
     const handleSession = async () => {
       try {
         if (!sessionManager) {
+          console.error('[WebSocketSessionScreen] Session manager not initialized');
           setError('Session manager not initialized');
           return;
         }
 
+        console.log('[WebSocketSessionScreen] Initializing session');
+
         // Get or create room ID
         let finalRoomId = getRoomIdFromUrl();
+        console.log('[WebSocketSessionScreen] Room ID from URL:', finalRoomId);
+
         if (!finalRoomId) {
           finalRoomId = generateRoomId();
           updateUrlRoom(finalRoomId);
+          console.log('[WebSocketSessionScreen] Generated new room ID:', finalRoomId);
         }
 
         setRoomId(finalRoomId);
         setStatus('connecting');
+        console.log('[WebSocketSessionScreen] Connecting to room:', finalRoomId);
 
         // Initialize multiplayer session
         const playerId = `player_${Math.random().toString(36).substring(7)}`;
