@@ -8,6 +8,13 @@ const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
   : ['https://boss-attack.vercel.app', 'http://localhost:3000', 'http://localhost:5173'];
 
 const httpServer = createServer((req, res) => {
+  // Health check endpoint
+  if (req.url === '/health' || req.url === '/') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ status: 'ok', timestamp: Date.now() }));
+    return;
+  }
+
   const origin = req.headers.origin;
   if (ALLOWED_ORIGINS.includes(origin) || !origin) {
     res.setHeader('Access-Control-Allow-Origin', origin || '*');
