@@ -4,34 +4,40 @@ import { MainMenu } from './components/MainMenu';
 import { PauseButton } from './components/PauseButton';
 import { PauseMenu } from './components/PauseMenu';
 import { LevelTitle } from './components/LevelTitle';
-import { PlayroomSessionScreen } from './components/PlayroomSessionScreen';
 import { WebSocketSessionScreen } from './components/WebSocketSessionScreen';
-import { updateUrlLevel } from './game/core/urlParams';
+import { updateUrlLevel, getRoomIdFromUrl, getLevelFromUrl } from './game/core/urlParams';
 import { saveProgress } from './game/core/progressCache';
+import { createSessionManager } from './game/core/sessionManager';
+import type { SessionManager } from './game/core/sessionManager';
 
 export default function App() {
   const [gameStarted, setGameStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [gameState, setGameState] = useState<any>(null);
-  const [showPlayroomSession, setShowPlayroomSession] = useState(false);
-  const [showWebSocketSession, setShowWebSocketSession] = useState(false);
+  const [showSessionScreen, setShowSessionScreen] = useState(false);
   const [isMultiplayer, setIsMultiplayer] = useState(false);
-  const [useWebSocket, setUseWebSocket] = useState(false);
+  const [sessionManager, setSessionManager] = useState<SessionManager | null>(null);
+
+  // Auto-detect multiplayer mode on mount
+  useEffect(() => {
+    const manager = createSessionManager();
+    setSessionManager(manager);
+
+    const roomId = getRoomIdFromUrl();
+    if (roomId) {
+      // Auto-start multiplayer if room URL present
+      setIsMultiplayer(true);
+      setShowSessionScreen(true);
+    }
+  }, []);
 
   const handleStartGame = (level?: number) => {
     if (level) {
       updateUrlLevel(level);
     }
     setIsMultiplayer(false);
-    // For single player, only show Playroom on mobile devices
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    if (isMobile) {
-      setShowPlayroomSession(true);
-    } else {
-      // Desktop single player - start game directly
-      setGameStarted(true);
-      setIsPaused(false);
-    }
+    setGameStarted(true);
+    setIsPaused(false);
   };
 
   const handleStartMultiplayer = (level?: number) => {
@@ -39,9 +45,7 @@ export default function App() {
       updateUrlLevel(level);
     }
     setIsMultiplayer(true);
-    // Use WebSocket for multiplayer (can be changed to Playroom if needed)
-    setUseWebSocket(true);
-    setShowWebSocketSession(true);
+    setShowSessionScreen(true);
   };
 
   const handlePause = () => {
@@ -53,27 +57,29 @@ export default function App() {
   };
 
   const handleMainMenu = () => {
-    // Reset progress to level 1 when returning to main menu from pause
     updateUrlLevel(1);
     setGameStarted(false);
     setIsPaused(false);
     setIsMultiplayer(false);
-    setUseWebSocket(false);
+    setShowSessionScreen(false);
+    
+    // Cleanup session
+    if (sessionManager) {
+      sessionManager.cleanup();
+    }
   };
 
   const handleGameStateChange = (state: any) => {
-    console.log('App: Game state changed to level', state.level, 'with config:', state.levelConfig?.name);
     setGameState(state);
-    
-    // Salvar progresso automaticamente quando o jogador avança de fase
+
+    // Auto-save progress on victory
     if (state.status === 'won' && state.victoryTimer > 0) {
       saveProgress(state);
     }
   };
 
   const handleSessionReady = () => {
-    setShowPlayroomSession(false);
-    setShowWebSocketSession(false);
+    setShowSessionScreen(false);
     setGameStarted(true);
     setIsPaused(false);
   };
@@ -99,16 +105,20 @@ export default function App() {
   if (!gameStarted) {
     return (
       <>
-        <MainMenu onStartGame={handleStartGame} onStartMultiplayer={handleStartMultiplayer} />
-        {showPlayroomSession && (
-          <PlayroomSessionScreen onSessionReady={handleSessionReady} isMultiplayer={isMultiplayer} />
-        )}
-        {showWebSocketSession && (
-          <WebSocketSessionScreen onSessionReady={handleSessionReady} />
+        <MainMenu 
+          onStartGame={handleStartGame} 
+          onStartMultiplayer={handleStartMultiplayer} 
+        />
+        {showSessionScreen && (
+          <WebSocketSessionScreen 
+            onSessionReady={handleSessionReady}
+            sessionManager={sessionManager}
+          />
         )}
       </>
     );
   }
+
   return (
     <div style={{
       display: 'flex',
@@ -120,7 +130,12 @@ export default function App() {
     }}>
       {gameState && <LevelTitle key={gameState.level} gameState={gameState} />}
       <div style={{ position: 'relative' }}>
-        <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} isMultiplayer={isMultiplayer} />
+        <GameCanvas 
+          isPaused={isPaused} 
+          onGameStateChange={handleGameStateChange} 
+          isMultiplayer={isMultiplayer}
+          sessionManager={sessionManager}
+        />
       </div>
       {!isPaused && <PauseButton onPause={handlePause} />}
       {isPaused && (

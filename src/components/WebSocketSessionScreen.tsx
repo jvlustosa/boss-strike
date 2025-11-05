@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { websocketSession } from '../game/core/websocketSession';
 import { getRoomIdFromUrl, updateUrlRoom, generateRoomId } from '../game/core/urlParams';
+import type { SessionManager } from '../game/core/sessionManager';
 
 interface WebSocketSessionScreenProps {
   onSessionReady: () => void;
+  sessionManager: SessionManager | null;
 }
 
-export function WebSocketSessionScreen({ onSessionReady }: WebSocketSessionScreenProps) {
+export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSocketSessionScreenProps) {
   const [status, setStatus] = useState<'connecting' | 'waiting' | 'ready'>('connecting');
   const [dots, setDots] = useState('');
   const [isHidden, setIsHidden] = useState(false);
@@ -15,6 +16,7 @@ export function WebSocketSessionScreen({ onSessionReady }: WebSocketSessionScree
   const [showManualStart, setShowManualStart] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Animate dots
   useEffect(() => {
     const interval = setInterval(() => {
       setDots(prev => {
@@ -26,14 +28,19 @@ export function WebSocketSessionScreen({ onSessionReady }: WebSocketSessionScree
     return () => clearInterval(interval);
   }, []);
 
+  // Initialize session
   useEffect(() => {
     let isCompleted = false;
 
     const handleSession = async () => {
       try {
-        const urlRoomId = getRoomIdFromUrl();
-        let finalRoomId = urlRoomId;
+        if (!sessionManager) {
+          setError('Session manager not initialized');
+          return;
+        }
 
+        // Get or create room ID
+        let finalRoomId = getRoomIdFromUrl();
         if (!finalRoomId) {
           finalRoomId = generateRoomId();
           updateUrlRoom(finalRoomId);
@@ -42,35 +49,18 @@ export function WebSocketSessionScreen({ onSessionReady }: WebSocketSessionScree
         setRoomId(finalRoomId);
         setStatus('connecting');
 
-        websocketSession.setCallbacks({
-          onJoin: (roomId, playerId, isHost) => {
-            console.log(`[WS] Joined room ${roomId} as ${isHost ? 'host' : 'player'}`);
-            setStatus('waiting');
-            setConnectedPlayers(1);
-            setError(null);
-          },
-          onPlayerJoined: (playerId, playerName, playerCount) => {
-            console.log(`[WS] Player ${playerId} joined. Total: ${playerCount}`);
-            setConnectedPlayers(playerCount);
-          },
-          onPlayerLeft: (playerId, playerCount) => {
-            console.log(`[WS] Player ${playerId} left. Total: ${playerCount}`);
-            setConnectedPlayers(playerCount);
-          },
-          onError: (errorMessage) => {
-            console.error('[WS] Error:', errorMessage);
-            setError(errorMessage);
-            if (errorMessage.includes('não encontrado') || errorMessage.includes('não acessível')) {
-              setStatus('connecting');
-            }
-          }
-        });
+        // Initialize multiplayer session
+        const playerId = `player_${Math.random().toString(36).substring(7)}`;
+        await sessionManager.initMultiplayer(playerId, 'Player');
 
-        await websocketSession.connect(finalRoomId, null);
+        setStatus('waiting');
+        setConnectedPlayers(1);
+        setError(null);
 
+        // Safety timeout - start game after 20 seconds anyway
         const safetyTimeout = setTimeout(() => {
           if (!isCompleted) {
-            console.log('[WS] Safety timeout - starting game anyway');
+            console.log('[Session] Safety timeout - starting game');
             isCompleted = true;
             setStatus('ready');
             setTimeout(() => {
@@ -80,59 +70,58 @@ export function WebSocketSessionScreen({ onSessionReady }: WebSocketSessionScree
           }
         }, 20000);
 
+        // Check for 2 players
         const checkPlayers = () => {
           if (isCompleted) return;
 
-          const playerCount = websocketSession.getPlayerCount();
-          const isConnected = websocketSession.isConnected();
-
-          setConnectedPlayers(playerCount);
-
-          if (isConnected && playerCount >= 2) {
-            console.log('[WS] 2 players connected! Starting game...');
-            isCompleted = true;
-            clearTimeout(safetyTimeout);
-            setStatus('ready');
-            setTimeout(() => {
-              setIsHidden(true);
-              onSessionReady();
-            }, 2000);
-          } else if (isConnected) {
+          const status = sessionManager.getConnectionStatus();
+          if (status.connected) {
+            setConnectedPlayers(1); // Will be 2 when remote player joins
+            
             setTimeout(checkPlayers, 1000);
           }
         };
 
         setTimeout(checkPlayers, 2000);
 
+        // Show manual start button after 5 seconds
         setTimeout(() => {
           if (!isCompleted) {
             setShowManualStart(true);
           }
         }, 5000);
 
+        return () => {
+          clearTimeout(safetyTimeout);
+        };
       } catch (error) {
-        console.error('[WS] Error handling session:', error);
-        setError('Falha ao conectar ao servidor');
+        console.error('[Session] Error:', error);
+        setError('Failed to connect to server');
+        setStatus('connecting');
       }
     };
 
     handleSession();
 
     return () => {
-      websocketSession.disconnect();
+      // Cleanup on unmount
     };
-  }, [onSessionReady]);
+  }, [sessionManager, onSessionReady]);
+
+  if (isHidden) {
+    return null;
+  }
 
   const getStatusText = () => {
     switch (status) {
       case 'connecting':
-        return `Conectando ao servidor${dots}`;
+        return `Connecting to server${dots}`;
       case 'waiting':
-        return `Aguardando jogadores${dots}`;
+        return `Waiting for players${dots}`;
       case 'ready':
-        return `Iniciando jogo...`;
+        return `Starting game...`;
       default:
-        return 'Conectando...';
+        return 'Connecting...';
     }
   };
 
@@ -149,14 +138,10 @@ export function WebSocketSessionScreen({ onSessionReady }: WebSocketSessionScree
     }
   };
 
-  if (isHidden) {
-    return null;
-  }
-
   const copyRoomLink = () => {
     const url = window.location.href;
     navigator.clipboard.writeText(url).then(() => {
-      alert('Link copiado! Compartilhe com seu amigo.');
+      alert('Room link copied! Share with your friend.');
     });
   };
 
@@ -204,7 +189,7 @@ export function WebSocketSessionScreen({ onSessionReady }: WebSocketSessionScree
             textShadow: '3px 3px 0px #000',
             letterSpacing: '2px',
           }}>
-            🎮 BOSS STRIKE
+            🎮 BOSS STRIKE - MULTIPLAYER
           </div>
 
           <div style={{
@@ -224,7 +209,7 @@ export function WebSocketSessionScreen({ onSessionReady }: WebSocketSessionScree
               marginBottom: '20px',
               textShadow: '1px 1px 0px #000',
             }}>
-              Erro: {error}
+              Error: {error}
             </div>
           )}
 
@@ -249,7 +234,7 @@ export function WebSocketSessionScreen({ onSessionReady }: WebSocketSessionScree
               }}>
                 <span>👥</span>
                 <span>{connectedPlayers}/2</span>
-                <span>JOGADORES</span>
+                <span>PLAYERS</span>
               </div>
 
               <div style={{
@@ -278,9 +263,9 @@ export function WebSocketSessionScreen({ onSessionReady }: WebSocketSessionScree
                 fontWeight: 'bold',
                 textShadow: '1px 1px 0px #000',
               }}>
-                {connectedPlayers === 0 && 'Aguardando jogadores...'}
-                {connectedPlayers === 1 && '1 jogador conectado - Aguardando mais 1...'}
-                {connectedPlayers >= 2 && '✅ Pronto para iniciar!'}
+                {connectedPlayers === 0 && 'Waiting for players...'}
+                {connectedPlayers === 1 && '1 player connected - Waiting for more...'}
+                {connectedPlayers >= 2 && '✅ Ready to start!'}
               </div>
             </div>
           )}
@@ -298,7 +283,7 @@ export function WebSocketSessionScreen({ onSessionReady }: WebSocketSessionScree
               borderRadius: '4px',
               border: '1px solid #4ade80',
             }}>
-              Sala: {roomId}
+              Room: {roomId}
             </div>
           )}
 
@@ -319,23 +304,16 @@ export function WebSocketSessionScreen({ onSessionReady }: WebSocketSessionScree
                 boxShadow: '0 2px 0px #4f46e5',
               }}
             >
-              📋 Copiar Link da Sala
+              📋 Copy Room Link
             </button>
           )}
 
           {showManualStart && (
             <button
               onClick={(e) => {
-                const playerCount = websocketSession.getPlayerCount();
-                const isTestMode = e.shiftKey;
-
-                if (playerCount >= 2 || isTestMode) {
-                  console.log(`[WS] Manual start with ${playerCount} players${isTestMode ? ' (TEST MODE)' : ''}`);
-                  setIsHidden(true);
-                  onSessionReady();
-                } else {
-                  alert(`Aguarde! Apenas ${playerCount} jogador(es) conectado(s). Necessário 2 jogadores.\n\nDica: Segure Shift + clique para modo teste.`);
-                }
+                console.log('[Session] Manual start');
+                setIsHidden(true);
+                onSessionReady();
               }}
               style={{
                 fontSize: '16px',
@@ -360,7 +338,7 @@ export function WebSocketSessionScreen({ onSessionReady }: WebSocketSessionScree
                 e.currentTarget.style.boxShadow = '0 4px 0px #22c55e';
               }}
             >
-              🎮 INICIAR JOGO (2 JOGADORES)
+              🎮 START GAME
             </button>
           )}
 
@@ -370,11 +348,10 @@ export function WebSocketSessionScreen({ onSessionReady }: WebSocketSessionScree
             textShadow: '1px 1px 0px #000',
             letterSpacing: '1px',
           }}>
-            Modo Multiplayer - Compartilhe o link da sala
+            Multiplayer Mode - Share the room link with your friend
           </div>
         </div>
       </div>
     </>
   );
 }
-

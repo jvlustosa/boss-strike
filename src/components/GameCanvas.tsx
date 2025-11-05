@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useCallback } from 'react';
 import type { GameState } from '../game/core/types';
 import { createInitialState } from '../game/core/state';
 import { LOGICAL_W, LOGICAL_H } from '../game/core/config';
-import { createGameLoop } from '../game/engine/loop';
 import { registerInput } from '../game/engine/input';
 import { playerSystem } from '../game/systems/playerSystem';
 import { bossSystem } from '../game/systems/bossSystem';
@@ -13,54 +12,41 @@ import { renderSystem } from '../game/systems/renderSystem';
 import { updateExplosionSystem } from '../game/systems/explosionSystem';
 import { getLevelFromUrl, updateUrlLevel } from '../game/core/urlParams';
 import { saveProgress, saveVictory } from '../game/core/progressCache';
-import { websocketSession } from '../game/core/websocketSession';
 import { audioManager } from '../game/core/audio';
 import { MobileControlsLayout } from './MobileControlsLayout';
 import { MobileCredits } from './MobileCredits';
 import { DesktopControls } from './DesktopControls';
 import { DesktopCredits } from './DesktopCredits';
+import type { SessionManager } from '../game/core/sessionManager';
 
 interface GameCanvasProps {
   isPaused: boolean;
   onGameStateChange?: (gameState: GameState) => void;
   isMultiplayer?: boolean;
+  sessionManager?: SessionManager | null;
 }
 
-export function GameCanvas({ isPaused, onGameStateChange, isMultiplayer = false }: GameCanvasProps) {
+export function GameCanvas({ 
+  isPaused, 
+  onGameStateChange, 
+  isMultiplayer = false,
+  sessionManager = null 
+}: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
-  // Get initial level from URL with error handling
-  const getInitialLevel = () => {
-    try {
-      const level = getLevelFromUrl();
-      // Debug logs disabled for production
-      return level;
-    } catch (error) {
-      console.warn('🎮 GameCanvas Debug - Error getting level from URL, defaulting to 1:', error);
-      return 1;
-    }
-  };
-  
-  const initialLevel = getInitialLevel();
-  const stateRef = useRef<GameState>(createInitialState(initialLevel, isMultiplayer)); // Start with level from URL
+  const stateRef = useRef<GameState>(createInitialState(getLevelFromUrl(), isMultiplayer));
   const scaleRef = useRef<number>(1);
-  const isTransitioningRef = useRef(false);
 
-  // Start the game when component mounts
+  // Initialize game state
   React.useEffect(() => {
-    // Recriar estado se o nível mudou na URL
     const currentLevel = getLevelFromUrl();
     if (stateRef.current.level !== currentLevel) {
-      console.log('🎮 GameCanvas Debug - Level changed in URL, recreating state from', stateRef.current.level, 'to', currentLevel);
       stateRef.current = createInitialState(currentLevel, isMultiplayer);
     }
-    
+
     if (stateRef.current.status === 'menu') {
       stateRef.current.status = 'playing';
     }
-    
-    // For multiplayer mode, the PlayroomSessionScreen will handle waiting for 2 players
-    // and call onSessionReady() when ready, so we can start immediately here
+
     if (onGameStateChange) {
       onGameStateChange(stateRef.current);
     }
@@ -68,16 +54,15 @@ export function GameCanvas({ isPaused, onGameStateChange, isMultiplayer = false 
 
   const setupCanvas = useCallback((canvas: HTMLCanvasElement) => {
     const ctx = canvas.getContext('2d')!;
-    
-    // Pixel-perfect scaling
     const scale = Math.floor(Math.min(window.innerWidth / LOGICAL_W, window.innerHeight / LOGICAL_H));
+    
     canvas.width = LOGICAL_W * scale;
     canvas.height = LOGICAL_H * scale;
     scaleRef.current = scale;
-    
+
     ctx.imageSmoothingEnabled = false;
     ctx.scale(scale, scale);
-    
+
     return ctx;
   }, []);
 
@@ -88,404 +73,204 @@ export function GameCanvas({ isPaused, onGameStateChange, isMultiplayer = false 
     const ctx = setupCanvas(canvas);
     const state = stateRef.current;
 
-    // Input setup
+    // Register keyboard input
     const cleanupInput = registerInput(state.keys);
 
-    // WebSocket integration for multiplayer
-    let inputSendInterval: number | null = null;
-    let stateSendInterval: number | null = null;
-    
-    // Apply remote player inputs to their player objects
-    const applyRemoteInputs = (dt: number) => {
-      if (isMultiplayer && websocketSession.isConnected() && state.players.length >= 2) {
-        const playerId = websocketSession.getPlayerId();
-        const allInputs = websocketSession.getAllPlayerInputs();
-        
-        // Map local player (index 0) and remote player (index 1)
-        allInputs.forEach((input, remotePlayerId) => {
-          if (remotePlayerId !== playerId) {
-            // Remote player is always at index 1
-            const player = state.players[1];
-            if (player && player.alive) {
-              // Apply movement directly from normalized input values
-              player.pos.x += input.x * 100 * dt; // PLAYER_SPEED = 100
-              player.pos.y += input.y * 100 * dt;
-              
-              // Clamp position
-              player.pos.x = Math.max(0, Math.min(LOGICAL_W - player.w, player.pos.x));
-              player.pos.y = Math.max(0, Math.min(LOGICAL_H - player.h, player.pos.y));
-              
-              // Handle firing
-              if (input.fire && player.cooldown <= 0) {
+    // Game loop
+    const update = (dt: number) => {
+      if (state.status === 'playing' && !isPaused) {
+        // Multiplayer: host handles simulation, client receives state
+        if (isMultiplayer && sessionManager?.isMultiplayer()) {
+          if (!sessionManager.getIsHost()) {
+            // Non-host: skip simulation, wait for state from host
+            return;
+          }
+
+          // Host: get remote player input and apply
+          const remoteInput = sessionManager.getRemotePlayerInput(1);
+          if (remoteInput && state.players.length >= 2) {
+            const player2 = state.players[1];
+            if (player2 && player2.alive) {
+              player2.pos.x += remoteInput.x * 100 * dt;
+              player2.pos.y += remoteInput.y * 100 * dt;
+              player2.pos.x = Math.max(0, Math.min(LOGICAL_W - player2.w, player2.pos.x));
+              player2.pos.y = Math.max(0, Math.min(LOGICAL_H - player2.h, player2.pos.y));
+
+              if (remoteInput.fire && player2.cooldown <= 0) {
                 state.bullets.push({
-                  pos: { x: player.pos.x + player.w / 2 - 1, y: player.pos.y },
+                  pos: { x: player2.pos.x + player2.w / 2 - 1, y: player2.pos.y },
                   w: 2,
                   h: 4,
                   vel: { x: 0, y: -120 },
                   from: 'player',
                 });
-                player.cooldown = 0.2;
+                player2.cooldown = 0.2;
               }
             }
           }
-        });
-      }
-    };
-    
-    if (isMultiplayer && websocketSession.isConnected()) {
-      const playerId = websocketSession.getPlayerId();
-      const isHost = websocketSession.getIsHost();
-      
-      // Setup remote player input handler
-      websocketSession.setCallbacks({
-        onPlayerInput: (remotePlayerId, input) => {
-          if (remotePlayerId !== playerId) {
-            // Input is stored in websocketSession, no need to store here
-          }
-        },
-        onGameStateUpdate: (gameState) => {
-          if (!isHost && gameState) {
-            // Apply remote game state (non-host receives authoritative state)
-            Object.assign(state, gameState);
-          }
         }
-      });
 
-      // Send local input every frame
-      inputSendInterval = window.setInterval(() => {
-        if (websocketSession.isConnected() && state.status === 'playing') {
-          const keys = state.keys;
-          const input = {
-            x: (keys['d'] || keys['arrowright'] ? 1 : 0) - (keys['a'] || keys['arrowleft'] ? 1 : 0),
-            y: (keys['s'] || keys['arrowdown'] ? 1 : 0) - (keys['w'] || keys['arrowup'] ? 1 : 0),
-            fire: keys[' '] || keys['space'] || false
-          };
-          websocketSession.sendInput(input);
-        }
-      }, 16);
-
-      // Host sends game state periodically
-      if (isHost) {
-        stateSendInterval = window.setInterval(() => {
-          if (websocketSession.isConnected() && state.status === 'playing') {
-            websocketSession.sendGameState(state);
-          }
-        }, 100);
-      }
-    }
-
-    // Handle ESC key for pause
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        // Save progress when pausing
-        if (state.status === 'playing') {
-          saveProgress(state);
-        }
-        // Toggle pause - this will be handled by the parent component
-        window.dispatchEvent(new CustomEvent('togglePause'));
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-
-    // Game loop
-    const update = (dt: number) => {
-      if (state.status === 'playing' && !isPaused) {
-        // Apply remote player inputs for multiplayer
-        if (isMultiplayer && websocketSession.isConnected()) {
-          const isHost = websocketSession.getIsHost();
-          if (!isHost) {
-            // Non-host receives state from host, so skip local game simulation
-            return;
-          }
-          // Host applies remote inputs first
-          applyRemoteInputs(dt);
-        }
-        
         state.time += dt;
-        
-        // In multiplayer, only the host runs full simulation
-        // playerSystem applies input to players - for multiplayer, input is handled via applyRemoteInputs
-        if (!isMultiplayer || !websocketSession.isConnected()) {
-          // Single player: use normal playerSystem
-          playerSystem(state, dt);
-        } else if (isMultiplayer && websocketSession.isConnected() && websocketSession.getIsHost()) {
-          // Multiplayer host: update only local player with keyboard input
-          // Remote player is handled by applyRemoteInputs above
-          const localPlayer = state.players[0];
-          if (localPlayer && localPlayer.alive) {
-            const keys = state.keys;
-            let moveX = 0;
-            if (keys['a'] || keys['arrowleft']) moveX -= 1;
-            if (keys['d'] || keys['arrowright']) moveX += 1;
-            localPlayer.pos.x += moveX * 100 * dt;
-            localPlayer.pos.x = Math.max(0, Math.min(LOGICAL_W - localPlayer.w, localPlayer.pos.x));
-
-            let moveY = 0;
-            if (keys['w'] || keys['arrowup']) moveY -= 1;
-            if (keys['s'] || keys['arrowdown']) moveY += 1;
-            localPlayer.pos.y += moveY * 100 * dt;
-            localPlayer.pos.y = Math.max(0, Math.min(LOGICAL_H - localPlayer.h, localPlayer.pos.y));
-
-            // Cooldown
-            if (localPlayer.cooldown > 0) {
-              localPlayer.cooldown -= dt;
-            }
-          }
-          
-          // Fire bullets for local player
-          const player = state.players[0];
-          if (player && player.alive && player.cooldown <= 0 && (state.keys[' '] || state.keys['space'])) {
-            state.bullets.push({
-              pos: { x: player.pos.x + player.w / 2 - 1, y: player.pos.y },
-              w: 2,
-              h: 4,
-              vel: { x: 0, y: -120 },
-              from: 'player',
-            });
-            player.cooldown = 0.2;
-            audioManager.playSound('shoot', 0.3, 0.4);
-          }
-        }
-        
+        playerSystem(state, dt);
         bossSystem(state, dt);
         bulletSystem(state, dt);
         heartSystem(state, dt);
         collisionSystem(state);
-        
-        // Handle victory timer
+
+        // Victory timer
         if (state.victoryTimer > 0) {
           state.victoryTimer -= dt;
           if (state.victoryTimer <= 0) {
             state.status = 'won';
-            // Save victory and progress
             saveVictory();
             saveProgress(state);
           }
         }
       } else if (state.status === 'lost') {
-        // Auto-restart after 2 seconds when player loses
+        // Auto-restart after 2 seconds
         state.restartTimer += dt;
         if (state.restartTimer >= 2) {
-          console.log('Game: Restarting game...');
-          
-          // Reset game state, mantendo o mesmo nível
           const next = createInitialState(state.level, isMultiplayer);
-          
-          // Preservar a referência do objeto keys para não quebrar o input
           const keysRef = state.keys;
-          
-          // Aplicar novo estado - atualizar propriedades específicas
+
           state.time = next.time;
           state.level = next.level;
           state.levelConfig = next.levelConfig;
           state.player = next.player;
+          state.players = next.players;
           state.boss = next.boss;
           state.heartsSpawnedThisLevel = next.heartsSpawnedThisLevel;
           state.status = next.status;
           state.victoryTimer = next.victoryTimer;
           state.restartTimer = next.restartTimer;
           state.keys = keysRef;
-          
-          // Atualizar moveSpeed dos braços do boss com a nova configuração
+
           for (let i = 0; i < state.boss.arms.length; i++) {
             state.boss.arms[i].moveSpeed = state.levelConfig.armMoveSpeed;
           }
-          
-          // Limpar qualquer tecla pressionada
+
           for (const key in keysRef) {
             keysRef[key] = false;
           }
-          
-          // Force joystick cleanup on restart
-          forceJoystickCleanup();
-          
-          // Reset all timers and state
-          state.restartTimer = 0;
-          state.victoryTimer = 0;
-          state.time = 0;
-          state.status = 'playing';
-          
-          // Notify parent component of state changes to update level title
+
           if (onGameStateChange) {
             onGameStateChange(state);
           }
-          
-          console.log('Game: Restart completed');
         }
       }
-      
-      // Notify parent component of state changes
+
       if (onGameStateChange) {
         onGameStateChange(state);
       }
     };
 
-    const render = () => {
-      renderSystem(ctx, state, isPaused);
-    };
-
-    const cleanupLoop = createGameLoop(update, render);
-
-    // Resize handler
-    const handleResize = () => {
-      setupCanvas(canvas);
-    };
-    window.addEventListener('resize', handleResize);
-
-    // Click handling for next level button
-    const onClick = (e: MouseEvent) => {
-      const currentState = stateRef.current;
-      if (currentState.status !== 'won' || isTransitioningRef.current) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / scaleRef.current;
-      const y = (e.clientY - rect.top) / scaleRef.current;
-      const btn = (currentState as any)._nextBtn as { x: number; y: number; w: number; h: number } | undefined;
-      if (btn && x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
-        isTransitioningRef.current = true;
-        console.log('Game: Transitioning to next level...');
-        
-        // Avançar para próxima fase
-        const nextLevel = currentState.level + 1;
-        console.log('🎮 Level Transition Debug - Moving from level', currentState.level, 'to level', nextLevel);
-        updateUrlLevel(nextLevel);
-        
-        // Criar novo estado completamente
-        const newState = createInitialState(nextLevel, isMultiplayer);
-        console.log('🎮 Level Transition Debug - New state created with config:', newState.levelConfig);
-        
-        // Preservar apenas o que é necessário
-        const keysRef = currentState.keys;
-        
-        // Limpar estado atual
-        currentState.bullets.length = 0;
-        currentState.hearts.length = 0;
-        currentState.explosionParticles.length = 0;
-        currentState.smokeParticles.length = 0;
-        
-        // Aplicar novo estado - atualizar propriedades específicas
-        currentState.time = newState.time;
-        currentState.level = newState.level;
-        currentState.levelConfig = { ...newState.levelConfig }; // Create new object
-        currentState.player = newState.player;
-        currentState.boss = newState.boss;
-        currentState.heartsSpawnedThisLevel = newState.heartsSpawnedThisLevel;
-        currentState.status = newState.status;
-        currentState.victoryTimer = newState.victoryTimer;
-        currentState.restartTimer = newState.restartTimer;
-        currentState.keys = keysRef;
-        
-        // Atualizar moveSpeed dos braços do boss com a nova configuração
-        for (let i = 0; i < currentState.boss.arms.length; i++) {
-          currentState.boss.arms[i].moveSpeed = currentState.levelConfig.armMoveSpeed;
+    // Handle ESC key for pause
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (state.status === 'playing') {
+          saveProgress(state);
         }
-        
-        // Limpar qualquer tecla pressionada
-        for (const key in keysRef) {
-          keysRef[key] = false;
-        }
-        
-        // Force joystick cleanup on level transition
-        forceJoystickCleanup();
-        
-        // Reset timers
-        currentState.restartTimer = 0;
-        currentState.victoryTimer = 0;
-        currentState.time = 0;
-        
-        // Garantir que o status seja 'playing'
-        currentState.status = 'playing';
-        
-        // Notify parent component of state changes to update level title FIRST
-        if (onGameStateChange) {
-          console.log('GameCanvas: Notifying level change to', currentState.level, 'with config:', currentState.levelConfig?.name);
-          // Create a new object to ensure React detects the change
-          const stateToNotify = {
-            ...currentState,
-            levelConfig: { ...currentState.levelConfig }
-          };
-          onGameStateChange(stateToNotify);
-        }
-        
-        // Forçar uma atualização do canvas
-        if (canvas) {
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            renderSystem(ctx, currentState, isPaused);
-          }
-        }
-        
-        console.log(`Game: Transition to level ${nextLevel} completed`);
-        
-        // Reset transition flag after a short delay
-        setTimeout(() => {
-          isTransitioningRef.current = false;
-        }, 100);
+        window.dispatchEvent(new CustomEvent('togglePause'));
       }
-      
-      // Always update explosion system (even when game is won/lost)
-      updateExplosionSystem(state, 0);
     };
-    canvas.addEventListener('click', onClick);
+
+    window.addEventListener('keydown', handleKeyDown);
+
+    // Render loop
+    const render = (dt: number) => {
+      renderSystem(ctx, state, isPaused);
+      updateExplosionSystem(state, dt);
+    };
+
+    // Combined game and render loop
+    let lastTime = performance.now();
+    let frameCount = 0;
+    const frameRate = 1000 / 60; // 60 FPS target
+
+    const gameLoop = (currentTime: number) => {
+      const delta = (currentTime - lastTime) / 1000; // Convert to seconds
+      lastTime = currentTime;
+
+      // Cap dt to prevent large jumps
+      const dt = Math.min(delta, 0.05);
+
+      // Update game state
+      update(dt);
+
+      // Render
+      render(dt);
+
+      // Multiplayer: send input and state
+      if (isMultiplayer && sessionManager?.isMultiplayer()) {
+        const keys = state.keys;
+        const x = (keys['d'] || keys['arrowright'] ? 1 : 0) - (keys['a'] || keys['arrowleft'] ? 1 : 0);
+        const y = (keys['s'] || keys['arrowdown'] ? 1 : 0) - (keys['w'] || keys['arrowup'] ? 1 : 0);
+        const fire = keys[' '] || keys['space'] || false;
+
+        sessionManager.updateInput(x, y, fire);
+        sessionManager.sendInput();
+
+        // Host broadcasts state
+        if (sessionManager.getIsHost()) {
+          sessionManager.sendGameState({
+            frameNumber: sessionManager.getFrameNumber(),
+            timestamp: Date.now(),
+            players: state.players.map((p, idx) => ({
+              index: idx,
+              pos: p.pos,
+              health: p.health,
+              alive: p.alive,
+              cooldown: p.cooldown,
+            })),
+            boss: {
+              pos: state.boss.pos,
+              hp: state.boss.hp,
+              hpMax: state.boss.hpMax,
+            },
+            bulletsCount: state.bullets.length,
+          });
+        }
+
+        sessionManager.nextFrame();
+      }
+
+      frameCount++;
+      requestAnimationFrame(gameLoop);
+    };
+
+    requestAnimationFrame(gameLoop);
 
     return () => {
-      cleanupInput();
-      cleanupLoop();
-      window.removeEventListener('resize', handleResize);
       window.removeEventListener('keydown', handleKeyDown);
-      canvas.removeEventListener('click', onClick);
-      
-      // Cleanup WebSocket intervals
-      if (inputSendInterval !== null) {
-        clearInterval(inputSendInterval);
-      }
-      if (stateSendInterval !== null) {
-        clearInterval(stateSendInterval);
-      }
+      cleanupInput();
     };
-  }, [setupCanvas, isPaused, isMultiplayer]);
+  }, [isPaused, isMultiplayer, sessionManager, setupCanvas, onGameStateChange]);
 
-  const handlePlayroomFire = () => {
-    if ((window as any).handleTouchFire) {
-      (window as any).handleTouchFire();
-    }
-  };
-
-  // Soft restart joystick on game restart/level change (keep session alive)
-  const forceJoystickCleanup = () => {
-    // Clear input first
-    if ((window as any).forceClearInput) {
-      (window as any).forceClearInput();
-    }
-    
-    // Dispatch custom event for soft restart (keeps Playroom session alive)
-    window.dispatchEvent(new CustomEvent('forceJoystickCleanup'));
-    
-    // Reinitialize input system after Playroom session has restarted
-    setTimeout(() => {
-      if ((window as any).forceReinitInput) {
-        (window as any).forceReinitInput();
-      }
-    }, 200); // Increased delay to ensure Playroom session is ready
-  };
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   return (
     <>
       <canvas
         ref={canvasRef}
         style={{
-          border: '2px solid #333',
-          display: 'block',
-          maxWidth: '100%',
-          maxHeight: '100%',
+          imageRendering: 'pixelated',
+          imageRendering: 'crisp-edges',
+          border: '2px solid #fff',
+          boxShadow: '0 0 20px rgba(0, 255, 255, 0.5)',
         }}
       />
-      <MobileControlsLayout onFire={handlePlayroomFire} />
-      <MobileCredits visible={true} position="top-left" />
-      <DesktopControls />
-      <DesktopCredits />
-      {/* <PlayroomDebug /> */}
-      {/* <SubtleLogger enabled={true} position="bottom-right" maxLogs={2} /> */}
+      {isMobile && (
+        <>
+          <MobileControlsLayout />
+          <MobileCredits />
+        </>
+      )}
+      {!isMobile && (
+        <>
+          <DesktopControls />
+          <DesktopCredits />
+        </>
+      )}
     </>
   );
 }
