@@ -66,6 +66,8 @@ Sinta-se à vontade para usar este código como base para criar jogos com as cri
 - ✅ Controles de teclado (WASD/Arrow Keys + Space)
 - ✅ Controles touch para mobile (Playroom Joystick)
 - ✅ **Modo Multiplayer** - Jogue com 2 jogadores simultaneamente!
+  - **WebSocket Multiplayer**: Conecte jogadores pela mesma URL (room ID)
+  - **Playroom Multiplayer**: Usando PlayroomKit (mobile)
 - ✅ Sistema de níveis progressivos
 - ✅ Sistema de pontuação e vitórias
 - ✅ Efeitos sonoros
@@ -76,6 +78,8 @@ Sinta-se à vontade para usar este código como base para criar jogos com as cri
 - ✅ Favicon SVG otimizado
 
 ## 🛠️ Desenvolvimento Local
+
+### Cliente (Frontend)
 
 ```bash
 # Instalar dependências
@@ -89,6 +93,29 @@ npm run build
 
 # Preview do build
 npm run preview
+```
+
+### Servidor WebSocket (Multiplayer)
+
+```bash
+# Entrar na pasta do servidor
+cd server
+
+# Instalar dependências
+npm install
+
+# Executar servidor
+npm start
+
+# Ou em modo desenvolvimento (auto-reload)
+npm run dev
+```
+
+O servidor roda na porta 8080 por padrão. Configure `VITE_WS_SERVER_URL` no arquivo `.env` para apontar para o servidor.
+
+**Exemplo `.env`:**
+```
+VITE_WS_SERVER_URL=ws://localhost:8080
 ```
 
 ## 📱 Compatibilidade
@@ -105,11 +132,31 @@ npm run preview
 3. **Pausar**: ESC
 4. **Objetivo**: Destrua o boss atirando no ponto fraco (amarelo)
 
-### Modo Multiplayer
-1. **Jogador 1**: WASD + Space (verde)
-2. **Jogador 2**: Arrow Keys + Space (vermelho)
-3. **Pausar**: ESC
-4. **Objetivo**: Ambos os jogadores devem destruir o boss juntos!
+### Modo Multiplayer (WebSocket)
+
+1. **Inicie o servidor WebSocket**:
+   ```bash
+   cd server
+   npm start
+   ```
+
+2. **Jogador 1 (Host)**:
+   - Abra o jogo e clique em "Multiplayer"
+   - Um código de sala será gerado (ex: `ABC123`)
+   - Compartilhe o link da URL com o segundo jogador
+
+3. **Jogador 2**:
+   - Abra o mesmo link compartilhado pelo Jogador 1
+   - Aguarde a conexão (2/2 jogadores)
+
+4. **Controles**:
+   - **Jogador 1**: WASD + Space (verde, esquerda)
+   - **Jogador 2**: WASD + Space (vermelho, direita)
+   - **Pausar**: ESC
+
+5. **Objetivo**: Ambos os jogadores devem destruir o boss juntos!
+
+**Nota**: O host executa a simulação do jogo e envia o estado para os outros jogadores. Todos os jogadores enviam seus inputs.
 
 ## 🔧 Tecnologias
 

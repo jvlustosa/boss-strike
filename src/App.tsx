@@ -5,6 +5,7 @@ import { PauseButton } from './components/PauseButton';
 import { PauseMenu } from './components/PauseMenu';
 import { LevelTitle } from './components/LevelTitle';
 import { PlayroomSessionScreen } from './components/PlayroomSessionScreen';
+import { WebSocketSessionScreen } from './components/WebSocketSessionScreen';
 import { updateUrlLevel } from './game/core/urlParams';
 import { saveProgress } from './game/core/progressCache';
 
@@ -13,7 +14,9 @@ export default function App() {
   const [isPaused, setIsPaused] = useState(false);
   const [gameState, setGameState] = useState<any>(null);
   const [showPlayroomSession, setShowPlayroomSession] = useState(false);
+  const [showWebSocketSession, setShowWebSocketSession] = useState(false);
   const [isMultiplayer, setIsMultiplayer] = useState(false);
+  const [useWebSocket, setUseWebSocket] = useState(false);
 
   const handleStartGame = (level?: number) => {
     if (level) {
@@ -36,8 +39,9 @@ export default function App() {
       updateUrlLevel(level);
     }
     setIsMultiplayer(true);
-    // For multiplayer, always show Playroom session first
-    setShowPlayroomSession(true);
+    // Use WebSocket for multiplayer (can be changed to Playroom if needed)
+    setUseWebSocket(true);
+    setShowWebSocketSession(true);
   };
 
   const handlePause = () => {
@@ -54,6 +58,7 @@ export default function App() {
     setGameStarted(false);
     setIsPaused(false);
     setIsMultiplayer(false);
+    setUseWebSocket(false);
   };
 
   const handleGameStateChange = (state: any) => {
@@ -68,6 +73,7 @@ export default function App() {
 
   const handleSessionReady = () => {
     setShowPlayroomSession(false);
+    setShowWebSocketSession(false);
     setGameStarted(true);
     setIsPaused(false);
   };
@@ -96,6 +102,9 @@ export default function App() {
         <MainMenu onStartGame={handleStartGame} onStartMultiplayer={handleStartMultiplayer} />
         {showPlayroomSession && (
           <PlayroomSessionScreen onSessionReady={handleSessionReady} isMultiplayer={isMultiplayer} />
+        )}
+        {showWebSocketSession && (
+          <WebSocketSessionScreen onSessionReady={handleSessionReady} />
         )}
       </>
     );

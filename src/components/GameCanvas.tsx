@@ -13,6 +13,7 @@ import { renderSystem } from '../game/systems/renderSystem';
 import { updateExplosionSystem } from '../game/systems/explosionSystem';
 import { getLevelFromUrl, updateUrlLevel } from '../game/core/urlParams';
 import { saveProgress, saveVictory } from '../game/core/progressCache';
+import { websocketSession } from '../game/core/websocketSession';
 import { MobileControlsLayout } from './MobileControlsLayout';
 import { MobileCredits } from './MobileCredits';
 import { DesktopControls } from './DesktopControls';
@@ -89,6 +90,89 @@ export function GameCanvas({ isPaused, onGameStateChange, isMultiplayer = false 
     // Input setup
     const cleanupInput = registerInput(state.keys);
 
+    // WebSocket integration for multiplayer
+    let inputSendInterval: number | null = null;
+    let stateSendInterval: number | null = null;
+    
+    // Apply remote player inputs to their player objects
+    const applyRemoteInputs = (dt: number) => {
+      if (isMultiplayer && websocketSession.isConnected() && state.players.length >= 2) {
+        const playerId = websocketSession.getPlayerId();
+        const allInputs = websocketSession.getAllPlayerInputs();
+        let playerIndex = 0;
+        
+        allInputs.forEach((input, remotePlayerId) => {
+          if (remotePlayerId !== playerId && playerIndex < state.players.length - 1) {
+            const player = state.players[playerIndex + 1];
+            if (player && player.alive) {
+              // Apply movement
+              player.pos.x += input.x * player.speed * dt;
+              player.pos.y += input.y * player.speed * dt;
+              
+              // Clamp position
+              player.pos.x = Math.max(0, Math.min(LOGICAL_W - player.w, player.pos.x));
+              player.pos.y = Math.max(0, Math.min(LOGICAL_H - player.h, player.pos.y));
+              
+              // Handle firing
+              if (input.fire && player.cooldown <= 0) {
+                state.bullets.push({
+                  pos: { x: player.pos.x + player.w / 2 - 1, y: player.pos.y },
+                  w: 2,
+                  h: 4,
+                  vel: { x: 0, y: -120 },
+                  from: 'player',
+                });
+                player.cooldown = 0.2;
+              }
+            }
+            playerIndex++;
+          }
+        });
+      }
+    };
+    
+    if (isMultiplayer && websocketSession.isConnected()) {
+      const playerId = websocketSession.getPlayerId();
+      const isHost = websocketSession.getIsHost();
+      
+      // Setup remote player input handler
+      websocketSession.setCallbacks({
+        onPlayerInput: (remotePlayerId, input) => {
+          if (remotePlayerId !== playerId) {
+            // Input is stored in websocketSession, no need to store here
+          }
+        },
+        onGameStateUpdate: (gameState) => {
+          if (!isHost && gameState) {
+            // Apply remote game state (non-host receives authoritative state)
+            Object.assign(state, gameState);
+          }
+        }
+      });
+
+      // Send local input every frame
+      inputSendInterval = window.setInterval(() => {
+        if (websocketSession.isConnected() && state.status === 'playing') {
+          const keys = state.keys;
+          const input = {
+            x: (keys['d'] || keys['arrowright'] ? 1 : 0) - (keys['a'] || keys['arrowleft'] ? 1 : 0),
+            y: (keys['s'] || keys['arrowdown'] ? 1 : 0) - (keys['w'] || keys['arrowup'] ? 1 : 0),
+            fire: keys[' '] || keys['space'] || false
+          };
+          websocketSession.sendInput(input);
+        }
+      }, 16);
+
+      // Host sends game state periodically
+      if (isHost) {
+        stateSendInterval = window.setInterval(() => {
+          if (websocketSession.isConnected() && state.status === 'playing') {
+            websocketSession.sendGameState(state);
+          }
+        }, 100);
+      }
+    }
+
     // Handle ESC key for pause
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -106,6 +190,18 @@ export function GameCanvas({ isPaused, onGameStateChange, isMultiplayer = false 
     // Game loop
     const update = (dt: number) => {
       if (state.status === 'playing' && !isPaused) {
+        // Apply remote player inputs for multiplayer
+        if (isMultiplayer && websocketSession.isConnected()) {
+          const isHost = websocketSession.getIsHost();
+          if (isHost) {
+            // Host applies remote inputs and runs full game loop
+            applyRemoteInputs(dt);
+          } else {
+            // Non-host receives state from host, so skip local game simulation
+            return;
+          }
+        }
+        
         state.time += dt;
         playerSystem(state, dt);
         bossSystem(state, dt);
@@ -294,8 +390,16 @@ export function GameCanvas({ isPaused, onGameStateChange, isMultiplayer = false 
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('keydown', handleKeyDown);
       canvas.removeEventListener('click', onClick);
+      
+      // Cleanup WebSocket intervals
+      if (inputSendInterval !== null) {
+        clearInterval(inputSendInterval);
+      }
+      if (stateSendInterval !== null) {
+        clearInterval(stateSendInterval);
+      }
     };
-  }, [setupCanvas, isPaused]);
+  }, [setupCanvas, isPaused, isMultiplayer]);
 
   const handlePlayroomFire = () => {
     if ((window as any).handleTouchFire) {

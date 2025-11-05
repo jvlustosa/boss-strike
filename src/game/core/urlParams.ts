@@ -53,3 +53,27 @@ export function updateUrlLevel(level: number): void {
   window.history.pushState(null, '', url.toString());
 }
 
+export function getRoomIdFromUrl(): string | null {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('room') || null;
+  } catch (error) {
+    console.error('Error getting room ID from URL:', error);
+    return null;
+  }
+}
+
+export function updateUrlRoom(roomId: string | null): void {
+  const url = new URL(window.location.href);
+  if (roomId) {
+    url.searchParams.set('room', roomId);
+  } else {
+    url.searchParams.delete('room');
+  }
+  window.history.pushState(null, '', url.toString());
+}
+
+export function generateRoomId(): string {
+  return Math.random().toString(36).substring(2, 8).toUpperCase();
+}
+

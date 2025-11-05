@@ -19,11 +19,21 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    host: true
+    host: true,
+    allowedHosts: [
+      'bcc89db6bb03.ngrok-free.app',
+      '.ngrok-free.app',
+      '.ngrok.app'
+    ]
   },
   preview: {
     port: 3000,
-    host: true
+    host: true,
+    allowedHosts: [
+      'bcc89db6bb03.ngrok-free.app',
+      '.ngrok-free.app',
+      '.ngrok.app'
+    ]
   },
   optimizeDeps: {
     include: ['playroomkit']
