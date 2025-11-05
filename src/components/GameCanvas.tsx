@@ -13,7 +13,7 @@ import { updateExplosionSystem } from '../game/systems/explosionSystem';
 import { getLevelFromUrl, updateUrlLevel } from '../game/core/urlParams';
 import { saveProgress, saveVictory } from '../game/core/progressCache';
 import { audioManager } from '../game/core/audio';
-import { MobileControlsLayout } from './MobileControlsLayout';
+import { NativeTouchControls } from './NativeTouchControls';
 import { MobileCredits } from './MobileCredits';
 import { DesktopControls } from './DesktopControls';
 import { DesktopCredits } from './DesktopCredits';
@@ -261,7 +261,22 @@ export function GameCanvas({
       />
       {isMobile && (
         <>
-          <MobileControlsLayout />
+          <NativeTouchControls
+            onMove={(x, y) => {
+              if (window.handleJoystickMove) {
+                window.handleJoystickMove(x, y);
+              }
+            }}
+            onFire={() => {
+              const keys = stateRef.current.keys;
+              keys[' '] = true;
+              keys['space'] = true;
+              setTimeout(() => {
+                keys[' '] = false;
+                keys['space'] = false;
+              }, 50);
+            }}
+          />
           <MobileCredits />
         </>
       )}
