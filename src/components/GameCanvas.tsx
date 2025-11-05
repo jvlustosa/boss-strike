@@ -14,6 +14,7 @@ import { updateExplosionSystem } from '../game/systems/explosionSystem';
 import { getLevelFromUrl, updateUrlLevel } from '../game/core/urlParams';
 import { saveProgress, saveVictory } from '../game/core/progressCache';
 import { websocketSession } from '../game/core/websocketSession';
+import { audioManager } from '../game/core/audio';
 import { MobileControlsLayout } from './MobileControlsLayout';
 import { MobileCredits } from './MobileCredits';
 import { DesktopControls } from './DesktopControls';
@@ -99,15 +100,16 @@ export function GameCanvas({ isPaused, onGameStateChange, isMultiplayer = false 
       if (isMultiplayer && websocketSession.isConnected() && state.players.length >= 2) {
         const playerId = websocketSession.getPlayerId();
         const allInputs = websocketSession.getAllPlayerInputs();
-        let playerIndex = 0;
         
+        // Map local player (index 0) and remote player (index 1)
         allInputs.forEach((input, remotePlayerId) => {
-          if (remotePlayerId !== playerId && playerIndex < state.players.length - 1) {
-            const player = state.players[playerIndex + 1];
+          if (remotePlayerId !== playerId) {
+            // Remote player is always at index 1
+            const player = state.players[1];
             if (player && player.alive) {
-              // Apply movement
-              player.pos.x += input.x * player.speed * dt;
-              player.pos.y += input.y * player.speed * dt;
+              // Apply movement directly from normalized input values
+              player.pos.x += input.x * 100 * dt; // PLAYER_SPEED = 100
+              player.pos.y += input.y * 100 * dt;
               
               // Clamp position
               player.pos.x = Math.max(0, Math.min(LOGICAL_W - player.w, player.pos.x));
@@ -125,7 +127,6 @@ export function GameCanvas({ isPaused, onGameStateChange, isMultiplayer = false 
                 player.cooldown = 0.2;
               }
             }
-            playerIndex++;
           }
         });
       }
@@ -193,17 +194,60 @@ export function GameCanvas({ isPaused, onGameStateChange, isMultiplayer = false 
         // Apply remote player inputs for multiplayer
         if (isMultiplayer && websocketSession.isConnected()) {
           const isHost = websocketSession.getIsHost();
-          if (isHost) {
-            // Host applies remote inputs and runs full game loop
-            applyRemoteInputs(dt);
-          } else {
+          if (!isHost) {
             // Non-host receives state from host, so skip local game simulation
             return;
           }
+          // Host applies remote inputs first
+          applyRemoteInputs(dt);
         }
         
         state.time += dt;
-        playerSystem(state, dt);
+        
+        // In multiplayer, only the host runs full simulation
+        // playerSystem applies input to players - for multiplayer, input is handled via applyRemoteInputs
+        if (!isMultiplayer || !websocketSession.isConnected()) {
+          // Single player: use normal playerSystem
+          playerSystem(state, dt);
+        } else if (isMultiplayer && websocketSession.isConnected() && websocketSession.getIsHost()) {
+          // Multiplayer host: update only local player with keyboard input
+          // Remote player is handled by applyRemoteInputs above
+          const localPlayer = state.players[0];
+          if (localPlayer && localPlayer.alive) {
+            const keys = state.keys;
+            let moveX = 0;
+            if (keys['a'] || keys['arrowleft']) moveX -= 1;
+            if (keys['d'] || keys['arrowright']) moveX += 1;
+            localPlayer.pos.x += moveX * 100 * dt;
+            localPlayer.pos.x = Math.max(0, Math.min(LOGICAL_W - localPlayer.w, localPlayer.pos.x));
+
+            let moveY = 0;
+            if (keys['w'] || keys['arrowup']) moveY -= 1;
+            if (keys['s'] || keys['arrowdown']) moveY += 1;
+            localPlayer.pos.y += moveY * 100 * dt;
+            localPlayer.pos.y = Math.max(0, Math.min(LOGICAL_H - localPlayer.h, localPlayer.pos.y));
+
+            // Cooldown
+            if (localPlayer.cooldown > 0) {
+              localPlayer.cooldown -= dt;
+            }
+          }
+          
+          // Fire bullets for local player
+          const player = state.players[0];
+          if (player && player.alive && player.cooldown <= 0 && (state.keys[' '] || state.keys['space'])) {
+            state.bullets.push({
+              pos: { x: player.pos.x + player.w / 2 - 1, y: player.pos.y },
+              w: 2,
+              h: 4,
+              vel: { x: 0, y: -120 },
+              from: 'player',
+            });
+            player.cooldown = 0.2;
+            audioManager.playSound('shoot', 0.3, 0.4);
+          }
+        }
+        
         bossSystem(state, dt);
         bulletSystem(state, dt);
         heartSystem(state, dt);
