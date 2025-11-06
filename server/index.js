@@ -230,17 +230,21 @@ wss.on('connection', (ws, req) => {
 
   ws.on('message', (data) => {
     try {
-      const message = JSON.parse(data.toString());
+      const messageStr = data.toString();
+      console.log(`[WS] Message received from ${playerId || 'unknown'}:`, messageStr);
+      const message = JSON.parse(messageStr);
       handleMessage(ws, message);
     } catch (error) {
-      console.error('[WS] Error parsing message:', error);
+      console.error('[WS] Error parsing message:', error, 'Data:', data.toString());
       ws.send(JSON.stringify({ type: 'error', message: 'Invalid message format' }));
     }
   });
 
   function handleMessage(ws, message) {
+    console.log(`[WS] Handling message type: ${message.type} from ${playerId || 'unknown'}`);
     switch (message.type) {
       case 'join':
+        console.log(`[WS] Processing join request - Room: ${urlRoomId || message.roomId || 'none'}, Player: ${message.playerName || urlPlayerName || 'unknown'}`);
         handleJoin(ws, message, urlRoomId, urlPlayerName);
         break;
       case 'input':

@@ -48,11 +48,28 @@ export class NetworkManager {
 
     return new Promise((resolve, reject) => {
       try {
+        // Validate server URL
+        if (!this.serverUrl) {
+          console.error('[Network] Server URL is empty!');
+          reject(new Error('WebSocket server URL not configured'));
+          return;
+        }
+
+        // Validate room ID
+        if (!this.roomId) {
+          console.error('[Network] Room ID is empty!');
+          reject(new Error('Room ID is required'));
+          return;
+        }
+
         const url = new URL(this.serverUrl);
         url.searchParams.set('room', this.roomId);
 
-        console.log(`[Network] Connecting to ${url.toString()}`);
-        this.ws = new WebSocket(url.toString());
+        const wsUrl = url.toString();
+        console.log(`[Network] Connecting to ${wsUrl}`);
+        console.log(`[Network] Server URL: ${this.serverUrl}, Room ID: ${this.roomId}`);
+        
+        this.ws = new WebSocket(wsUrl);
 
         const connectTimeout = setTimeout(() => {
           reject(new Error('WebSocket connection timeout (15s)'));
@@ -74,9 +91,18 @@ export class NetworkManager {
           resolve();
         };
 
-        this.ws.onmessage = (event) => this.handleMessage(event.data);
-        this.ws.onerror = (error) => this.handleError(error);
-        this.ws.onclose = () => this.handleDisconnected();
+        this.ws.onmessage = (event) => {
+          console.log('[Network] Message received:', event.data);
+          this.handleMessage(event.data);
+        };
+        this.ws.onerror = (error) => {
+          console.error('[Network] WebSocket error:', error);
+          this.handleError(error);
+        };
+        this.ws.onclose = (event) => {
+          console.log('[Network] WebSocket closed:', event.code, event.reason);
+          this.handleDisconnected();
+        };
       } catch (error) {
         reject(error);
       }
@@ -178,12 +204,15 @@ export class NetworkManager {
   private sendMessage(message: any): void {
     if (this.getIsConnected()) {
       try {
-        this.ws!.send(JSON.stringify(message));
+        const messageStr = JSON.stringify(message);
+        console.log('[Network] Sending message:', messageStr);
+        this.ws!.send(messageStr);
       } catch (error) {
         console.error('[Network] Failed to send message:', error);
         this.messageQueue.push(message);
       }
     } else {
+      console.warn('[Network] Not connected, queuing message:', message.type);
       this.messageQueue.push(message);
     }
   }
