@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { getRoomIdFromUrl, updateUrlRoom, generateRoomId } from '../game/core/urlParams';
 import type { SessionManager } from '../game/core/sessionManager';
 
@@ -28,15 +28,34 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
     return () => clearInterval(interval);
   }, []);
 
-  // Initialize session
+  // Initialize session (only once)
+  const initRef = useRef(false);
+  const cleanupRef = useRef(false);
+
   useEffect(() => {
+    // Prevent multiple initializations
+    if (initRef.current || cleanupRef.current) {
+      console.log('[WebSocketSessionScreen] Already initialized or cleaning up, skipping');
+      return;
+    }
+
     let isCompleted = false;
 
     const handleSession = async () => {
+      initRef.current = true;
+
       try {
         if (!sessionManager) {
           console.error('[WebSocketSessionScreen] Session manager not initialized');
           setError('Session manager not initialized');
+          initRef.current = false; // Reset to allow retry
+          return;
+        }
+
+        // Check if already initialized
+        if (sessionManager.getIsInitialized() && sessionManager.isMultiplayer()) {
+          console.log('[WebSocketSessionScreen] Already initialized, skipping');
+          initRef.current = false; // Reset to allow re-init if needed
           return;
         }
 
@@ -67,7 +86,7 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
         
         const userName = user.name;
 
-        // Initialize multiplayer session
+        // Initialize multiplayer session (only once)
         const playerId = `player_${Math.random().toString(36).substring(7)}`;
         await sessionManager.initMultiplayer(playerId, userName);
 
@@ -96,13 +115,11 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
         // Start button only appears when connectedPlayers >= 2
         console.log('[Session] Waiting for 2nd player to start game');
 
-        return () => {
-          // Cleanup if needed
-        };
       } catch (error) {
         console.error('[Session] Error:', error);
-        setError('Failed to connect to server');
+        setError(error instanceof Error ? error.message : 'Failed to connect to server');
         setStatus('connecting');
+        initRef.current = false; // Reset to allow retry
       }
     };
 
@@ -110,6 +127,12 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
 
     return () => {
       // Cleanup on unmount
+      cleanupRef.current = true;
+      console.log('[WebSocketSessionScreen] Component unmounting - cleanup');
+      if (sessionManager) {
+        sessionManager.cleanup();
+      }
+      initRef.current = false; // Reset for next mount
     };
   }, [sessionManager, onSessionReady]);
 

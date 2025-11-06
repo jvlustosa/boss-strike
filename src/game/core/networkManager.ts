@@ -41,9 +41,37 @@ export class NetworkManager {
    * Connect to WebSocket server
    */
   async connect(): Promise<void> {
+    // If already connected, return
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.log('[Network] Already connected');
+      console.log('[Network] Already connected to server');
       return;
+    }
+
+    // If connecting, wait for it
+    if (this.ws && this.ws.readyState === WebSocket.CONNECTING) {
+      console.log('[Network] Already connecting, waiting...');
+      return new Promise((resolve, reject) => {
+        const checkInterval = setInterval(() => {
+          if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            clearInterval(checkInterval);
+            resolve();
+          } else if (this.ws && this.ws.readyState === WebSocket.CLOSED) {
+            clearInterval(checkInterval);
+            reject(new Error('Connection closed'));
+          }
+        }, 100);
+
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          reject(new Error('Connection timeout'));
+        }, 10000);
+      });
+    }
+
+    // Cleanup existing connection if any
+    if (this.ws) {
+      console.log('[Network] Cleaning up existing WebSocket connection');
+      this.disconnect();
     }
 
     return new Promise((resolve, reject) => {

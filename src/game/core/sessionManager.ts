@@ -56,6 +56,14 @@ export class SessionManager {
    */
   async initMultiplayer(playerId: string, playerName: string = 'Player'): Promise<void> {
     try {
+      // Cleanup existing session if any
+      if (this.multiplayerSession && this.isInitialized) {
+        console.log('[SessionManager] Cleaning up existing multiplayer session before reinitializing');
+        this.multiplayerSession.cleanup();
+        this.multiplayerSession = null;
+        this.isInitialized = false;
+      }
+
       const roomId = getRoomIdFromUrl();
       if (!roomId) {
         throw new Error('No room ID in URL for multiplayer');
