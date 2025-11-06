@@ -86,30 +86,38 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
         
         const userName = user.name;
 
-        // Initialize multiplayer session (only once)
+        // Register listener for joined event (gets player count) BEFORE initialization
+        const joinedListener = (roomId: string, playerId: string, playerCount: number, isHost: boolean) => {
+          console.log('[WebSocketSessionScreen] Joined room - playerCount:', playerCount);
+          setConnectedPlayers(playerCount);
+          if (playerCount === 2) {
+            setStatus('ready');
+          }
+        };
+        (window as any).sessionManagerJoinedListener = joinedListener;
+
+        // Register listener for playerJoined event (when remote player enters)
+        if (sessionManager.onPlayerJoined) {
+          sessionManager.onPlayerJoined((playerId, playerName, isHost) => {
+            console.log('[WebSocketSessionScreen] Remote player detected:', playerName, 'isHost:', isHost);
+            setConnectedPlayers(2);
+            setStatus('ready');
+            
+            if (!isCompleted) {
+              isCompleted = true;
+              console.log('[WebSocketSessionScreen] Room full - ready to start');
+            }
+          });
+        }
+
+        // Initialize multiplayer session (only once) - AFTER listeners are registered
         const playerId = `player_${Math.random().toString(36).substring(7)}`;
         await sessionManager.initMultiplayer(playerId, userName);
 
         setStatus('waiting');
-        setConnectedPlayers(1);
+        setConnectedPlayers(1); // Initial count
         setError(null);
         console.log('[WebSocketSessionScreen] Player connected:', userName);
-
-        // Listen for remote player joining
-        const unsubscribe = sessionManager.onPlayerJoined?.((playerId, playerName, isHost) => {
-          console.log('[WebSocketSessionScreen] Remote player detected:', playerName);
-          setConnectedPlayers(2);
-          
-          if (!isCompleted) {
-            isCompleted = true;
-            setStatus('ready');
-            setTimeout(() => {
-              console.log('[WebSocketSessionScreen] Starting game - 2 players ready');
-              setIsHidden(true);
-              onSessionReady();
-            }, 500);
-          }
-        });
 
         // NO automatic timeout - require 2/2 players for manual start
         // Start button only appears when connectedPlayers >= 2

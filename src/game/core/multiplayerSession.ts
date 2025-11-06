@@ -183,6 +183,17 @@ export class MultiplayerSession {
 
   private setupNetworkCallbacks(): void {
     this.networkManager.setCallbacks({
+      onJoined: (roomId, playerId, playerCount, isHost) => {
+        console.log(`[MultiplayerSession] Joined room ${roomId} - playerCount: ${playerCount}, isHost: ${isHost}`);
+        // Update player count in manager
+        if (playerCount === 2) {
+          // Room is full - notify if needed
+          if (typeof (window as any).sessionManagerJoinedListener === 'function') {
+            (window as any).sessionManagerJoinedListener(roomId, playerId, playerCount, isHost);
+          }
+        }
+      },
+
       onPlayerJoined: (playerId, playerName, isHost) => {
         console.log(`[MultiplayerSession] Remote player joined: ${playerName} (${playerId}), isHost: ${isHost}`);
         this.mpManager.addRemotePlayer(playerId, playerName, isHost, this.mpManager.getRemotePlayerIndex());

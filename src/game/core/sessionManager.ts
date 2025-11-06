@@ -81,10 +81,11 @@ export class SessionManager {
         isHost
       );
 
-      // Register listener callback on window
+      // Register listener callbacks on window
       if (this.playerJoinedListener) {
         (window as any).sessionManagerPlayerJoinedListener = this.playerJoinedListener;
       }
+      // Note: sessionManagerJoinedListener is registered by WebSocketSessionScreen
 
       await this.multiplayerSession.initialize();
       this.gameMode = 'multi';
