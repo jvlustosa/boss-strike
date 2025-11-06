@@ -74,9 +74,22 @@ class Room {
 
   /**
    * Add player to room and subscribe to events
+   * Returns true if player was added or already exists
    */
   addPlayer(socket, playerId, playerName) {
+    // Check if player already exists in room (reconnection)
+    if (this.players.has(playerId)) {
+      console.log(`[Room] Player ${playerId} already in room - updating socket`);
+      const existingPlayer = this.players.get(playerId);
+      existingPlayer.socket = socket;  // Update socket for reconnection
+      existingPlayer.lastUpdate = Date.now();
+      this.lastActivity = Date.now();
+      return true;  // Already in room, just update socket
+    }
+
+    // Check if room is full
     if (this.players.size >= 2) {
+      console.log(`[Room] Room ${this.id} is full (${this.players.size}/2 players)`);
       return false;
     }
     
@@ -316,6 +329,30 @@ wss.on('connection', (ws, req) => {
       console.log(`[WS]   Active subscriptions: ${room.getSubscriptions().map(s => s.playerId).join(', ')}`);
     }
 
+    // Check if player already exists in room
+    const playerAlreadyInRoom = room.isSubscribed(playerId);
+    
+    if (playerAlreadyInRoom) {
+      // Player already in room - just send confirmation (reconnection)
+      console.log(`[WS] Player ${playerId} already in room ${requestedRoomId} - reconnection`);
+      const isHostPlayer = room.hostId === playerId;
+      const playerCountNow = room.getPlayerCount();
+      
+      ws.send(JSON.stringify({
+        type: 'joined',
+        roomId: requestedRoomId,
+        roomHash: roomHash,
+        playerId,
+        isHost: isHostPlayer,
+        playerCount: playerCountNow,
+        reconnected: true
+      }));
+      
+      console.log(`[WS] ✓ Reconnected player ${playerId} to room ${requestedRoomId} [${roomHash}]`);
+      return;
+    }
+
+    // Try to add player to room
     if (room.addPlayer(ws, playerId, playerNameToUse)) {
       const isHostPlayer = room.hostId === playerId;
       const playerCountNow = room.getPlayerCount();
@@ -349,7 +386,14 @@ wss.on('connection', (ws, req) => {
       
       console.log(`[WS] ✓ Room ${requestedRoomId} [${roomHash}] now has ${playerCountNow}/2 players`);
     } else {
-      ws.send(JSON.stringify({ type: 'error', message: 'Room is full' }));
+      // Room is full (2 players already)
+      console.log(`[WS] ❌ Room ${requestedRoomId} is full - cannot add player ${playerId}`);
+      ws.send(JSON.stringify({ 
+        type: 'error', 
+        message: 'Room is full (2 players maximum)',
+        roomId: requestedRoomId,
+        playerCount: room.getPlayerCount()
+      }));
     }
   }
 

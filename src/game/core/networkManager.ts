@@ -77,9 +77,22 @@ export class NetworkManager {
 
         this.ws.onopen = () => {
           clearTimeout(connectTimeout);
-          console.log(`[Network] Connected to ${url.toString()}`);
+          console.log(`[Network] Connected to ${wsUrl}`);
           
-          // Send join message immediately
+          // Mark as connected first
+          this.isConnected = true;
+          this.isReconnecting = false;
+          this.reconnectAttempts = 0;
+
+          // Flush queued messages first
+          this.flushMessageQueue();
+
+          // Start heartbeat and ping
+          this.startHeartbeat();
+          this.startPing();
+
+          // Now send join message (after queue is flushed)
+          console.log(`[Network] Sending join message for room: ${this.roomId}`);
           this.sendMessage({
             type: 'join',
             roomId: this.roomId,
@@ -87,7 +100,12 @@ export class NetworkManager {
             timestamp: Date.now()
           });
           
-          this.handleConnected();
+          // Call connected callback
+          if (this.callbacks.onConnected) {
+            console.log('[Network] Calling onConnected callback');
+            this.callbacks.onConnected();
+          }
+          
           resolve();
         };
 
