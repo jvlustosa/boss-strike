@@ -6,7 +6,7 @@ export function createBossExplosion(state: GameState, bossX: number, bossY: numb
   
   for (let i = 0; i < particleCount; i++) {
     const angle = (Math.PI * 2 * i) / particleCount + Math.random() * 0.5;
-    const speed = 21 + Math.random() * 28; // Reduced from 30-70 to 21-49 (30% slower)
+    const speed = 15 + Math.random() * 20; // Reduced from 30-70 to 15-35 (50% slower)
     const life = 0.8 + Math.random() * 0.4;
     
     const particle: ExplosionParticle = {
