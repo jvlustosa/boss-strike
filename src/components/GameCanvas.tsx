@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import type { GameState } from '../game/core/types';
 import { createInitialState } from '../game/core/state';
 import { LOGICAL_W, LOGICAL_H } from '../game/core/config';
@@ -17,6 +17,7 @@ import { NativeTouchControls } from './NativeTouchControls';
 import { MobileCredits } from './MobileCredits';
 import { DesktopControls } from './DesktopControls';
 import { DesktopCredits } from './DesktopCredits';
+import { PlayerLegend } from './PlayerLegend';
 import type { SessionManager } from '../game/core/sessionManager';
 
 interface GameCanvasProps {
@@ -35,6 +36,8 @@ export function GameCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const stateRef = useRef<GameState>(createInitialState(getLevelFromUrl(), isMultiplayer));
   const scaleRef = useRef<number>(1);
+  const [remotePlayerName, setRemotePlayerName] = useState<string>('Player 2');
+  const [isHost, setIsHost] = useState<boolean>(false);
 
   // Initialize game state
   React.useEffect(() => {
@@ -51,6 +54,43 @@ export function GameCanvas({
       onGameStateChange(stateRef.current);
     }
   }, [onGameStateChange, isMultiplayer]);
+
+  // Track multiplayer session info
+  React.useEffect(() => {
+    if (isMultiplayer && sessionManager) {
+      // Update host status
+      setIsHost(sessionManager.getIsHost());
+
+      // Get remote player name
+      const remoteName = sessionManager.getRemotePlayerName();
+      if (remoteName) {
+        setRemotePlayerName(remoteName);
+      }
+
+      // Listen for player joined events
+      const handlePlayerJoined = (playerId: string, playerName: string, isHostPlayer: boolean) => {
+        console.log(`[GameCanvas] Player joined: ${playerName} (Host: ${isHostPlayer})`);
+        setRemotePlayerName(playerName);
+      };
+
+      // Register callback if available
+      if (sessionManager && typeof sessionManager.onPlayerJoined === 'function') {
+        sessionManager.onPlayerJoined(handlePlayerJoined);
+      }
+
+      // Update remote name periodically
+      const interval = setInterval(() => {
+        const updated = sessionManager.getRemotePlayerName();
+        if (updated) {
+          setRemotePlayerName(updated);
+        }
+      }, 1000);
+
+      return () => {
+        clearInterval(interval);
+      };
+    }
+  }, [isMultiplayer, sessionManager]);
 
   const setupCanvas = useCallback((canvas: HTMLCanvasElement) => {
     const ctx = canvas.getContext('2d')!;
@@ -297,6 +337,14 @@ export function GameCanvas({
           boxShadow: '0 0 20px rgba(0, 255, 255, 0.5)',
         }}
       />
+      
+      {/* Player Legend */}
+      <PlayerLegend 
+        isMultiplayer={isMultiplayer}
+        remotePlayerName={remotePlayerName}
+        isHost={isHost}
+      />
+
       {isMobile && (
         <>
           <NativeTouchControls

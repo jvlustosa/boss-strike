@@ -120,6 +120,20 @@ export class SessionManager {
   }
 
   /**
+   * Get remote player name
+   */
+  getRemotePlayerName(): string | null {
+    if (!this.multiplayerSession || !this.isInitialized) {
+      return null;
+    }
+
+    const players = this.multiplayerSession.getRemotePlayers();
+    if (players.length === 0) return null;
+
+    return players[0].name || 'Player 2';
+  }
+
+  /**
    * Send game state snapshot (host only)
    */
   sendGameState(snapshot: any): void {
