@@ -122,13 +122,13 @@ wss.on('connection', (ws, req) => {
   }
 
   const { query } = parse(req.url, true);
-  const roomId = query.room || null;
-  const playerName = query.name || null;
+  const urlRoomId = query.room || null;
+  const urlPlayerName = query.name || null;
 
   let currentRoom = null;
   let playerId = null;
 
-  console.log(`[WS] New connection attempt - Room: ${roomId || 'none'}, Origin: ${origin || 'none'}`);
+  console.log(`[WS] New connection attempt - Room: ${urlRoomId || 'none'}, Origin: ${origin || 'none'}`);
 
   ws.on('message', (data) => {
     try {
@@ -143,7 +143,7 @@ wss.on('connection', (ws, req) => {
   function handleMessage(ws, message) {
     switch (message.type) {
       case 'join':
-        handleJoin(ws, message);
+        handleJoin(ws, message, urlRoomId, urlPlayerName);
         break;
       case 'input':
         handleInput(message);
@@ -162,10 +162,13 @@ wss.on('connection', (ws, req) => {
     }
   }
 
-  function handleJoin(ws, message) {
-    const requestedRoomId = message.roomId || roomId;
+  function handleJoin(ws, message, urlRoomId, urlPlayerName) {
+    // Priority: URL room ID > message room ID > generate new
+    const requestedRoomId = urlRoomId || message.roomId || null;
+    const playerNameToUse = urlPlayerName || message.playerName || `Player`;
     
     if (!requestedRoomId) {
+      // No room specified - create new room for host
       const newRoomId = generateRoomId();
       playerId = generatePlayerId();
       const room = new Room(newRoomId);
@@ -174,7 +177,7 @@ wss.on('connection', (ws, req) => {
       
       console.log(`[WS] Created new room: ${newRoomId} for player: ${playerId}`);
       
-      if (room.addPlayer(ws, playerId, message.playerName || playerName)) {
+      if (room.addPlayer(ws, playerId, playerNameToUse)) {
         ws.send(JSON.stringify({
           type: 'joined',
           roomId: newRoomId,
@@ -188,9 +191,11 @@ wss.on('connection', (ws, req) => {
       return;
     }
 
+    // Join existing or create if doesn't exist
     let room = rooms.get(requestedRoomId);
     
     if (!room) {
+      // Room doesn't exist yet - create it
       playerId = generatePlayerId();
       room = new Room(requestedRoomId);
       rooms.set(requestedRoomId, room);
@@ -198,12 +203,13 @@ wss.on('connection', (ws, req) => {
       
       console.log(`[WS] Created room: ${requestedRoomId} for player: ${playerId}`);
     } else {
+      // Room exists - join it
       playerId = generatePlayerId();
       currentRoom = room;
       console.log(`[WS] Player ${playerId} joining room: ${requestedRoomId}`);
     }
 
-    if (room.addPlayer(ws, playerId, message.playerName || playerName)) {
+    if (room.addPlayer(ws, playerId, playerNameToUse)) {
       ws.send(JSON.stringify({
         type: 'joined',
         roomId: requestedRoomId,
@@ -212,12 +218,15 @@ wss.on('connection', (ws, req) => {
         playerCount: room.getPlayerCount()
       }));
 
+      // Notify other players in room
       room.broadcast({
         type: 'playerJoined',
         playerId,
-        playerName: message.playerName || playerName || `Player ${room.getPlayerCount()}`,
+        playerName: playerNameToUse,
         playerCount: room.getPlayerCount()
       }, playerId);
+      
+      console.log(`[WS] Room ${requestedRoomId} now has ${room.getPlayerCount()} players`);
     } else {
       ws.send(JSON.stringify({ type: 'error', message: 'Room is full' }));
     }

@@ -241,6 +241,7 @@ export class NetworkManager {
 
   private handleConnected(): void {
     console.log('[Network] Connected to server');
+    console.log(`[Network] Room: ${this.roomId}, Player: ${this.playerId}`);
     this.isConnected = true;
     this.isReconnecting = false;
     this.reconnectAttempts = 0;
@@ -253,6 +254,7 @@ export class NetworkManager {
     this.startPing();
 
     if (this.callbacks.onConnected) {
+      console.log('[Network] Calling onConnected callback');
       this.callbacks.onConnected();
     }
   }
