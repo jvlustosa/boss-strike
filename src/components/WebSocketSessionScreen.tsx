@@ -31,11 +31,14 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
   // Initialize session (only once)
   const initRef = useRef(false);
   const cleanupRef = useRef(false);
+  const gameStartedRef = useRef(false);
+  const joinedListenerCalledRef = useRef(false);
+  const playerJoinedCallbackCalledRef = useRef(false);
 
   useEffect(() => {
     // Prevent multiple initializations
-    if (initRef.current || cleanupRef.current) {
-      console.log('[WebSocketSessionScreen] Already initialized or cleaning up, skipping');
+    if (initRef.current || cleanupRef.current || gameStartedRef.current) {
+      console.log('[WebSocketSessionScreen] Already initialized, cleaning up, or game started, skipping');
       return;
     }
 
@@ -88,6 +91,11 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
 
         // Register listener for joined event (gets player count) BEFORE initialization
         const joinedListener = (roomId: string, playerId: string, playerCount: number, isHost: boolean) => {
+          if (joinedListenerCalledRef.current || gameStartedRef.current) {
+            console.log('[WebSocketSessionScreen] Joined listener already called or game started, skipping');
+            return;
+          }
+          joinedListenerCalledRef.current = true;
           console.log('[WebSocketSessionScreen] Joined room - playerCount:', playerCount);
           setConnectedPlayers(playerCount);
           if (playerCount === 2) {
@@ -99,11 +107,16 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
         // Register listener for playerJoined event (when remote player enters)
         if (sessionManager.onPlayerJoined) {
           sessionManager.onPlayerJoined((playerId, playerName, isHost) => {
+            if (playerJoinedCallbackCalledRef.current || gameStartedRef.current) {
+              console.log('[WebSocketSessionScreen] PlayerJoined callback already called or game started, skipping');
+              return;
+            }
+            playerJoinedCallbackCalledRef.current = true;
             console.log('[WebSocketSessionScreen] Remote player detected:', playerName, 'isHost:', isHost);
             setConnectedPlayers(2);
             setStatus('ready');
             
-            if (!isCompleted) {
+            if (!isCompleted && !gameStartedRef.current) {
               isCompleted = true;
               console.log('[WebSocketSessionScreen] Room full - ready to start');
             }
@@ -155,7 +168,7 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
       case 'waiting':
         return `Waiting for players${dots}`;
       case 'ready':
-        return `Starting game...`;
+        return `Ready to start!`;
       default:
         return 'Connecting...';
     }
@@ -345,10 +358,15 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
           )}
 
           {/* START GAME button - ONLY appears with 2/2 players */}
-          {connectedPlayers >= 2 && status === 'waiting' && (
+          {connectedPlayers >= 2 && (status === 'waiting' || status === 'ready') && (
             <button
               onClick={(e) => {
+                if (isHidden || gameStartedRef.current) {
+                  console.log('[Session] Already starting game, ignoring click');
+                  return;
+                }
                 console.log('[Session] Starting game with 2 players');
+                gameStartedRef.current = true;
                 setIsHidden(true);
                 onSessionReady();
               }}
