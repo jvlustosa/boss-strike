@@ -13,6 +13,8 @@ export interface NetworkManagerCallbacks {
   onConnected?: () => void;
   onDisconnected?: () => void;
   onPing?: (latency: number) => void;
+  onJoined?: (roomId: string, playerId: string, playerCount: number, isHost: boolean) => void;
+  onReady?: (playerId: string, ready: boolean, allReady: boolean) => void;
 }
 
 export class NetworkManager {
