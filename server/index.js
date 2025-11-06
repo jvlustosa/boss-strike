@@ -449,12 +449,6 @@ wss.on('connection', (ws, req) => {
       }, playerId);
       
       console.log(`[WS] Room ${currentRoom.id} - Ready: ${readyCount}/${playerCount}, All ready: ${readyCount === playerCount && playerCount === 2}`);
-      
-      currentRoom.broadcast({
-        type: 'playerReady',
-        playerId,
-        ready: player.ready
-      }, playerId);
     }
   }
 
