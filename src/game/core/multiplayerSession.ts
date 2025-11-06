@@ -184,10 +184,12 @@ export class MultiplayerSession {
   private setupNetworkCallbacks(): void {
     this.networkManager.setCallbacks({
       onPlayerJoined: (playerId, playerName, isHost) => {
+        console.log(`[MultiplayerSession] Remote player joined: ${playerName} (${playerId}), isHost: ${isHost}`);
         this.mpManager.addRemotePlayer(playerId, playerName, isHost, this.mpManager.getRemotePlayerIndex());
       },
 
       onPlayerLeft: (playerId) => {
+        console.log(`[MultiplayerSession] Player left: ${playerId}`);
         this.mpManager.removePlayer(playerId);
       },
 
@@ -199,6 +201,7 @@ export class MultiplayerSession {
       },
 
       onGameStateUpdate: (snapshot) => {
+        console.log('[MultiplayerSession] Game state update received');
         // Validate before accepting state from host
         if (!this.mpManager.isHost() && this.mpManager.validateStateSnapshot(snapshot)) {
           // State will be applied by GameCanvas

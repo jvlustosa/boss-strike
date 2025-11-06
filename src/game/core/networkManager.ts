@@ -55,11 +55,21 @@ export class NetworkManager {
         this.ws = new WebSocket(url.toString());
 
         const connectTimeout = setTimeout(() => {
-          reject(new Error('Connection timeout'));
-        }, 5000);
+          reject(new Error('WebSocket connection timeout (15s)'));
+        }, 15000);
 
         this.ws.onopen = () => {
           clearTimeout(connectTimeout);
+          console.log(`[Network] Connected to ${url.toString()}`);
+          
+          // Send join message immediately
+          this.sendMessage({
+            type: 'join',
+            roomId: this.roomId,
+            playerId: this.playerId,
+            timestamp: Date.now()
+          });
+          
           this.handleConnected();
           resolve();
         };

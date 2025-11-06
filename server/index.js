@@ -210,23 +210,35 @@ wss.on('connection', (ws, req) => {
     }
 
     if (room.addPlayer(ws, playerId, playerNameToUse)) {
-      ws.send(JSON.stringify({
+      const isHostPlayer = room.hostId === playerId;
+      const playerCountNow = room.getPlayerCount();
+      
+      // Send joined confirmation to this player
+      const joinedMessage = {
         type: 'joined',
         roomId: requestedRoomId,
         playerId,
-        isHost: room.hostId === playerId,
-        playerCount: room.getPlayerCount()
-      }));
-
-      // Notify other players in room
-      room.broadcast({
-        type: 'playerJoined',
-        playerId,
-        playerName: playerNameToUse,
-        playerCount: room.getPlayerCount()
-      }, playerId);
+        isHost: isHostPlayer,
+        playerCount: playerCountNow
+      };
       
-      console.log(`[WS] Room ${requestedRoomId} now has ${room.getPlayerCount()} players`);
+      console.log(`[WS] Sending 'joined' to ${playerId}:`, joinedMessage);
+      ws.send(JSON.stringify(joinedMessage));
+
+      // Notify OTHER players in room that someone joined
+      if (playerCountNow > 1) {
+        const otherPlayersMessage = {
+          type: 'playerJoined',
+          playerId,
+          playerName: playerNameToUse,
+          playerCount: playerCountNow
+        };
+        
+        console.log(`[WS] Broadcasting 'playerJoined' to ${playerCountNow - 1} other player(s) in room ${requestedRoomId}`);
+        room.broadcast(otherPlayersMessage, playerId);
+      }
+      
+      console.log(`[WS] ✓ Room ${requestedRoomId} now has ${playerCountNow} players`);
     } else {
       ws.send(JSON.stringify({ type: 'error', message: 'Room is full' }));
     }
