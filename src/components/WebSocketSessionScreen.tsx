@@ -56,10 +56,16 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
         setStatus('connecting');
         console.log('[WebSocketSessionScreen] Connecting to room:', finalRoomId);
 
-        // Get user name from userManager
+        // Get user name from userManager (MUST have a name)
         const { userManager } = await import('../game/core/userManager');
         const user = userManager.getCurrentUser();
-        const userName = user?.name || 'Player';
+        
+        // Enforce name requirement - user MUST be logged in with a name
+        if (!user?.name) {
+          throw new Error('Player name is required. Please login first.');
+        }
+        
+        const userName = user.name;
 
         // Initialize multiplayer session
         const playerId = `player_${Math.random().toString(36).substring(7)}`;
@@ -86,29 +92,12 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
           }
         });
 
-        // Safety timeout - start game after 20 seconds anyway
-        const safetyTimeout = setTimeout(() => {
-          if (!isCompleted) {
-            console.log('[Session] Safety timeout - starting game (1 player)');
-            isCompleted = true;
-            setStatus('ready');
-            setTimeout(() => {
-              setIsHidden(true);
-              onSessionReady();
-            }, 500);
-          }
-        }, 20000);
-
-        // Show manual start button after 5 seconds
-        const manualStartTimeout = setTimeout(() => {
-          if (!isCompleted) {
-            console.log('[Session] Showing manual start button');
-            setShowManualStart(true);
-          }
-        }, 5000);
+        // NO automatic timeout - require 2/2 players for manual start
+        // Start button only appears when connectedPlayers >= 2
+        console.log('[Session] Waiting for 2nd player to start game');
 
         return () => {
-          clearTimeout(safetyTimeout);
+          // Cleanup if needed
         };
       } catch (error) {
         console.error('[Session] Error:', error);
@@ -324,10 +313,11 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
             </button>
           )}
 
-          {showManualStart && (
+          {/* START GAME button - ONLY appears with 2/2 players */}
+          {connectedPlayers >= 2 && status === 'waiting' && (
             <button
               onClick={(e) => {
-                console.log('[Session] Manual start');
+                console.log('[Session] Starting game with 2 players');
                 setIsHidden(true);
                 onSessionReady();
               }}
@@ -344,6 +334,7 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
                 textShadow: '1px 1px 0px #000',
                 boxShadow: '0 4px 0px #22c55e',
                 transition: 'all 0.1s ease',
+                animation: 'pulse 1s infinite',
               }}
               onMouseDown={(e) => {
                 e.currentTarget.style.transform = 'translateY(2px)';
