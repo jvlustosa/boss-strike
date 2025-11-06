@@ -150,7 +150,7 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
         await sessionManager.initMultiplayer(playerId, userName);
 
         setStatus('waiting');
-        setConnectedPlayers(1); // Initial count
+        setConnectedPlayers(1); // Initial count - will be updated by joined listener
         setError(null);
         console.log('[WebSocketSessionScreen] Player connected:', userName);
 
