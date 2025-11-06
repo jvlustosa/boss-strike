@@ -186,6 +186,11 @@ export class MultiplayerSession {
       onPlayerJoined: (playerId, playerName, isHost) => {
         console.log(`[MultiplayerSession] Remote player joined: ${playerName} (${playerId}), isHost: ${isHost}`);
         this.mpManager.addRemotePlayer(playerId, playerName, isHost, this.mpManager.getRemotePlayerIndex());
+        
+        // Call external listener if registered
+        if (typeof (window as any).sessionManagerPlayerJoinedListener === 'function') {
+          (window as any).sessionManagerPlayerJoinedListener(playerId, playerName, isHost);
+        }
       },
 
       onPlayerLeft: (playerId) => {

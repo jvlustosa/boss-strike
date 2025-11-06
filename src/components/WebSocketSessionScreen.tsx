@@ -56,18 +56,40 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
         setStatus('connecting');
         console.log('[WebSocketSessionScreen] Connecting to room:', finalRoomId);
 
+        // Get user name from userManager
+        const { userManager } = await import('../game/core/userManager');
+        const user = userManager.getCurrentUser();
+        const userName = user?.name || 'Player';
+
         // Initialize multiplayer session
         const playerId = `player_${Math.random().toString(36).substring(7)}`;
-        await sessionManager.initMultiplayer(playerId, 'Player');
+        await sessionManager.initMultiplayer(playerId, userName);
 
         setStatus('waiting');
         setConnectedPlayers(1);
         setError(null);
+        console.log('[WebSocketSessionScreen] Player connected:', userName);
+
+        // Listen for remote player joining
+        const unsubscribe = sessionManager.onPlayerJoined?.((playerId, playerName, isHost) => {
+          console.log('[WebSocketSessionScreen] Remote player detected:', playerName);
+          setConnectedPlayers(2);
+          
+          if (!isCompleted) {
+            isCompleted = true;
+            setStatus('ready');
+            setTimeout(() => {
+              console.log('[WebSocketSessionScreen] Starting game - 2 players ready');
+              setIsHidden(true);
+              onSessionReady();
+            }, 500);
+          }
+        });
 
         // Safety timeout - start game after 20 seconds anyway
         const safetyTimeout = setTimeout(() => {
           if (!isCompleted) {
-            console.log('[Session] Safety timeout - starting game');
+            console.log('[Session] Safety timeout - starting game (1 player)');
             isCompleted = true;
             setStatus('ready');
             setTimeout(() => {
@@ -77,23 +99,10 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
           }
         }, 20000);
 
-        // Check for 2 players
-        const checkPlayers = () => {
-          if (isCompleted) return;
-
-          const status = sessionManager.getConnectionStatus();
-          if (status.connected) {
-            setConnectedPlayers(1); // Will be 2 when remote player joins
-            
-            setTimeout(checkPlayers, 1000);
-          }
-        };
-
-        setTimeout(checkPlayers, 2000);
-
         // Show manual start button after 5 seconds
-        setTimeout(() => {
+        const manualStartTimeout = setTimeout(() => {
           if (!isCompleted) {
+            console.log('[Session] Showing manual start button');
             setShowManualStart(true);
           }
         }, 5000);

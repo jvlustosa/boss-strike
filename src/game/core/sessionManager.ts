@@ -15,9 +15,22 @@ export class SessionManager {
   private isHost: boolean = false;
   private isInitialized: boolean = false;
   private serverUrl: string = '';
+  private playerJoinedListener: ((playerId: string, playerName: string, isHost: boolean) => void) | null = null;
 
   constructor() {
     this.serverUrl = this.getServerUrl();
+  }
+
+  /**
+   * Set listener for when a remote player joins
+   */
+  onPlayerJoined(callback: (playerId: string, playerName: string, isHost: boolean) => void): void {
+    this.playerJoinedListener = callback;
+    
+    // If already have a multiplayer session, register the callback
+    if (this.multiplayerSession) {
+      // The callback will be called when playerJoined event fires
+    }
   }
 
   /**
@@ -59,6 +72,11 @@ export class SessionManager {
         playerId,
         isHost
       );
+
+      // Register listener callback on window
+      if (this.playerJoinedListener) {
+        (window as any).sessionManagerPlayerJoinedListener = this.playerJoinedListener;
+      }
 
       await this.multiplayerSession.initialize();
       this.gameMode = 'multi';

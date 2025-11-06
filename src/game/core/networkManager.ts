@@ -194,7 +194,11 @@ export class NetworkManager {
 
       switch (message.type) {
         case 'joined':
-          console.log('[Network] Joined room:', message.roomId);
+          console.log('[Network] Joined room:', message.roomId, 'Player:', message.playerId, 'IsHost:', message.isHost);
+          // Store connection info
+          if (this.callbacks.onConnected) {
+            this.callbacks.onConnected();
+          }
           break;
 
         case 'playerJoined':
