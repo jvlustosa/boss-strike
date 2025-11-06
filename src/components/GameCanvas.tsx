@@ -79,39 +79,78 @@ export function GameCanvas({
     // Game loop
     const update = (dt: number) => {
       if (state.status === 'playing' && !isPaused) {
-        // Multiplayer: host handles simulation, client receives state
+        // Multiplayer: separate player control
         if (isMultiplayer && sessionManager?.isMultiplayer()) {
           if (!sessionManager.getIsHost()) {
             // Non-host: skip simulation, wait for state from host
             return;
           }
 
-          // Host: get remote player input and apply
-          const remoteInput = sessionManager.getRemotePlayerInput(1);
-          if (remoteInput && state.players.length >= 2) {
-            const player2 = state.players[1];
-            if (player2 && player2.alive) {
-              player2.pos.x += remoteInput.x * 100 * dt;
-              player2.pos.y += remoteInput.y * 100 * dt;
-              player2.pos.x = Math.max(0, Math.min(LOGICAL_W - player2.w, player2.pos.x));
-              player2.pos.y = Math.max(0, Math.min(LOGICAL_H - player2.h, player2.pos.y));
+          // Host: apply inputs to each player separately
+          // Player 1 (local) - use state.keys (keyboard input from this device)
+          const player1 = state.players[0];
+          if (player1 && player1.alive) {
+            const keys = state.keys;
+            let moveX = 0;
+            if (keys['a'] || keys['arrowleft']) moveX -= 1;
+            if (keys['d'] || keys['arrowright']) moveX += 1;
+            player1.pos.x += moveX * 100 * dt;
+            player1.pos.x = Math.max(0, Math.min(LOGICAL_W - player1.w, player1.pos.x));
 
-              if (remoteInput.fire && player2.cooldown <= 0) {
-                state.bullets.push({
-                  pos: { x: player2.pos.x + player2.w / 2 - 1, y: player2.pos.y },
-                  w: 2,
-                  h: 4,
-                  vel: { x: 0, y: -120 },
-                  from: 'player',
-                });
-                player2.cooldown = 0.2;
-              }
+            let moveY = 0;
+            if (keys['w'] || keys['arrowup']) moveY -= 1;
+            if (keys['s'] || keys['arrowdown']) moveY += 1;
+            player1.pos.y += moveY * 100 * dt;
+            player1.pos.y = Math.max(0, Math.min(LOGICAL_H - player1.h, player1.pos.y));
+
+            if (player1.cooldown > 0) {
+              player1.cooldown -= dt;
+            }
+
+            if ((keys[' '] || keys['space']) && player1.cooldown <= 0) {
+              state.bullets.push({
+                pos: { x: player1.pos.x + player1.w / 2 - 1, y: player1.pos.y },
+                w: 2,
+                h: 4,
+                vel: { x: 0, y: -120 },
+                from: 'player',
+              });
+              player1.cooldown = 0.2;
+              audioManager.playSound('shoot', 0.3, 0.4);
             }
           }
+
+          // Player 2 (remote) - use remote input from WebSocket
+          const remoteInput = sessionManager.getRemotePlayerInput(1);
+          const player2 = state.players[1];
+          if (player2 && player2.alive && remoteInput) {
+            player2.pos.x += remoteInput.x * 100 * dt;
+            player2.pos.y += remoteInput.y * 100 * dt;
+            player2.pos.x = Math.max(0, Math.min(LOGICAL_W - player2.w, player2.pos.x));
+            player2.pos.y = Math.max(0, Math.min(LOGICAL_H - player2.h, player2.pos.y));
+
+            if (player2.cooldown > 0) {
+              player2.cooldown -= dt;
+            }
+
+            if (remoteInput.fire && player2.cooldown <= 0) {
+              state.bullets.push({
+                pos: { x: player2.pos.x + player2.w / 2 - 1, y: player2.pos.y },
+                w: 2,
+                h: 4,
+                vel: { x: 0, y: -120 },
+                from: 'player',
+              });
+              player2.cooldown = 0.2;
+              audioManager.playSound('shoot', 0.3, 0.4);
+            }
+          }
+        } else {
+          // Single player: use normal playerSystem
+          playerSystem(state, dt);
         }
 
         state.time += dt;
-        playerSystem(state, dt);
         bossSystem(state, dt);
         bulletSystem(state, dt);
         heartSystem(state, dt);
