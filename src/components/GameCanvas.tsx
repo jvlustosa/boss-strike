@@ -94,13 +94,13 @@ export function GameCanvas({
             let moveX = 0;
             if (keys['a'] || keys['arrowleft']) moveX -= 1;
             if (keys['d'] || keys['arrowright']) moveX += 1;
-            player1.pos.x += moveX * 100 * dt;
+            player1.pos.x += moveX * 40 * dt;
             player1.pos.x = Math.max(0, Math.min(LOGICAL_W - player1.w, player1.pos.x));
 
             let moveY = 0;
             if (keys['w'] || keys['arrowup']) moveY -= 1;
             if (keys['s'] || keys['arrowdown']) moveY += 1;
-            player1.pos.y += moveY * 100 * dt;
+            player1.pos.y += moveY * 40 * dt;
             player1.pos.y = Math.max(0, Math.min(LOGICAL_H - player1.h, player1.pos.y));
 
             if (player1.cooldown > 0) {
@@ -124,8 +124,8 @@ export function GameCanvas({
           const remoteInput = sessionManager.getRemotePlayerInput(1);
           const player2 = state.players[1];
           if (player2 && player2.alive && remoteInput) {
-            player2.pos.x += remoteInput.x * 100 * dt;
-            player2.pos.y += remoteInput.y * 100 * dt;
+            player2.pos.x += remoteInput.x * 40 * dt;
+            player2.pos.y += remoteInput.y * 40 * dt;
             player2.pos.x = Math.max(0, Math.min(LOGICAL_W - player2.w, player2.pos.x));
             player2.pos.y = Math.max(0, Math.min(LOGICAL_H - player2.h, player2.pos.y));
 

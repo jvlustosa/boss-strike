@@ -1,6 +1,6 @@
 export const LOGICAL_W = 160;
 export const LOGICAL_H = 144;
-export const PLAYER_SPEED = 60;
+export const PLAYER_SPEED = 40;
 export const BULLET_SPEED = 120;
 export const FIRE_COOLDOWN = 0.25;
 
