@@ -1,6 +1,7 @@
 import { WebSocketServer } from 'ws';
 import { createServer } from 'http';
 import { parse } from 'url';
+import crypto from 'crypto';
 
 const PORT = process.env.PORT || 8080;
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS 
@@ -37,60 +38,136 @@ const wss = new WebSocketServer({
   perMessageDeflate: false
 });
 
+/**
+ * Room subscription system with hashed room codes
+ * Maps roomHash → Room instance
+ */
 const rooms = new Map();
 
+/**
+ * Hash function for room IDs to prevent collision attacks
+ */
+function hashRoomId(roomId) {
+  if (!roomId) return null;
+  return crypto
+    .createHash('sha256')
+    .update(roomId)
+    .digest('hex')
+    .substring(0, 16);
+}
+
+/**
+ * Room class with subscription management
+ * Each room maintains WebSocket subscriptions per player
+ */
 class Room {
-  constructor(id) {
+  constructor(id, hash) {
     this.id = id;
+    this.hash = hash;  // Hashed room ID
     this.players = new Map();
+    this.subscriptions = new Map();  // playerId → subscription metadata
     this.gameState = null;
     this.hostId = null;
     this.createdAt = Date.now();
+    this.lastActivity = Date.now();
   }
 
+  /**
+   * Add player to room and subscribe to events
+   */
   addPlayer(socket, playerId, playerName) {
     if (this.players.size >= 2) {
       return false;
     }
     
     const isHost = this.players.size === 0;
-    this.players.set(playerId, {
+    const player = {
       socket,
       id: playerId,
       name: playerName || `Player ${this.players.size + 1}`,
       isHost,
       ready: false,
       input: { x: 0, y: 0, fire: false },
-      lastUpdate: Date.now()
+      lastUpdate: Date.now(),
+      subscribedAt: Date.now()
+    };
+
+    this.players.set(playerId, player);
+    
+    // Track subscription metadata
+    this.subscriptions.set(playerId, {
+      playerId,
+      subscribedAt: Date.now(),
+      roomHash: this.hash,
+      isHost
     });
 
     if (isHost) {
       this.hostId = playerId;
     }
 
+    this.lastActivity = Date.now();
+    console.log(`[Room] Player ${playerId} (${playerName}) subscribed to room ${this.id} [${this.hash}]`);
+    
     return true;
   }
 
+  /**
+   * Remove player and unsubscribe from room events
+   */
   removePlayer(playerId) {
     const player = this.players.get(playerId);
     if (player) {
       this.players.delete(playerId);
+      this.subscriptions.delete(playerId);
+      
+      console.log(`[Room] Player ${playerId} unsubscribed from room ${this.id} [${this.hash}]`);
       
       if (this.hostId === playerId && this.players.size > 0) {
         const newHost = Array.from(this.players.values())[0];
         this.hostId = newHost.id;
         newHost.isHost = true;
+        console.log(`[Room] Host promoted to ${newHost.id}`);
       }
     }
+    
+    this.lastActivity = Date.now();
   }
 
+  /**
+   * Broadcast message to subscribed players
+   */
   broadcast(message, excludePlayerId = null) {
     const data = JSON.stringify(message);
+    let sentCount = 0;
+    
     this.players.forEach((player, id) => {
       if (id !== excludePlayerId && player.socket.readyState === 1) {
-        player.socket.send(data);
+        try {
+          player.socket.send(data);
+          sentCount++;
+        } catch (error) {
+          console.error(`[Room] Failed to send to ${id}:`, error.message);
+        }
       }
     });
+    
+    this.lastActivity = Date.now();
+    return sentCount;
+  }
+
+  /**
+   * Get active subscriptions in this room
+   */
+  getSubscriptions() {
+    return Array.from(this.subscriptions.values());
+  }
+
+  /**
+   * Check if player is subscribed to this room
+   */
+  isSubscribed(playerId) {
+    return this.subscriptions.has(playerId);
   }
 
   getPlayerCount() {
@@ -99,6 +176,13 @@ class Room {
 
   isEmpty() {
     return this.players.size === 0;
+  }
+
+  /**
+   * Check if room is stale (no activity for 5 minutes)
+   */
+  isStale() {
+    return (Date.now() - this.lastActivity) > (5 * 60 * 1000);
   }
 }
 
@@ -167,15 +251,19 @@ wss.on('connection', (ws, req) => {
     const requestedRoomId = urlRoomId || message.roomId || null;
     const playerNameToUse = urlPlayerName || message.playerName || `Player`;
     
+    // Hash room ID for lookup (prevents collision attacks)
+    const roomHash = hashRoomId(requestedRoomId);
+    
     if (!requestedRoomId) {
       // No room specified - create new room for host
       const newRoomId = generateRoomId();
+      const newHash = hashRoomId(newRoomId);
       playerId = generatePlayerId();
-      const room = new Room(newRoomId);
-      rooms.set(newRoomId, room);
+      const room = new Room(newRoomId, newHash);
+      rooms.set(newHash, room);
       currentRoom = room;
       
-      console.log(`[WS] Created new room: ${newRoomId} for player: ${playerId}`);
+      console.log(`[WS] ✓ Created new room: ${newRoomId} [${newHash}] for player: ${playerId}`);
       
       if (room.addPlayer(ws, playerId, playerNameToUse)) {
         ws.send(JSON.stringify({
@@ -191,22 +279,23 @@ wss.on('connection', (ws, req) => {
       return;
     }
 
-    // Join existing or create if doesn't exist
-    let room = rooms.get(requestedRoomId);
+    // Join existing or create if doesn't exist (using hashed lookup)
+    let room = rooms.get(roomHash);
     
     if (!room) {
       // Room doesn't exist yet - create it
       playerId = generatePlayerId();
-      room = new Room(requestedRoomId);
-      rooms.set(requestedRoomId, room);
+      room = new Room(requestedRoomId, roomHash);
+      rooms.set(roomHash, room);
       currentRoom = room;
       
-      console.log(`[WS] Created room: ${requestedRoomId} for player: ${playerId}`);
+      console.log(`[WS] ✓ Created room: ${requestedRoomId} [${roomHash}] for player: ${playerId}`);
     } else {
-      // Room exists - join it
+      // Room exists - join it (verify hash matches)
       playerId = generatePlayerId();
       currentRoom = room;
-      console.log(`[WS] Player ${playerId} joining room: ${requestedRoomId}`);
+      console.log(`[WS] ✓ Player ${playerId} joining room: ${requestedRoomId} [${roomHash}]`);
+      console.log(`[WS]   Active subscriptions: ${room.getSubscriptions().map(s => s.playerId).join(', ')}`);
     }
 
     if (room.addPlayer(ws, playerId, playerNameToUse)) {
@@ -217,12 +306,13 @@ wss.on('connection', (ws, req) => {
       const joinedMessage = {
         type: 'joined',
         roomId: requestedRoomId,
+        roomHash: roomHash,  // Include hash for client reference
         playerId,
         isHost: isHostPlayer,
         playerCount: playerCountNow
       };
       
-      console.log(`[WS] Sending 'joined' to ${playerId}:`, joinedMessage);
+      console.log(`[WS] → Sending 'joined' to ${playerId} (${playerNameToUse})`);
       ws.send(JSON.stringify(joinedMessage));
 
       // Notify OTHER players in room that someone joined
@@ -231,14 +321,15 @@ wss.on('connection', (ws, req) => {
           type: 'playerJoined',
           playerId,
           playerName: playerNameToUse,
-          playerCount: playerCountNow
+          playerCount: playerCountNow,
+          roomHash: roomHash
         };
         
-        console.log(`[WS] Broadcasting 'playerJoined' to ${playerCountNow - 1} other player(s) in room ${requestedRoomId}`);
-        room.broadcast(otherPlayersMessage, playerId);
+        const sentCount = room.broadcast(otherPlayersMessage, playerId);
+        console.log(`[WS] ✓ Broadcasted 'playerJoined' to ${sentCount} subscribed player(s) in ${requestedRoomId}`);
       }
       
-      console.log(`[WS] ✓ Room ${requestedRoomId} now has ${playerCountNow} players`);
+      console.log(`[WS] ✓ Room ${requestedRoomId} [${roomHash}] now has ${playerCountNow}/2 players`);
     } else {
       ws.send(JSON.stringify({ type: 'error', message: 'Room is full' }));
     }
