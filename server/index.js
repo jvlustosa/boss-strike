@@ -205,14 +205,28 @@ wss.on('connection', (ws, req) => {
     return;
   }
 
-  const { query } = parse(req.url, true);
-  const urlRoomId = query.room || null;
+  const { pathname, query } = parse(req.url, true);
+  
+  // Extract room ID from path: /room/ABC123
+  let urlRoomId = null;
+  const pathRoomMatch = pathname.match(/\/room\/([a-zA-Z0-9]+)/);
+  if (pathRoomMatch && pathRoomMatch[1]) {
+    urlRoomId = pathRoomMatch[1];
+    console.log(`[WS] Room ID from path: ${urlRoomId}`);
+  }
+  
+  // Fallback to query param for backwards compatibility: ?room=ABC123
+  if (!urlRoomId && query.room) {
+    urlRoomId = query.room;
+    console.log(`[WS] Room ID from query: ${urlRoomId}`);
+  }
+  
   const urlPlayerName = query.name || null;
 
   let currentRoom = null;
   let playerId = null;
 
-  console.log(`[WS] New connection attempt - Room: ${urlRoomId || 'none'}, Origin: ${origin || 'none'}`);
+  console.log(`[WS] New connection attempt - Room: ${urlRoomId || 'none'}, Path: ${pathname}, Origin: ${origin || 'none'}`);
 
   ws.on('message', (data) => {
     try {

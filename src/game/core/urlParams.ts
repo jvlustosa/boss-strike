@@ -53,27 +53,71 @@ export function updateUrlLevel(level: number): void {
   window.history.pushState(null, '', url.toString());
 }
 
+/**
+ * Extract room ID from URL path: /room/ABC123
+ * Falls back to query param for backwards compatibility: ?room=ABC123
+ */
 export function getRoomIdFromUrl(): string | null {
   try {
+    // Try path-based first: /room/ABC123
+    const pathMatch = window.location.pathname.match(/\/room\/([a-zA-Z0-9]+)/);
+    if (pathMatch && pathMatch[1]) {
+      console.log('[URL] Room ID from path:', pathMatch[1]);
+      return pathMatch[1];
+    }
+
+    // Fallback to query params for backwards compatibility: ?room=ABC123
     const params = new URLSearchParams(window.location.search);
-    return params.get('room') || null;
+    const roomQuery = params.get('room');
+    if (roomQuery) {
+      console.log('[URL] Room ID from query:', roomQuery);
+      return roomQuery;
+    }
+
+    console.log('[URL] No room ID found in URL');
+    return null;
   } catch (error) {
     console.error('Error getting room ID from URL:', error);
     return null;
   }
 }
 
+/**
+ * Update URL with room ID using path-based routing: /room/ABC123
+ * Preserves existing query parameters
+ */
 export function updateUrlRoom(roomId: string | null): void {
-  const url = new URL(window.location.href);
-  if (roomId) {
-    url.searchParams.set('room', roomId);
-  } else {
-    url.searchParams.delete('room');
+  try {
+    const url = new URL(window.location.href);
+    
+    if (roomId) {
+      // Use path-based routing: /room/ABC123
+      const pathWithRoom = `/room/${roomId}`;
+      
+      // Preserve query params
+      const newUrl = `${pathWithRoom}${url.search}`;
+      
+      console.log('[URL] Updating to:', newUrl);
+      window.history.pushState(null, '', newUrl);
+    } else {
+      // Remove room from path
+      const pathWithoutRoom = url.pathname.replace(/\/room\/[a-zA-Z0-9]+\/?/, '');
+      const newUrl = `${pathWithoutRoom || '/'}${url.search}`;
+      
+      console.log('[URL] Removing room, updating to:', newUrl);
+      window.history.pushState(null, '', newUrl);
+    }
+  } catch (error) {
+    console.error('Error updating URL room:', error);
   }
-  window.history.pushState(null, '', url.toString());
 }
 
+/**
+ * Generate a random room ID (6 uppercase alphanumeric)
+ */
 export function generateRoomId(): string {
-  return Math.random().toString(36).substring(2, 8).toUpperCase();
+  const id = Math.random().toString(36).substring(2, 8).toUpperCase();
+  console.log('[URL] Generated new room ID:', id);
+  return id;
 }
 
