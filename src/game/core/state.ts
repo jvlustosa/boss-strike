@@ -9,7 +9,7 @@ export function createInitialState(level: number = 1, isMultiplayer: boolean = f
     pos: { x, y },
     w: PLAYER_W,
     h: PLAYER_H,
-    speed: 60,
+    speed: 42, // Reduced from 60 (30% slower)
     cooldown: 0,
     alive: true,
     health: 5,
