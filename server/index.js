@@ -433,6 +433,22 @@ wss.on('connection', (ws, req) => {
     const player = currentRoom.players.get(playerId);
     if (player) {
       player.ready = message.ready !== false;
+      console.log(`[WS] Player ${playerId} ready: ${player.ready}`);
+      
+      // Broadcast ready status to all players in room
+      const readyCount = Array.from(currentRoom.players.values()).filter(p => p.ready).length;
+      const playerCount = currentRoom.getPlayerCount();
+      
+      currentRoom.broadcast({
+        type: 'ready',
+        playerId,
+        ready: player.ready,
+        readyCount,
+        playerCount,
+        allReady: readyCount === playerCount && playerCount === 2
+      }, playerId);
+      
+      console.log(`[WS] Room ${currentRoom.id} - Ready: ${readyCount}/${playerCount}, All ready: ${readyCount === playerCount && playerCount === 2}`);
       
       currentRoom.broadcast({
         type: 'playerReady',

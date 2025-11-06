@@ -15,6 +15,8 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
   const [roomId, setRoomId] = useState<string | null>(null);
   const [showManualStart, setShowManualStart] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isReady, setIsReady] = useState(false);
+  const [remoteReady, setRemoteReady] = useState(false);
 
   // Animate dots
   useEffect(() => {
@@ -91,15 +93,19 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
 
         // Register listener for joined event (gets player count) BEFORE initialization
         const joinedListener = (roomId: string, playerId: string, playerCount: number, isHost: boolean) => {
-          if (joinedListenerCalledRef.current || gameStartedRef.current) {
-            console.log('[WebSocketSessionScreen] Joined listener already called or game started, skipping');
-            return;
-          }
-          joinedListenerCalledRef.current = true;
           console.log('[WebSocketSessionScreen] Joined room - playerCount:', playerCount);
           setConnectedPlayers(playerCount);
+          
+          // If room is full, send ready signal
           if (playerCount === 2) {
             setStatus('ready');
+            setIsReady(true);
+            // Send ready signal to server
+            const networkManager = (sessionManager as any).multiplayerSession?.networkManager;
+            if (networkManager) {
+              networkManager.sendReady(true);
+              console.log('[WebSocketSessionScreen] Sent ready signal to server');
+            }
           }
         };
         (window as any).sessionManagerJoinedListener = joinedListener;
@@ -107,18 +113,34 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
         // Register listener for playerJoined event (when remote player enters)
         if (sessionManager.onPlayerJoined) {
           sessionManager.onPlayerJoined((playerId, playerName, isHost) => {
-            if (playerJoinedCallbackCalledRef.current || gameStartedRef.current) {
-              console.log('[WebSocketSessionScreen] PlayerJoined callback already called or game started, skipping');
-              return;
-            }
-            playerJoinedCallbackCalledRef.current = true;
             console.log('[WebSocketSessionScreen] Remote player detected:', playerName, 'isHost:', isHost);
             setConnectedPlayers(2);
             setStatus('ready');
             
-            if (!isCompleted && !gameStartedRef.current) {
-              isCompleted = true;
-              console.log('[WebSocketSessionScreen] Room full - ready to start');
+            // Send ready signal when remote player joins
+            const networkManager = (sessionManager as any).multiplayerSession?.networkManager;
+            if (networkManager) {
+              networkManager.sendReady(true);
+              setIsReady(true);
+              console.log('[WebSocketSessionScreen] Sent ready signal to server');
+            }
+          });
+        }
+
+        // Listen for ready messages from other players via NetworkManager callback
+        const networkManager = (sessionManager as any).multiplayerSession?.networkManager;
+        if (networkManager) {
+          const originalCallbacks = networkManager.callbacks || {};
+          networkManager.setCallbacks({
+            ...originalCallbacks,
+            onReady: (playerId, ready, allReady) => {
+              if (playerId !== (sessionManager as any).playerId && ready) {
+                console.log('[WebSocketSessionScreen] Remote player ready:', playerId, 'allReady:', allReady);
+                setRemoteReady(true);
+              }
+              if (allReady) {
+                console.log('[WebSocketSessionScreen] Both players ready and synced!');
+              }
             }
           });
         }
@@ -262,28 +284,34 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
             </div>
           )}
 
-          {status === 'waiting' && (
+          {(status === 'waiting' || status === 'ready') && (
             <div style={{ marginBottom: '20px' }}>
               <div style={{
                 fontSize: '24px',
-                color: connectedPlayers >= 2 ? '#4ade80' : '#ffa500',
+                color: connectedPlayers >= 2 && isReady && remoteReady ? '#4ade80' : '#ffa500',
                 textShadow: '2px 2px 0px #000',
                 letterSpacing: '3px',
                 marginBottom: '10px',
                 fontWeight: 'bold',
-                backgroundColor: connectedPlayers >= 2 ? 'rgba(74, 222, 128, 0.2)' : 'rgba(255, 165, 0, 0.2)',
+                backgroundColor: connectedPlayers >= 2 && isReady && remoteReady ? 'rgba(74, 222, 128, 0.2)' : 'rgba(255, 165, 0, 0.2)',
                 padding: '12px 24px',
                 borderRadius: '8px',
-                border: `3px solid ${connectedPlayers >= 2 ? '#4ade80' : '#ffa500'}`,
+                border: `3px solid ${connectedPlayers >= 2 && isReady && remoteReady ? '#4ade80' : '#ffa500'}`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '10px',
-                animation: connectedPlayers >= 2 ? 'pulse 1s infinite' : 'none',
+                animation: connectedPlayers >= 2 && isReady && remoteReady ? 'pulse 1s infinite' : 'none',
               }}>
                 <span>👥</span>
                 <span>{connectedPlayers}/2</span>
                 <span>PLAYERS</span>
+                {connectedPlayers === 2 && (!isReady || !remoteReady) && (
+                  <span style={{ fontSize: '14px', marginLeft: '10px' }}>
+                    {!isReady && '⏳ Waiting for you...'}
+                    {isReady && !remoteReady && '⏳ Waiting for other player...'}
+                  </span>
+                )}
               </div>
 
               <div style={{
@@ -357,15 +385,15 @@ export function WebSocketSessionScreen({ onSessionReady, sessionManager }: WebSo
             </button>
           )}
 
-          {/* START GAME button - ONLY appears with 2/2 players */}
-          {connectedPlayers >= 2 && (status === 'waiting' || status === 'ready') && (
+          {/* START GAME button - ONLY appears when room is full AND both players are ready */}
+          {connectedPlayers === 2 && isReady && remoteReady && (status === 'waiting' || status === 'ready') && (
             <button
               onClick={(e) => {
                 if (isHidden || gameStartedRef.current) {
                   console.log('[Session] Already starting game, ignoring click');
                   return;
                 }
-                console.log('[Session] Starting game with 2 players');
+                console.log('[Session] Starting game - both players ready and synced');
                 gameStartedRef.current = true;
                 setIsHidden(true);
                 onSessionReady();

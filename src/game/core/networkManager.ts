@@ -313,6 +313,13 @@ export class NetworkManager {
           }
           break;
 
+        case 'ready':
+          console.log('[Network] Ready message received:', message.playerId, 'ready:', message.ready, 'allReady:', message.allReady);
+          if (this.callbacks.onReady) {
+            this.callbacks.onReady(message.playerId, message.ready, message.allReady || false);
+          }
+          break;
+
         case 'pong':
           if (message.timestamp && this.lastPingTime) {
             const latency = Date.now() - message.timestamp;
