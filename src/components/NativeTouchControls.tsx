@@ -171,7 +171,6 @@ export function NativeTouchControls({ onMove, onFire }: NativeTouchControlsProps
 
       {/* Fire Button */}
       <div
-        onTouchStart={handleFireTouchStart}
         style={{
           width: '70px',
           height: '70px',

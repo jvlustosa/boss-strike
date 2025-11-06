@@ -11,8 +11,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom'],
-          playroom: ['playroomkit']
+          vendor: ['react', 'react-dom']
         }
       }
     }
@@ -34,8 +33,5 @@ export default defineConfig({
       '.ngrok-free.app',
       '.ngrok.app'
     ]
-  },
-  optimizeDeps: {
-    include: ['playroomkit']
   }
 })
