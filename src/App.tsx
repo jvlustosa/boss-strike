@@ -5,16 +5,23 @@ import { PauseButton } from './components/PauseButton';
 import { PauseMenu } from './components/PauseMenu';
 import { LevelTitle } from './components/LevelTitle';
 import { PlayroomSessionScreen } from './components/PlayroomSessionScreen';
+import { AuthModal } from './components/AuthModal';
+import { ProfileModal } from './components/ProfileModal';
 import { updateUrlLevel, getLevelFromUrl } from './game/core/urlParams';
 import { saveProgress, clearProgress, clearVictories } from './game/core/progressCache';
+import { supabase } from './utils/supabase';
 
 export default function App() {
   const [gameStarted, setGameStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [gameState, setGameState] = useState<any>(null);
   const [showPlayroomSession, setShowPlayroomSession] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [authChecked, setAuthChecked] = useState(false);
 
-  const handleStartGame = (level?: number, clearTrophies?: boolean) => {
+  const handleStartGame = async (level?: number, clearTrophies?: boolean) => {
     // Verificar se há nível na URL primeiro, senão usar o nível passado ou 1
     const urlLevel = getLevelFromUrl();
     const targetLevel = level || urlLevel || 1;
@@ -22,12 +29,18 @@ export default function App() {
     
     // Se recomeçando (nível 1), limpar o progresso para não mostrar botão "CONTINUAR"
     if (targetLevel === 1) {
-      clearProgress();
+      await clearProgress();
       
       // Se solicitado, limpar troféus também
       if (clearTrophies) {
-        clearVictories();
+        await clearVictories();
       }
+    }
+    
+    // Show auth modal on first game start if not logged in
+    if (targetLevel === 1 && !user) {
+      setShowAuthModal(true);
+      return;
     }
     
     setShowPlayroomSession(true);
@@ -54,7 +67,7 @@ export default function App() {
     
     // Salvar progresso automaticamente quando o jogador avança de fase
     if (state.status === 'won' && state.victoryTimer > 0) {
-      saveProgress(state);
+      saveProgress(state).catch(console.error);
     }
   };
 
@@ -70,6 +83,25 @@ export default function App() {
     }
   };
 
+  // Check auth status on mount
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      setUser(currentUser);
+      setAuthChecked(true);
+    };
+
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
   // Listen for ESC key to toggle pause
   useEffect(() => {
     const handleTogglePause = () => {
@@ -82,10 +114,38 @@ export default function App() {
     };
   }, [gameStarted, isPaused]);
 
+  const handleAuthSuccess = () => {
+    setShowAuthModal(false);
+    setShowPlayroomSession(true);
+  };
+
+  const handleAuthSkip = () => {
+    setShowAuthModal(false);
+    setShowPlayroomSession(true);
+  };
+
   if (!gameStarted) {
     return (
       <>
-        <MainMenu onStartGame={handleStartGame} />
+        {authChecked && (
+          <MainMenu 
+            onStartGame={handleStartGame}
+            onShowProfile={() => setShowProfileModal(true)}
+            user={user}
+          />
+        )}
+        {showAuthModal && (
+          <AuthModal 
+            onAuthSuccess={handleAuthSuccess}
+            onSkip={handleAuthSkip}
+          />
+        )}
+        {showProfileModal && user && (
+          <ProfileModal 
+            onClose={() => setShowProfileModal(false)}
+            userId={user.id}
+          />
+        )}
         {showPlayroomSession && (
           <PlayroomSessionScreen onSessionReady={handleSessionReady} />
         )}

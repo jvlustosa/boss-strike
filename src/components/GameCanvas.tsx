@@ -84,7 +84,7 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
       if (e.key === 'Escape') {
         // Save progress when pausing
         if (state.status === 'playing') {
-          saveProgress(state);
+          saveProgress(state).catch(console.error);
         }
         // Toggle pause - this will be handled by the parent component
         window.dispatchEvent(new CustomEvent('togglePause'));
@@ -111,8 +111,8 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
           if (state.victoryTimer <= 0) {
             state.status = 'won';
             // Save victory (só se o nível for múltiplo de 5) and progress
-            saveVictory(state.level);
-            saveProgress(state);
+            saveVictory(state.level).catch(console.error);
+            saveProgress(state).catch(console.error);
           }
         }
       } else if (state.status === 'lost') {

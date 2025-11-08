@@ -5,9 +5,11 @@ import { getLevelFromUrl } from '../game/core/urlParams';
 
 interface MainMenuProps {
   onStartGame: (level?: number, clearTrophies?: boolean) => void;
+  onShowProfile?: () => void;
+  user?: any;
 }
 
-export function MainMenu({ onStartGame }: MainMenuProps) {
+export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [continueHovered, setContinueHovered] = useState(false);
   const [victoryCount, setVictoryCount] = useState(0);
@@ -16,19 +18,27 @@ export function MainMenu({ onStartGame }: MainMenuProps) {
   const [showRestartDialog, setShowRestartDialog] = useState(false);
   const [yesHovered, setYesHovered] = useState(false);
   const [noHovered, setNoHovered] = useState(false);
+  const [profileHovered, setProfileHovered] = useState(false);
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isLandscape = isMobile && window.innerHeight < window.innerWidth;
 
   // Load progress and victory count
   useEffect(() => {
-    setVictoryCount(getVictoryCount());
-    // Verificar se há nível na URL primeiro, senão usar o nível do progresso
-    const urlLevel = getLevelFromUrl();
-    const progressLevel = getNextLevel();
-    const finalLevel = urlLevel || progressLevel;
-    setNextLevel(finalLevel);
-    // Mostrar botão continuar se houver progresso OU se houver nível na URL
-    setCanContinue(hasProgress() || !!urlLevel);
+    const loadData = async () => {
+      const [victoryCount, progressLevel, hasProgressData] = await Promise.all([
+        getVictoryCount(),
+        getNextLevel(),
+        hasProgress(),
+      ]);
+      
+      setVictoryCount(victoryCount);
+      const urlLevel = getLevelFromUrl();
+      const finalLevel = urlLevel || progressLevel;
+      setNextLevel(finalLevel);
+      setCanContinue(hasProgressData || !!urlLevel);
+    };
+    
+    loadData();
   }, [showRestartDialog]);
 
   const getButtonStyle = (hovered: boolean, isSecondary: boolean = false): React.CSSProperties => ({
@@ -266,7 +276,28 @@ export function MainMenu({ onStartGame }: MainMenuProps) {
           </div>
         </div>
         
-        <div style={{ marginTop: isLandscape ? '3px' : (isMobile ? '5px' : '8px') }}>
+        <div style={{ 
+          marginTop: isLandscape ? '3px' : (isMobile ? '5px' : '8px'),
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: isLandscape ? '6px' : (isMobile ? '10px' : '12px')
+        }}>
+          {user && onShowProfile && (
+            <button
+              style={{
+                ...getButtonStyle(profileHovered, true),
+                fontSize: isLandscape ? '12px' : (isMobile ? '14px' : '16px'),
+                padding: isLandscape ? '6px 10px' : (isMobile ? '10px 20px' : '12px 24px'),
+                marginBottom: 0,
+              }}
+              onMouseEnter={() => setProfileHovered(true)}
+              onMouseLeave={() => setProfileHovered(false)}
+              onClick={onShowProfile}
+            >
+              👤 Meu Perfil
+            </button>
+          )}
           <a 
             href="https://github.com/jvlustosa/boss-strike" 
             target="_blank" 
