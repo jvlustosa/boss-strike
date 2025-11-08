@@ -64,9 +64,12 @@ export function getNextLevel(): number {
   return Math.min(nextLevel, maxLevel);
 }
 
-export function saveVictory(): void {
-  const current = parseInt(localStorage.getItem(VICTORIES_KEY) || '0', 10);
-  localStorage.setItem(VICTORIES_KEY, (current + 1).toString());
+export function saveVictory(level: number): void {
+  // Só dar vitória a cada 5 níveis (5, 10, 15, etc.)
+  if (level % 5 === 0) {
+    const current = parseInt(localStorage.getItem(VICTORIES_KEY) || '0', 10);
+    localStorage.setItem(VICTORIES_KEY, (current + 1).toString());
+  }
 }
 
 export function getVictoryCount(): number {

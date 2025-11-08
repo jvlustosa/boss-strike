@@ -9,6 +9,7 @@ import { bossSystem } from '../game/systems/bossSystem';
 import { bulletSystem } from '../game/systems/bulletSystem';
 import { collisionSystem } from '../game/systems/collisionSystem';
 import { heartSystem } from '../game/systems/heartSystem';
+import { shieldSystem, updateShieldFragments } from '../game/systems/shieldSystem';
 import { renderSystem } from '../game/systems/renderSystem';
 import { updateExplosionSystem } from '../game/systems/explosionSystem';
 import { getLevelFromUrl, updateUrlLevel } from '../game/core/urlParams';
@@ -109,6 +110,8 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         bossSystem(state, dt);
         bulletSystem(state, dt);
         heartSystem(state, dt);
+        shieldSystem(state, dt);
+        updateShieldFragments(state, dt);
         collisionSystem(state);
         
         // Handle victory timer
@@ -116,8 +119,8 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
           state.victoryTimer -= dt;
           if (state.victoryTimer <= 0) {
             state.status = 'won';
-            // Save victory and progress
-            saveVictory();
+            // Save victory (só se o nível for múltiplo de 5) and progress
+            saveVictory(state.level);
             saveProgress(state);
           }
         }
@@ -140,6 +143,11 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
           state.player = next.player;
           state.boss = next.boss;
           state.heartsSpawnedThisLevel = next.heartsSpawnedThisLevel;
+          state.shieldsSpawnedThisLevel = next.shieldsSpawnedThisLevel;
+          state.maxShieldsThisLevel = next.maxShieldsThisLevel;
+          state.shieldCooldown = next.shieldCooldown;
+          state.shields.length = 0;
+          state.shieldFragments.length = 0;
           state.status = next.status;
           state.victoryTimer = next.victoryTimer;
           state.restartTimer = next.restartTimer;
@@ -218,6 +226,8 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         // Limpar estado atual
         currentState.bullets.length = 0;
         currentState.hearts.length = 0;
+        currentState.shields.length = 0;
+        currentState.shieldFragments.length = 0;
         currentState.explosionParticles.length = 0;
         currentState.smokeParticles.length = 0;
         
@@ -228,6 +238,9 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         currentState.player = newState.player;
         currentState.boss = newState.boss;
         currentState.heartsSpawnedThisLevel = newState.heartsSpawnedThisLevel;
+        currentState.shieldsSpawnedThisLevel = newState.shieldsSpawnedThisLevel;
+        currentState.maxShieldsThisLevel = newState.maxShieldsThisLevel;
+        currentState.shieldCooldown = newState.shieldCooldown;
         currentState.status = newState.status;
         currentState.victoryTimer = newState.victoryTimer;
         currentState.restartTimer = newState.restartTimer;

@@ -4,9 +4,10 @@ import { damageBoss } from './boss';
 import { audioManager } from '../core/audio';
 import { createBossExplosion, createBulletExplosion } from '../systems/explosionSystem';
 import { isCheatActive } from '../core/urlParams';
+import { createShieldFragments } from '../systems/shieldSystem';
 
 export function checkCollisions(state: GameState): void {
-  const { bullets, boss, player, hearts } = state;
+  const { bullets, boss, player, hearts, shields } = state;
 
   // Helper para converter entidades com { pos, w, h } em AABB plano { x, y, w, h }
   const toAABB = (o: { pos: { x: number; y: number }; w: number; h: number }) => ({
@@ -37,10 +38,29 @@ export function checkCollisions(state: GameState): void {
     }
   }
 
+  // Verificar colisão player com escudos
+  if (player.alive) {
+    for (const shield of shields) {
+      if (!shield.collected && aabbCollision(toAABB(player), toAABB(shield))) {
+        shield.collected = true;
+        player.shieldHits = 10; // Escudo pode resistir 10 tiros
+        state.shieldCooldown = 6.0; // Esperar 6 segundos antes de spawnar outro
+        audioManager.playCriticalSound('shield', 0.8);
+      }
+    }
+  }
+
   for (let i = bullets.length - 1; i >= 0; i--) {
     const bullet = bullets[i];
 
     if (bullet.from === 'player') {
+      // Ignore collisions with boss if already dead
+      if (boss.hp <= 0) {
+        // Remove player bullets that hit dead boss
+        bullets.splice(i, 1);
+        continue;
+      }
+      
       // Check collision with boss weak spot
       if (aabbCollision(toAABB(bullet), boss.weakSpot)) {
         damageBoss(boss, 1);
@@ -66,15 +86,29 @@ export function checkCollisions(state: GameState): void {
           }
           // Create explosion animation at boss current position and start victory timer
           createBossExplosion(state, boss.pos.x, boss.pos.y, boss.w, boss.h);
-          state.victoryTimer = 1.5; // 1.5 seconds delay before victory screen
+          // Only start timer if not already started (to prevent delays from continued shooting)
+          if (state.victoryTimer <= 0) {
+            state.victoryTimer = 2.0; // 2 seconds delay before victory screen and button appears
+          }
           return; // Exit early to avoid processing remaining bullets
         }
       }
     } else if (bullet.from === 'boss') {
       // Boss bullets vs player collision
       if (player.alive && aabbCollision(toAABB(bullet), toAABB(player))) {
-        damagePlayer(state);
-        bullets.splice(i, 1);
+        // Se tiver escudo, reduzir hits do escudo em vez de dano
+        if (player.shieldHits > 0) {
+          player.shieldHits--;
+          bullets.splice(i, 1);
+          
+          // Se escudo quebrou, criar fragmentos
+          if (player.shieldHits === 0) {
+            createShieldFragments(state, player.pos.x + player.w / 2, player.pos.y + player.h / 2);
+          }
+        } else {
+          damagePlayer(state);
+          bullets.splice(i, 1);
+        }
       }
     }
   }

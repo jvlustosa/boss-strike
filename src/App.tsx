@@ -6,8 +6,7 @@ import { PauseMenu } from './components/PauseMenu';
 import { LevelTitle } from './components/LevelTitle';
 import { PlayroomSessionScreen } from './components/PlayroomSessionScreen';
 import { updateUrlLevel } from './game/core/urlParams';
-import { saveProgress, clearVictories } from './game/core/progressCache';
-import { createInitialState } from './game/core/state';
+import { saveProgress, clearProgress, clearVictories } from './game/core/progressCache';
 
 export default function App() {
   const [gameStarted, setGameStarted] = useState(false);
@@ -19,10 +18,9 @@ export default function App() {
     const targetLevel = level || 1;
     updateUrlLevel(targetLevel);
     
-    // Se recomeçando (nível 1), salvar o progresso como nível 1
+    // Se recomeçando (nível 1), limpar o progresso para não mostrar botão "CONTINUAR"
     if (targetLevel === 1) {
-      const initialState = createInitialState(1);
-      saveProgress(initialState);
+      clearProgress();
       
       // Se solicitado, limpar troféus também
       if (clearTrophies) {

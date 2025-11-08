@@ -54,6 +54,35 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     }
   }
 
+  // Shields
+  for (const shield of state.shields) {
+    if (!shield.collected) {
+      const x = shield.pos.x;
+      const y = shield.pos.y;
+      
+      // Desenhar triângulo virado de cabeça para baixo (pontiagudo para cima)
+      // Interior azul escuro
+      ctx.fillStyle = '#003366';
+      ctx.fillRect(x + 3, y + 1, 2, 1);       // linha do meio (interior)
+      ctx.fillRect(x + 2, y + 2, 4, 1);       // linha abaixo do meio (interior)
+      ctx.fillRect(x + 1, y + 3, 6, 1);       // linha acima da base (interior)
+      ctx.fillRect(x + 2, y + 4, 4, 1);       // base (interior)
+      
+      // Bordas azuis claras
+      ctx.fillStyle = '#66ccff';
+      ctx.fillRect(x + 4, y, 1, 1);           // ponta superior
+      ctx.fillRect(x + 2, y + 1, 1, 1);      // borda esquerda linha 1
+      ctx.fillRect(x + 5, y + 1, 1, 1);      // borda direita linha 1
+      ctx.fillRect(x + 1, y + 2, 1, 1);       // borda esquerda linha 2
+      ctx.fillRect(x + 6, y + 2, 1, 1);      // borda direita linha 2
+      ctx.fillRect(x, y + 3, 1, 1);          // borda esquerda linha 3
+      ctx.fillRect(x + 7, y + 3, 1, 1);      // borda direita linha 3
+      ctx.fillRect(x + 1, y + 4, 1, 1);      // borda esquerda base
+      ctx.fillRect(x + 6, y + 4, 1, 1);      // borda direita base
+      ctx.fillRect(x + 3, y + 5, 2, 1);      // base inferior
+    }
+  }
+
   // Explosion particles
   for (const particle of state.explosionParticles) {
     const alpha = particle.life / particle.maxLife;
@@ -139,6 +168,47 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
   ctx.fillStyle = hpPercent > 0.3 ? '#0f0' : '#f00';
   ctx.fillRect(hpBarX, hpBarY, hpBarW * hpPercent, hpBarH);
 
+  // Player Shield Visual (quando tiver escudo ativo)
+  if (state.player.shieldHits > 0) {
+    const shieldAlpha = 0.6 + (state.player.shieldHits / 10) * 0.4;
+    const px = state.player.pos.x + state.player.w / 2;
+    const py = state.player.pos.y + state.player.h / 2;
+    const size = Math.max(state.player.w, state.player.h) + 4;
+    
+    // Desenhar triângulo virado de cabeça para baixo ao redor do player
+    // Interior azul escuro
+    ctx.fillStyle = `rgba(0, 51, 102, ${shieldAlpha})`;
+    ctx.fillRect(px - 1, py - size / 2 + 1, 2, 1);           // linha do meio (interior)
+    ctx.fillRect(px - 2, py - size / 2 + 2, 4, 1);         // linha abaixo do meio (interior)
+    ctx.fillRect(px - 3, py - size / 2 + 3, 6, 1);         // linha acima da base (interior)
+    ctx.fillRect(px - 2, py - size / 2 + 4, 4, 1);         // base (interior)
+    
+    // Bordas azuis claras
+    ctx.fillStyle = `rgba(102, 204, 255, ${shieldAlpha})`;
+    ctx.fillRect(px, py - size / 2, 1, 1);                 // ponta superior
+    ctx.fillRect(px - 2, py - size / 2 + 1, 1, 1);         // borda esquerda linha 1
+    ctx.fillRect(px + 1, py - size / 2 + 1, 1, 1);         // borda direita linha 1
+    ctx.fillRect(px - 3, py - size / 2 + 2, 1, 1);         // borda esquerda linha 2
+    ctx.fillRect(px + 2, py - size / 2 + 2, 1, 1);        // borda direita linha 2
+    ctx.fillRect(px - 4, py - size / 2 + 3, 1, 1);         // borda esquerda linha 3
+    ctx.fillRect(px + 3, py - size / 2 + 3, 1, 1);         // borda direita linha 3
+    ctx.fillRect(px - 3, py - size / 2 + 4, 1, 1);         // borda esquerda base
+    ctx.fillRect(px + 2, py - size / 2 + 4, 1, 1);         // borda direita base
+    ctx.fillRect(px - 1, py - size / 2 + 5, 2, 1);         // base inferior
+  }
+
+  // Shield Fragments
+  for (const fragment of state.shieldFragments) {
+    const alpha = fragment.life / fragment.maxLife;
+    ctx.fillStyle = `rgba(0, 170, 255, ${alpha})`;
+    ctx.fillRect(
+      Math.floor(fragment.pos.x - fragment.size / 2),
+      Math.floor(fragment.pos.y - fragment.size / 2),
+      Math.max(1, Math.floor(fragment.size)),
+      Math.max(1, Math.floor(fragment.size))
+    );
+  }
+
   // Player Health Display
   ctx.fillStyle = '#0f0';
   for (let i = 0; i < state.player.health; i++) {
@@ -151,8 +221,17 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     ctx.fillRect(4 + i * 6, LOGICAL_H - 8, 4, 4);
   }
 
+  // Shield Hits Remaining Display (canto esquerdo)
+  if (state.player.shieldHits > 0) {
+    ctx.fillStyle = '#00aaff';
+    ctx.font = '6px "Pixelify Sans", monospace';
+    ctx.textBaseline = 'top';
+    ctx.textAlign = 'left';
+    ctx.fillText(`${state.player.shieldHits}`, 4, 20);
+  }
+
   // Victory Overlay
-  if (state.status === 'won') {
+  if (state.status === 'won' && state.victoryTimer <= 0) {
     ctx.fillStyle = 'rgba(0,0,0,0.6)';
     ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
 
