@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface UserHeaderProps {
@@ -23,6 +24,7 @@ export function UserHeader({ onProfileClick }: UserHeaderProps) {
     alignItems: 'center',
     gap: isMobile ? '10px' : '12px',
     fontFamily: "'Pixelify Sans', monospace",
+    pointerEvents: 'auto',
   };
 
   const usernameStyle: React.CSSProperties = {

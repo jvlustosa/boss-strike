@@ -6,8 +6,8 @@ export function PauseButton({ onPause }: PauseButtonProps) {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   const buttonStyle: React.CSSProperties = {
-    position: 'absolute',
-    top: isMobile ? '15px' : '10px',
+    position: 'fixed',
+    top: isMobile ? '70px' : '70px', // Below UserHeader
     right: isMobile ? '15px' : '10px',
     width: isMobile ? '50px' : '40px',
     height: isMobile ? '50px' : '40px',
@@ -22,7 +22,7 @@ export function PauseButton({ onPause }: PauseButtonProps) {
     alignItems: 'center',
     justifyContent: 'center',
     imageRendering: 'pixelated' as any,
-    zIndex: 1000,
+    zIndex: 999, // Below UserHeader (1000)
     touchAction: 'none',
   };
 

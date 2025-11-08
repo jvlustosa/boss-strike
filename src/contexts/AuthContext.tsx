@@ -9,6 +9,7 @@ interface AuthContextType {
   loading: boolean;
   initialized: boolean;
   refreshProfile: () => Promise<void>;
+  getUserId: () => string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -60,19 +61,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     const initializeAuth = async () => {
       try {
-        // Restore session from Supabase (handles localStorage automatically)
-        const { data: { session }, error } = await supabase.auth.getSession();
+        // First, try to get the current user (this will refresh token if needed)
+        const { data: { user: currentUser }, error: userError } = await supabase.auth.getUser();
         
-        if (error) {
-          console.error('Error restoring session:', error);
-        }
-
-        if (mounted) {
-          if (session?.user) {
-            setUser(session.user);
-            await loadProfile(session.user.id);
-            // Backup: store user ID in localStorage
-            localStorage.setItem('supabase_user_id', session.user.id);
+        if (userError) {
+          console.error('Error getting user:', userError);
+          // If getUser fails, try getSession as fallback
+          const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+          
+          if (sessionError) {
+            console.error('Error restoring session:', sessionError);
+          }
+          
+          if (mounted) {
+            if (session?.user) {
+              setUser(session.user);
+              await loadProfile(session.user.id);
+              localStorage.setItem('supabase_user_id', session.user.id);
+            } else {
+              setUser(null);
+              setProfile(null);
+              localStorage.removeItem('supabase_user_id');
+            }
+          }
+        } else if (mounted) {
+          // User retrieved successfully
+          if (currentUser) {
+            setUser(currentUser);
+            await loadProfile(currentUser.id);
+            localStorage.setItem('supabase_user_id', currentUser.id);
           } else {
             setUser(null);
             setProfile(null);
@@ -84,6 +101,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (mounted) {
           setUser(null);
           setProfile(null);
+          localStorage.removeItem('supabase_user_id');
         }
       } finally {
         if (mounted) {
@@ -100,6 +118,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       async (event, session) => {
         if (!mounted) return;
 
+
         if (session?.user) {
           setUser(session.user);
           await loadProfile(session.user.id);
@@ -115,15 +134,50 @@ export function AuthProvider({ children }: AuthProviderProps) {
           setUser(null);
           setProfile(null);
           localStorage.removeItem('supabase_user_id');
+        } else if (event === 'TOKEN_REFRESHED') {
+          // Session was refreshed, ensure user state is updated
+          if (session?.user) {
+            setUser(session.user);
+          }
         }
       }
     );
 
+    // Set up periodic session refresh check
+    const refreshInterval = setInterval(async () => {
+      if (!mounted) return;
+      
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          // Check if session is about to expire (within 5 minutes)
+          const expiresAt = session.expires_at;
+          if (expiresAt) {
+            const expiresIn = expiresAt - Math.floor(Date.now() / 1000);
+            if (expiresIn < 300 && expiresIn > 0) {
+              // Refresh session if it's about to expire (getUser will trigger refresh)
+              const { data: { user: refreshedUser } } = await supabase.auth.getUser();
+              if (refreshedUser && mounted) {
+                setUser(refreshedUser);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking session:', error);
+      }
+    }, 60000); // Check every minute
+
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      clearInterval(refreshInterval);
     };
   }, []);
+
+  const getUserId = () => {
+    return user?.id || null;
+  };
 
   const value: AuthContextType = {
     user,
@@ -131,6 +185,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     loading,
     initialized,
     refreshProfile,
+    getUserId,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

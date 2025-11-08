@@ -6,7 +6,7 @@ import { PauseMenu } from './components/PauseMenu';
 import { LevelTitle } from './components/LevelTitle';
 import { PlayroomSessionScreen } from './components/PlayroomSessionScreen';
 import { AuthModal } from './components/AuthModal';
-import { ProfileModal } from './components/ProfileModal';
+import { ProfilePage } from './components/ProfilePage';
 import { ToastContainer } from './components/ToastContainer';
 import { UserHeader } from './components/UserHeader';
 import { useToast } from './hooks/useToast';
@@ -46,6 +46,7 @@ export default function App() {
       return;
     }
     
+    // Start game session
     setShowPlayroomSession(true);
   };
 
@@ -65,7 +66,6 @@ export default function App() {
   };
 
   const handleGameStateChange = (state: any) => {
-    console.log('App: Game state changed to level', state.level, 'with config:', state.levelConfig?.name);
     setGameState(state);
     
     // Salvar progresso automaticamente quando o jogador avança de fase
@@ -76,8 +76,11 @@ export default function App() {
 
   const handleSessionReady = () => {
     setShowPlayroomSession(false);
-    setGameStarted(true);
     setIsPaused(false);
+    // Use setTimeout to ensure state updates are processed
+    setTimeout(() => {
+      setGameStarted(true);
+    }, 0);
   };
 
   const togglePause = () => {
@@ -87,10 +90,13 @@ export default function App() {
   };
 
   // Refresh profile after auth success
-  const handleAuthSuccess = () => {
-    refreshProfile();
+  const handleAuthSuccess = async () => {
+    await refreshProfile();
     setShowAuthModal(false);
-    setShowPlayroomSession(true);
+    // Small delay to ensure state is updated
+    setTimeout(() => {
+      setShowPlayroomSession(true);
+    }, 100);
   };
 
   // Listen for ESC key to toggle pause
@@ -110,19 +116,34 @@ export default function App() {
     setShowPlayroomSession(true);
   };
 
+  // Show loading state while auth is initializing
+  if (!initialized) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        background: '#000',
+        color: '#fff',
+        fontFamily: "'Pixelify Sans', monospace",
+      }}>
+        Carregando...
+      </div>
+    );
+  }
+
   if (!gameStarted) {
     return (
       <>
-        {initialized && user && (
+        {user && (
           <UserHeader onProfileClick={() => setShowProfileModal(true)} />
         )}
-        {initialized && (
-          <MainMenu 
-            onStartGame={handleStartGame}
-            onShowProfile={() => setShowProfileModal(true)}
-            user={user}
-          />
-        )}
+        <MainMenu 
+          onStartGame={handleStartGame}
+          onShowProfile={() => setShowProfileModal(true)}
+          user={user}
+        />
         {showAuthModal && (
           <AuthModal 
             onAuthSuccess={handleAuthSuccess}
@@ -132,10 +153,10 @@ export default function App() {
           />
         )}
         {showProfileModal && user && (
-          <ProfileModal 
+          <ProfilePage 
             onClose={() => setShowProfileModal(false)}
-            userId={user.id}
             showToast={toast.showError}
+            showSuccess={toast.showSuccess}
           />
         )}
         {showPlayroomSession && (
@@ -175,13 +196,13 @@ export default function App() {
         )}
       </div>
       {showProfileModal && user && (
-        <ProfileModal 
+        <ProfilePage 
           onClose={() => {
             setShowProfileModal(false);
             setIsPaused(false);
           }}
-          userId={user.id}
           showToast={toast.showError}
+          showSuccess={toast.showSuccess}
         />
       )}
       <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />

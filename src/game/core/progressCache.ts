@@ -11,9 +11,24 @@ export interface GameProgress {
 const PROGRESS_KEY = 'bossStrikeProgress';
 const VICTORIES_KEY = 'bossStrikeVictories';
 
-async function getCurrentUserId(): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser();
-  return user?.id || null;
+// Helper to get user ID - accepts optional userId parameter to use context when available
+async function getCurrentUserId(userId?: string | null): Promise<string | null> {
+  // If userId is provided (from context), use it
+  if (userId) {
+    return userId;
+  }
+  // Fallback: try to get from localStorage (set by AuthContext)
+  const storedUserId = localStorage.getItem('supabase_user_id');
+  if (storedUserId) {
+    return storedUserId;
+  }
+  // Last resort: query Supabase directly (should rarely be needed)
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    return user?.id || null;
+  } catch {
+    return null;
+  }
 }
 
 export async function saveProgress(gameState: GameState): Promise<void> {

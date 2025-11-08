@@ -16,11 +16,19 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
   // Only show on mobile/touch devices
   const shouldUsePlayroomResult = shouldUsePlayroom();
   
+  useEffect(() => {
+    if (!shouldUsePlayroomResult) {
+      // Skip session screen on desktop - start game immediately
+      const timer = setTimeout(() => {
+        if (onSessionReady) {
+          onSessionReady();
+        }
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [shouldUsePlayroomResult, onSessionReady]);
+  
   if (!shouldUsePlayroomResult) {
-    // Skip session screen on desktop
-    useEffect(() => {
-      onSessionReady();
-    }, [onSessionReady]);
     return null;
   }
 
@@ -89,6 +97,28 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
   // Wait for Playroom connection and Launch button click
   useEffect(() => {
     let isCompleted = false;
+    let checkCount = 0;
+    const MAX_CHECKS = 50; // Maximum 10 seconds (50 * 200ms)
+    const MAX_WAIT_TIME = 5000; // 5 seconds maximum wait
+
+    const startGame = () => {
+      if (!isCompleted) {
+        isCompleted = true;
+        setStatus('ready');
+        setIsHidden(true);
+        // Ensure onSessionReady is called
+        setTimeout(() => {
+          onSessionReady();
+        }, 100);
+      }
+    };
+
+    // Maximum timeout - always start game after MAX_WAIT_TIME
+    const maxTimeout = setTimeout(() => {
+      if (!isCompleted) {
+        startGame();
+      }
+    }, MAX_WAIT_TIME);
 
     const checkConnection = async () => {
       try {
@@ -104,13 +134,15 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
             return;
           }
           
+          checkCount++;
+          
           // Check if Playroom has rendered its UI elements
           const playroomElements = document.querySelectorAll('[data-playroom], .playroom-joystick, [class*="playroom"], [class*="joystick"], .bootstrap-wrapper, [class*="bootstrap"]');
           
           // Also check for any elements that might be Playroom UI
           const allElements = document.querySelectorAll('*');
           const playroomLikeElements = Array.from(allElements).filter(el => {
-            const className = typeof el.className === 'string' ? el.className : (el.className?.toString() || '');
+            const className = typeof el.className === 'string' ? el.className : String(el.className || '');
             const id = el.id || '';
             return className.includes('playroom') || 
                    className.includes('joystick') || 
@@ -126,44 +158,29 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
             }
             
             // Playroom UI is visible, start game automatically
-            isCompleted = true;
-            setStatus('ready');
-            
-            // Start game immediately after Playroom is connected
             setTimeout(() => {
-              setIsHidden(true);
-              onSessionReady();
-            }, 1000); // Small delay to show "ready" status
-          } else {
+              startGame();
+            }, 500); // Small delay to show "ready" status
+          } else if (checkCount < MAX_CHECKS) {
             // Check again in 200ms
             setTimeout(checkPlayroomUI, 200);
+          } else {
+            // Max checks reached, start game anyway
+            startGame();
           }
         };
 
         // Start checking for Playroom UI after a short delay
-        setTimeout(checkPlayroomUI, 1000);
+        setTimeout(checkPlayroomUI, 500);
 
       } catch (error) {
         console.error('Failed to connect to Playroom:', error);
         if (!isCompleted) {
-          // Fallback: start game anyway after delay
+          // Fallback: start game anyway after short delay
+          setStatus('connected');
           setTimeout(() => {
-            if (!isCompleted) {
-              setStatus('connected');
-              setTimeout(() => {
-                if (!isCompleted) {
-                  setStatus('ready');
-                  setTimeout(() => {
-                    if (!isCompleted) {
-                      isCompleted = true;
-                      setIsHidden(true);
-                      onSessionReady();
-                    }
-                  }, 1000);
-                }
-              }, 1000);
-            }
-          }, 2000);
+            startGame();
+          }, 500);
         }
       }
     };
@@ -172,9 +189,9 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
 
     // Cleanup function
     return () => {
-      // No cleanup needed for this implementation
+      clearTimeout(maxTimeout);
     };
-  }, [onSessionReady]);
+  }, [onSessionReady, playroomLoaded]);
 
   const getStatusText = () => {
     switch (status) {

@@ -112,7 +112,6 @@ export function registerInput(keys: Record<string, boolean>) {
 
   // Force clear all input keys
   const forceClearInput = () => {
-    console.log('Input: Force clearing all keys');
     for (const key in keys) {
       keys[key] = false;
     }
@@ -120,7 +119,6 @@ export function registerInput(keys: Record<string, boolean>) {
 
   // Force reinitialize input system
   const forceReinitInput = () => {
-    console.log('Input: Force reinitializing input system');
     
     // Clear all keys first
     for (const key in keys) {
@@ -134,7 +132,6 @@ export function registerInput(keys: Record<string, boolean>) {
     (window as any).forceClearInput = forceClearInput;
     (window as any).forceReinitInput = forceReinitInput;
     
-    console.log('Input: Input system reinitialized');
   };
 
   // Expose touch handlers globally

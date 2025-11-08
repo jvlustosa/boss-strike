@@ -41,7 +41,7 @@ export function getLevelFromUrl(): number {
     }
     return 1;
   } catch (error) {
-    console.error('❌ URL Debug - Error parsing URL params:', error);
+    console.error('Error parsing URL params:', error);
     return 1;
   }
 }

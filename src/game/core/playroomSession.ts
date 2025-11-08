@@ -22,7 +22,7 @@ async function ensurePlayroomKitLoaded(): Promise<typeof PlayroomKit> {
     }
     return dynamicPlayroomKit;
   } catch (error) {
-    console.error('🎮 playroomSession: Dynamic import failed:', error);
+    console.error('playroomSession: Dynamic import failed:', error);
     throw new Error('Failed to load PlayroomKit');
   }
 }

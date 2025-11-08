@@ -22,10 +22,8 @@ export function PlayroomJoystickController({
     setShouldRender(usePlayroom);
     
     if (usePlayroom) {
-      console.log('PlayroomJoystickController: Mobile/Touch detected - Rendering joystick');
       emitSubtleLog('📱', 'system');
     } else {
-      console.log('PlayroomJoystickController: Desktop detected - Keyboard controls only');
       emitSubtleLog('🖥️', 'system');
     }
   }, []);

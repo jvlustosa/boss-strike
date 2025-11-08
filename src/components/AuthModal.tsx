@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '../utils/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { parseSupabaseError } from '../utils/supabaseErrors';
@@ -19,13 +19,13 @@ export function AuthModal({ onAuthSuccess, onSkip, showToast, showSuccess }: Aut
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [buttonHovered, setButtonHovered] = useState(false);
-  const { user, refreshProfile } = useAuth();
+  const [showEmailConfirmation, setShowEmailConfirmation] = useState(false);
+  const [signupEmail, setSignupEmail] = useState('');
+  const [gmailHovered, setGmailHovered] = useState(false);
+  const [checkHovered, setCheckHovered] = useState(false);
+  const [backHovered, setBackHovered] = useState(false);
+  const { refreshProfile } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      onAuthSuccess();
-    }
-  }, [user, onAuthSuccess]);
 
   const validateUsername = (username: string): string | null => {
     if (!username) return null; // Optional field
@@ -76,16 +76,24 @@ export function AuthModal({ onAuthSuccess, onSkip, showToast, showSuccess }: Aut
       if (signUpError) throw signUpError;
 
       if (data.user) {
-        const successMsg = 'Conta criada! Verifique seu email para confirmar (ou faça login se já confirmou).';
-        setMessage(successMsg);
-        if (showSuccess) {
-          showSuccess('Conta criada com sucesso!');
+        // Check if email confirmation is required
+        if (data.user.email_confirmed_at) {
+          // Email already confirmed, proceed normally
+          await refreshProfile();
+          if (showSuccess) {
+            showSuccess('Conta criada com sucesso!');
+          }
+          setTimeout(() => {
+            onAuthSuccess();
+          }, 1000);
+        } else {
+          // Email confirmation required
+          setSignupEmail(email);
+          setShowEmailConfirmation(true);
+          if (showSuccess) {
+            showSuccess('Conta criada! Verifique seu email.');
+          }
         }
-        // Refresh profile and auto login if email confirmation is disabled
-        await refreshProfile();
-        setTimeout(() => {
-          onAuthSuccess();
-        }, 1000);
       }
     } catch (err: any) {
       const errorInfo = parseSupabaseError(err);
@@ -220,6 +228,127 @@ export function AuthModal({ onAuthSuccess, onSkip, showToast, showSuccess }: Aut
     marginBottom: '12px',
     textAlign: 'center',
   };
+
+  const openGmail = () => {
+    window.open('https://mail.google.com', '_blank');
+  };
+
+  const handleCheckEmail = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email_confirmed_at) {
+        await refreshProfile();
+        onAuthSuccess();
+      } else {
+        setError('Email ainda não confirmado. Verifique sua caixa de entrada.');
+      }
+    } catch (err) {
+      setError('Erro ao verificar confirmação. Tente fazer login.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const confirmButtonStyle = (hovered: boolean): React.CSSProperties => ({
+    width: '100%',
+    padding: isMobile ? '14px' : '16px',
+    marginBottom: '12px',
+    backgroundColor: hovered ? '#333' : '#222',
+    border: '3px solid #4ade80',
+    color: '#fff',
+    fontFamily: "'Pixelify Sans', monospace",
+    fontSize: isMobile ? '16px' : '18px',
+    fontWeight: '600',
+    cursor: 'pointer',
+    textTransform: 'uppercase',
+    letterSpacing: '2px',
+    boxShadow: hovered ? 'inset 0 0 0 2px #4ade80, 4px 4px 0px #333' : '4px 4px 0px #333',
+    transition: 'none',
+  });
+
+  // Email confirmation screen
+  if (showEmailConfirmation) {
+
+    return (
+      <div style={modalStyle}>
+        <div style={contentStyle}>
+          <h2 style={titleStyle}>Confirme seu Email</h2>
+          
+          <div style={{
+            textAlign: 'center',
+            marginBottom: '24px',
+            fontSize: isMobile ? '14px' : '16px',
+            lineHeight: '1.6',
+            color: '#fff',
+          }}>
+            <div style={{ marginBottom: '16px', fontSize: isMobile ? '32px' : '48px' }}>
+              📧
+            </div>
+            <div style={{ marginBottom: '16px' }}>
+              Enviamos um email de confirmação para:
+            </div>
+            <div style={{
+              fontWeight: '600',
+              color: '#4ade80',
+              wordBreak: 'break-word' as const,
+              marginBottom: '20px',
+              padding: '12px',
+              backgroundColor: '#222',
+              border: '2px solid #4ade80',
+            }}>
+              {signupEmail}
+            </div>
+            <div style={{ marginBottom: '20px', color: '#aaa', fontSize: isMobile ? '13px' : '14px' }}>
+              Clique no link no email para confirmar sua conta.
+            </div>
+          </div>
+
+          {error && <div style={errorStyle}>{error}</div>}
+
+          <button
+            style={confirmButtonStyle(gmailHovered)}
+            onClick={openGmail}
+            onMouseEnter={() => setGmailHovered(true)}
+            onMouseLeave={() => setGmailHovered(false)}
+            disabled={loading}
+          >
+            📧 Abrir Gmail
+          </button>
+
+          <button
+            style={confirmButtonStyle(checkHovered)}
+            onClick={handleCheckEmail}
+            onMouseEnter={() => setCheckHovered(true)}
+            onMouseLeave={() => setCheckHovered(false)}
+            disabled={loading}
+          >
+            {loading ? 'Verificando...' : '✓ Já Confirmei'}
+          </button>
+
+          <button
+            style={{
+              ...buttonStyle(backHovered),
+              backgroundColor: backHovered ? '#333' : '#222',
+              border: '3px solid #666',
+              color: '#aaa',
+            }}
+            onClick={() => {
+              setShowEmailConfirmation(false);
+              setError(null);
+              setMessage(null);
+            }}
+            onMouseEnter={() => setBackHovered(true)}
+            onMouseLeave={() => setBackHovered(false)}
+            disabled={loading}
+          >
+            ← Voltar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={modalStyle}>

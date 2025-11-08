@@ -13,7 +13,6 @@ export function LevelTitle({ gameState }: LevelTitleProps) {
   // Force update when gameState changes
   useEffect(() => {
     const newLevelText = `Nível ${gameState.level}: ${gameState.levelConfig.name}`;
-    console.log('LevelTitle: Updating level text to:', newLevelText);
     setLevelText(newLevelText);
   }, [gameState.level, gameState.levelConfig.name]);
 

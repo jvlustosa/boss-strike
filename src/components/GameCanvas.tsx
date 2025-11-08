@@ -39,7 +39,6 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
     // Inicializar ou atualizar estado se necessário
     if (!stateRef.current || stateRef.current.level !== currentLevel) {
       if (stateRef.current) {
-        console.log('🎮 GameCanvas Debug - Level changed in URL, recreating state from', stateRef.current.level, 'to', currentLevel);
       }
       stateRef.current = createInitialState(currentLevel);
     }
@@ -119,7 +118,6 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         // Auto-restart after 2 seconds when player loses
         state.restartTimer += dt;
         if (state.restartTimer >= 2) {
-          console.log('Game: Restarting game...');
           
           // Reset game state, mantendo o mesmo nível
           const next = createInitialState(state.level);
@@ -167,8 +165,6 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
           if (onGameStateChange) {
             onGameStateChange(state);
           }
-          
-          console.log('Game: Restart completed');
         }
       }
       
@@ -193,23 +189,19 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
     // Click handling for next level button
     const onClick = (e: MouseEvent) => {
       const currentState = stateRef.current;
-      if (currentState.status !== 'won' || isTransitioningRef.current) return;
+      if (!currentState || currentState.status !== 'won' || isTransitioningRef.current) return;
       const rect = canvas.getBoundingClientRect();
       const x = (e.clientX - rect.left) / scaleRef.current;
       const y = (e.clientY - rect.top) / scaleRef.current;
       const btn = (currentState as any)._nextBtn as { x: number; y: number; w: number; h: number } | undefined;
       if (btn && x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
         isTransitioningRef.current = true;
-        console.log('Game: Transitioning to next level...');
-        
         // Avançar para próxima fase
         const nextLevel = currentState.level + 1;
-        console.log('🎮 Level Transition Debug - Moving from level', currentState.level, 'to level', nextLevel);
         updateUrlLevel(nextLevel);
         
         // Criar novo estado completamente
         const newState = createInitialState(nextLevel);
-        console.log('🎮 Level Transition Debug - New state created with config:', newState.levelConfig);
         
         // Preservar apenas o que é necessário
         const keysRef = currentState.keys;
@@ -250,34 +242,34 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         // Force joystick cleanup on level transition
         forceJoystickCleanup();
         
-        // Reset timers
-        currentState.restartTimer = 0;
-        currentState.victoryTimer = 0;
-        currentState.time = 0;
-        
-        // Garantir que o status seja 'playing'
-        currentState.status = 'playing';
-        
-        // Notify parent component of state changes to update level title FIRST
-        if (onGameStateChange) {
-          console.log('GameCanvas: Notifying level change to', currentState.level, 'with config:', currentState.levelConfig?.name);
-          // Create a new object to ensure React detects the change
-          const stateToNotify = {
-            ...currentState,
-            levelConfig: { ...currentState.levelConfig }
-          };
-          onGameStateChange(stateToNotify);
-        }
-        
-        // Forçar uma atualização do canvas
-        if (canvas) {
-          const ctx = canvas.getContext('2d');
-          if (ctx) {
-            renderSystem(ctx, currentState, isPaused);
+        if (currentState) {
+          // Reset timers
+          currentState.restartTimer = 0;
+          currentState.victoryTimer = 0;
+          currentState.time = 0;
+          
+          // Garantir que o status seja 'playing'
+          currentState.status = 'playing';
+          
+          // Notify parent component of state changes to update level title FIRST
+          if (onGameStateChange) {
+            // Create a new object to ensure React detects the change
+            const stateToNotify = {
+              ...currentState,
+              levelConfig: { ...currentState.levelConfig }
+            };
+            onGameStateChange(stateToNotify);
+          }
+          
+          // Forçar uma atualização do canvas
+          if (canvas) {
+            const ctx = canvas.getContext('2d');
+            if (ctx) {
+              renderSystem(ctx, currentState, isPaused);
+            }
           }
         }
         
-        console.log(`Game: Transition to level ${nextLevel} completed`);
         
         // Reset transition flag after a short delay
         setTimeout(() => {
