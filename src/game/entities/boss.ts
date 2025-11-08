@@ -146,14 +146,31 @@ function createBulletsFromPattern(
       break;
       
     case 'burst':
-      bullets.push(createBullet(origin, baseAngle, speed));
+      // Se tem doubleSpeed, às vezes atira 2 tiros com velocidade diferente
+      if (pattern.doubleSpeed !== undefined && Math.random() < 0.3) {
+        // 30% de chance de atirar 2 tiros com velocidade antiga
+        const doubleSpeed = pattern.doubleSpeed;
+        const spread = 0.15; // pequeno spread entre os 2 tiros
+        bullets.push(createBullet(origin, baseAngle - spread / 2, doubleSpeed));
+        bullets.push(createBullet(origin, baseAngle + spread / 2, doubleSpeed));
+      } else {
+        // 70% de chance de atirar 1 tiro com velocidade aumentada
+        bullets.push(createBullet(origin, baseAngle, speed));
+      }
       break;
       
     case 'alternating':
-      const currentPattern = boss.patternPhase % 2 < 1 ? 'single' : 'spread';
+      const patterns = pattern.patterns || ['single', 'spread'];
+      const patternIndex = Math.floor(boss.patternPhase) % patterns.length;
+      const currentPattern = patterns[patternIndex];
+      
       if (currentPattern === 'single') {
         bullets.push(createBullet(origin, baseAngle, speed));
-      } else {
+      } else if (currentPattern === 'double') {
+        const altSpreadAngle = ((pattern.spreadAngle || 45) * Math.PI) / 180;
+        bullets.push(createBullet(origin, baseAngle - altSpreadAngle / 4, speed));
+        bullets.push(createBullet(origin, baseAngle + altSpreadAngle / 4, speed));
+      } else if (currentPattern === 'spread') {
         const altSpreadAngle = ((pattern.spreadAngle || 45) * Math.PI) / 180;
         for (let i = 0; i < 3; i++) {
           const angle = baseAngle + (i - 1) * altSpreadAngle / 3;
@@ -171,8 +188,8 @@ function createBulletsFromPattern(
       break;
       
     case 'multi':
-      const patterns = pattern.patterns || ['single', 'spread'];
-      const currentMultiPattern = patterns[Math.floor(boss.patternPhase / 2) % patterns.length];
+      const multiPatterns = pattern.patterns || ['single', 'spread'];
+      const currentMultiPattern = multiPatterns[Math.floor(boss.patternPhase / 2) % multiPatterns.length];
       
       if (currentMultiPattern === 'circular') {
         const circularStep = (2 * Math.PI) / 6;
@@ -180,12 +197,25 @@ function createBulletsFromPattern(
           bullets.push(createBullet(origin, i * circularStep + boss.shootTimer, speed));
         }
       } else if (currentMultiPattern === 'spread') {
+        // Usar velocidade e spread customizados se especificados
+        const spreadSpeed = pattern.spreadSpeed !== undefined ? pattern.spreadSpeed : speed;
+        const spreadAngle = pattern.spreadAngle !== undefined ? pattern.spreadAngle : 0.3;
         for (let i = 0; i < 5; i++) {
-          const angle = baseAngle + (i - 2) * 0.3;
-          bullets.push(createBullet(origin, angle, speed));
+          const angle = baseAngle + (i - 2) * spreadAngle;
+          bullets.push(createBullet(origin, angle, spreadSpeed));
         }
       } else {
-        bullets.push(createBullet(origin, baseAngle, speed));
+        // Se tem burstCount configurado, atirar múltiplos tiros
+        const burstCount = pattern.burstCount || 1;
+        if (burstCount > 1) {
+          const burstSpread = 0.15; // pequeno spread entre os tiros
+          for (let i = 0; i < burstCount; i++) {
+            const angle = baseAngle + (i - (burstCount - 1) / 2) * burstSpread;
+            bullets.push(createBullet(origin, angle, speed));
+          }
+        } else {
+          bullets.push(createBullet(origin, baseAngle, speed));
+        }
       }
       break;
       
@@ -196,8 +226,13 @@ function createBulletsFromPattern(
       
       if (currentPhase.type === 'circular') {
         const ultimateStep = (2 * Math.PI) / (currentPhase.numBullets || 8);
+        // Adicionar um pequeno offset para evitar tiros exatamente sobrepostos
+        const rotationOffset = boss.shootTimer * 2;
+        // Aumentar espaçamento mínimo entre tiros circulares
+        const minAngleStep = (2 * Math.PI) / 10; // Garantir pelo menos 10 posições possíveis
         for (let i = 0; i < (currentPhase.numBullets || 8); i++) {
-          bullets.push(createBullet(origin, i * ultimateStep + boss.shootTimer * 2, speed));
+          const angle = i * ultimateStep + rotationOffset;
+          bullets.push(createBullet(origin, angle, speed));
         }
       } else if (currentPhase.type === 'spread') {
         const ultSpreadAngle = ((currentPhase.spreadAngle || 90) * Math.PI) / 180;
@@ -208,8 +243,11 @@ function createBulletsFromPattern(
           bullets.push(createBullet(origin, ultStartAngle + i * ultAngleStep, speed));
         }
       } else if (currentPhase.type === 'burst') {
+        // Aumentar o spread de 0.8 para 1.2 para separar ainda mais os tiros
+        const burstSpread = 1.2;
+        const burstStep = burstSpread / Math.max(1, (currentPhase.burstCount || 3) - 1);
         for (let i = 0; i < (currentPhase.burstCount || 3); i++) {
-          const burstAngle = baseAngle + (Math.random() - 0.5) * 0.4;
+          const burstAngle = baseAngle + (i - (currentPhase.burstCount - 1) / 2) * burstStep;
           bullets.push(createBullet(origin, burstAngle, speed * 1.2));
         }
       }

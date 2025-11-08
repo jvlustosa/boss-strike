@@ -33,8 +33,11 @@ export function canPlayerFire(player: Player, keys: Record<string, boolean>): bo
 }
 
 export function firePlayerBullet(state: GameState): void {
-  const { player } = state;
+  const { player, boss } = state;
   if (!canPlayerFire(player, state.keys)) return;
+
+  // Don't create bullets or play sound if boss is dead
+  if (boss.hp <= 0) return;
 
   state.bullets.push({
     pos: { x: player.pos.x + player.w / 2 - 1, y: player.pos.y },

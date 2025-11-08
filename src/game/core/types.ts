@@ -9,6 +9,7 @@ export type Player = {
   alive: boolean;
   health: number;
   maxHealth: number;
+  shieldHits: number; // Número de tiros que o escudo pode resistir (0 = sem escudo)
 };
 
 export type BossArm = {
@@ -49,6 +50,21 @@ export type Heart = {
   collected: boolean;
 };
 
+export type Shield = {
+  pos: Vec2;
+  w: number;
+  h: number;
+  collected: boolean;
+};
+
+export type ShieldFragment = {
+  pos: Vec2;
+  vel: Vec2;
+  life: number;
+  maxLife: number;
+  size: number;
+};
+
 export type ExplosionParticle = {
   pos: Vec2;
   vel: Vec2;
@@ -71,12 +87,12 @@ export type SmokeParticle = {
 export type BulletPattern = 
   | { type: 'single' }
   | { type: 'double'; spread: number }
-  | { type: 'burst'; burstCount: number; burstDelay: number }
+  | { type: 'burst'; burstCount: number; burstDelay: number; doubleSpeed?: number }
   | { type: 'spread'; numBullets: number; spreadAngle: number }
   | { type: 'circular'; numBullets: number }
   | { type: 'alternating'; patterns: string[]; spreadAngle?: number }
   | { type: 'wave'; waveCount: number; delayBetweenWaves: number }
-  | { type: 'multi'; patterns: string[]; cycleDelay: number }
+  | { type: 'multi'; patterns: string[]; cycleDelay: number; spreadSpeed?: number; spreadAngle?: number; burstCount?: number }
   | { type: 'ultimate'; phases: Array<{ type: string; [key: string]: any }> };
 
 export type LevelConfig = {
@@ -103,8 +119,13 @@ export type GameState = {
   bullets: Bullet[];
   hearts: Heart[];
   heartsSpawnedThisLevel: number;
+  shields: Shield[];
+  shieldsSpawnedThisLevel: number;
+  maxShieldsThisLevel: number; // Máximo de escudos para este nível (determinado no início)
+  shieldCooldown: number; // Tempo desde que pegou o último escudo
   explosionParticles: ExplosionParticle[];
   smokeParticles: SmokeParticle[];
+  shieldFragments: ShieldFragment[];
   keys: Record<string, boolean>;
   status: 'menu' | 'playing' | 'paused' | 'won' | 'lost';
   victoryTimer: number;
