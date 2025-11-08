@@ -16,23 +16,22 @@ export function getLevelFromUrl(): number {
     
     if (levelParam) {
       const level = parseInt(levelParam, 10);
-      const maxLevel = getMaxLevel();
       
       if (DEBUG_LOGS) {
         console.log('🔍 URL Debug - Parsed level:', level);
-        console.log('🔍 URL Debug - Max level:', maxLevel);
         console.log('🔍 URL Debug - Is valid number:', !isNaN(level));
-        console.log('🔍 URL Debug - Is in range:', level >= 1 && level <= maxLevel);
+        console.log('🔍 URL Debug - Is positive:', level >= 1);
       }
       
-      if (!isNaN(level) && level >= 1 && level <= maxLevel) {
+      // Permitir qualquer nível positivo (getLevelConfig fará fallback se não existir)
+      if (!isNaN(level) && level >= 1) {
         if (DEBUG_LOGS) {
           console.log('✅ URL Debug - Valid level found:', level);
         }
         return level;
       } else {
         if (DEBUG_LOGS) {
-          console.log('❌ URL Debug - Level out of range or invalid, returning 1');
+          console.log('❌ URL Debug - Invalid level, returning 1');
         }
       }
     }
@@ -57,6 +56,16 @@ export function isCheatActive(cheatName: string): boolean {
   try {
     const params = new URLSearchParams(window.location.search);
     return params.get('cheat') === cheatName;
+  } catch (error) {
+    return false;
+  }
+}
+
+export function isJoystickDisabled(): boolean {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const joystickParam = params.get('joystick');
+    return joystickParam === 'false' || joystickParam === '0' || params.has('nojoystick');
   } catch (error) {
     return false;
   }

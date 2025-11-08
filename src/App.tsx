@@ -5,7 +5,7 @@ import { PauseButton } from './components/PauseButton';
 import { PauseMenu } from './components/PauseMenu';
 import { LevelTitle } from './components/LevelTitle';
 import { PlayroomSessionScreen } from './components/PlayroomSessionScreen';
-import { updateUrlLevel } from './game/core/urlParams';
+import { updateUrlLevel, getLevelFromUrl } from './game/core/urlParams';
 import { saveProgress, clearVictories } from './game/core/progressCache';
 import { createInitialState } from './game/core/state';
 
@@ -16,7 +16,9 @@ export default function App() {
   const [showPlayroomSession, setShowPlayroomSession] = useState(false);
 
   const handleStartGame = (level?: number, clearTrophies?: boolean) => {
-    const targetLevel = level || 1;
+    // Verificar se há nível na URL primeiro, senão usar o nível passado ou 1
+    const urlLevel = getLevelFromUrl();
+    const targetLevel = level || urlLevel || 1;
     updateUrlLevel(targetLevel);
     
     // Se recomeçando (nível 1), salvar o progresso como nível 1

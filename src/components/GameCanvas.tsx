@@ -26,29 +26,20 @@ interface GameCanvasProps {
 export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
-  // Get initial level from URL with error handling
-  const getInitialLevel = () => {
-    try {
-      const level = getLevelFromUrl();
-      // Debug logs disabled for production
-      return level;
-    } catch (error) {
-      console.warn('🎮 GameCanvas Debug - Error getting level from URL, defaulting to 1:', error);
-      return 1;
-    }
-  };
-  
-  const initialLevel = getInitialLevel();
-  const stateRef = useRef<GameState>(createInitialState(initialLevel)); // Start with level from URL
+  const stateRef = useRef<GameState | null>(null);
   const scaleRef = useRef<number>(1);
   const isTransitioningRef = useRef(false);
 
-  // Start the game when component mounts
+  // Start the game when component mounts - initialize state from URL
   React.useEffect(() => {
-    // Recriar estado se o nível mudou na URL
+    // Sempre ler o nível da URL ao montar/atualizar
     const currentLevel = getLevelFromUrl();
-    if (stateRef.current.level !== currentLevel) {
-      console.log('🎮 GameCanvas Debug - Level changed in URL, recreating state from', stateRef.current.level, 'to', currentLevel);
+    
+    // Inicializar ou atualizar estado se necessário
+    if (!stateRef.current || stateRef.current.level !== currentLevel) {
+      if (stateRef.current) {
+        console.log('🎮 GameCanvas Debug - Level changed in URL, recreating state from', stateRef.current.level, 'to', currentLevel);
+      }
       stateRef.current = createInitialState(currentLevel);
     }
     
@@ -57,7 +48,7 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
     }
     
     // Notify parent component of initial state to show level title
-    if (onGameStateChange) {
+    if (onGameStateChange && stateRef.current) {
       onGameStateChange(stateRef.current);
     }
   }, [onGameStateChange]);
@@ -79,7 +70,7 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas) return;
+    if (!canvas || !stateRef.current) return;
 
     const ctx = setupCanvas(canvas);
     const state = stateRef.current;

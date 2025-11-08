@@ -91,20 +91,20 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
   },
   10: {
     name: "Boss Final",
-    bossHp: 75,
-    armMoveSpeed: 4.5,
-    armAmplitude: 10,
-    armShootCooldown: 0.5,
-    bossBulletSpeed: 82,
+    bossHp: 50,
+    armMoveSpeed: 3.5,
+    armAmplitude: 7,
+    armShootCooldown: 0.7,
+    bossBulletSpeed: 70,
     bulletPattern: { 
       type: 'ultimate', 
       phases: [
-        { type: 'circular', numBullets: 12 },
-        { type: 'spread', numBullets: 7, spreadAngle: 90 },
-        { type: 'burst', burstCount: 5, burstDelay: 0.05 }
+        { type: 'circular', numBullets: 8 },
+        { type: 'spread', numBullets: 5, spreadAngle: 70 },
+        { type: 'burst', burstCount: 3, burstDelay: 0.1 }
       ]
     },
-    bossMovement: { type: 'figure8', speed: 6, amplitude: 70 }
+    bossMovement: { type: 'figure8', speed: 4, amplitude: 50 }
   }
 };
 

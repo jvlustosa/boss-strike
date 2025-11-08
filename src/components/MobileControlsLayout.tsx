@@ -4,6 +4,7 @@ import { PlayroomAngularJoystick } from './PlayroomAngularJoystick';
 import { PixelatedFireButton } from './PixelatedFireButton';
 import { emitSubtleLog } from './SubtleLogger';
 import { shouldUsePlayroom, getEnvironmentInfo } from '../game/core/environmentDetector';
+import { isJoystickDisabled } from '../game/core/urlParams';
 
 interface MobileControlsLayoutProps {
   onFire: () => void;
@@ -21,9 +22,10 @@ export function MobileControlsLayout({
   // Check environment on mount
   useEffect(() => {
     const usePlayroom = shouldUsePlayroom();
-    setShouldRender(usePlayroom);
+    const disabled = isJoystickDisabled();
+    setShouldRender(usePlayroom && !disabled);
     
-    if (usePlayroom) {
+    if (usePlayroom && !disabled) {
       emitSubtleLog('📱', 'system');
       
       // Auto-detect layout based on screen size

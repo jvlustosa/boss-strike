@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { AnimatedBackground } from './AnimatedBackground';
 import { hasProgress, getNextLevel, getVictoryCount } from '../game/core/progressCache';
+import { getLevelFromUrl } from '../game/core/urlParams';
 
 interface MainMenuProps {
   onStartGame: (level?: number, clearTrophies?: boolean) => void;
@@ -21,8 +22,13 @@ export function MainMenu({ onStartGame }: MainMenuProps) {
   // Load progress and victory count
   useEffect(() => {
     setVictoryCount(getVictoryCount());
-    setCanContinue(hasProgress());
-    setNextLevel(getNextLevel());
+    // Verificar se há nível na URL primeiro, senão usar o nível do progresso
+    const urlLevel = getLevelFromUrl();
+    const progressLevel = getNextLevel();
+    const finalLevel = urlLevel || progressLevel;
+    setNextLevel(finalLevel);
+    // Mostrar botão continuar se houver progresso OU se houver nível na URL
+    setCanContinue(hasProgress() || !!urlLevel);
   }, [showRestartDialog]);
 
   const getButtonStyle = (hovered: boolean, isSecondary: boolean = false): React.CSSProperties => ({
