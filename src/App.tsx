@@ -7,9 +7,12 @@ import { LevelTitle } from './components/LevelTitle';
 import { PlayroomSessionScreen } from './components/PlayroomSessionScreen';
 import { AuthModal } from './components/AuthModal';
 import { ProfileModal } from './components/ProfileModal';
+import { ToastContainer } from './components/ToastContainer';
+import { UserHeader } from './components/UserHeader';
+import { useToast } from './hooks/useToast';
+import { useAuth } from './contexts/AuthContext';
 import { updateUrlLevel, getLevelFromUrl } from './game/core/urlParams';
 import { saveProgress, clearProgress, clearVictories } from './game/core/progressCache';
-import { supabase } from './utils/supabase';
 
 export default function App() {
   const [gameStarted, setGameStarted] = useState(false);
@@ -18,8 +21,8 @@ export default function App() {
   const [showPlayroomSession, setShowPlayroomSession] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [user, setUser] = useState<any>(null);
-  const [authChecked, setAuthChecked] = useState(false);
+  const toast = useToast();
+  const { user, initialized, refreshProfile } = useAuth();
 
   const handleStartGame = async (level?: number, clearTrophies?: boolean) => {
     // Verificar se há nível na URL primeiro, senão usar o nível passado ou 1
@@ -83,24 +86,12 @@ export default function App() {
     }
   };
 
-  // Check auth status on mount
-  useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user: currentUser } } = await supabase.auth.getUser();
-      setUser(currentUser);
-      setAuthChecked(true);
-    };
-
-    checkAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
+  // Refresh profile after auth success
+  const handleAuthSuccess = () => {
+    refreshProfile();
+    setShowAuthModal(false);
+    setShowPlayroomSession(true);
+  };
 
   // Listen for ESC key to toggle pause
   useEffect(() => {
@@ -114,11 +105,6 @@ export default function App() {
     };
   }, [gameStarted, isPaused]);
 
-  const handleAuthSuccess = () => {
-    setShowAuthModal(false);
-    setShowPlayroomSession(true);
-  };
-
   const handleAuthSkip = () => {
     setShowAuthModal(false);
     setShowPlayroomSession(true);
@@ -127,7 +113,10 @@ export default function App() {
   if (!gameStarted) {
     return (
       <>
-        {authChecked && (
+        {initialized && user && (
+          <UserHeader onProfileClick={() => setShowProfileModal(true)} />
+        )}
+        {initialized && (
           <MainMenu 
             onStartGame={handleStartGame}
             onShowProfile={() => setShowProfileModal(true)}
@@ -138,40 +127,64 @@ export default function App() {
           <AuthModal 
             onAuthSuccess={handleAuthSuccess}
             onSkip={handleAuthSkip}
+            showToast={toast.showError}
+            showSuccess={toast.showSuccess}
           />
         )}
         {showProfileModal && user && (
           <ProfileModal 
             onClose={() => setShowProfileModal(false)}
             userId={user.id}
+            showToast={toast.showError}
           />
         )}
         {showPlayroomSession && (
           <PlayroomSessionScreen onSessionReady={handleSessionReady} />
         )}
+        <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
       </>
     );
   }
+  
   return (
-    <div style={{
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      minHeight: '100vh',
-      background: '#000',
-      position: 'relative',
-    }}>
-      {gameState && <LevelTitle key={gameState.level} gameState={gameState} />}
-      <div style={{ position: 'relative' }}>
-        <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} />
+    <>
+      {user && (
+        <UserHeader onProfileClick={() => {
+          setIsPaused(true);
+          setShowProfileModal(true);
+        }} />
+      )}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        background: '#000',
+        position: 'relative',
+      }}>
+        {gameState && <LevelTitle key={gameState.level} gameState={gameState} />}
+        <div style={{ position: 'relative' }}>
+          <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} />
+        </div>
+        {!isPaused && <PauseButton onPause={handlePause} />}
+        {isPaused && (
+          <PauseMenu 
+            onContinue={handleContinue} 
+            onMainMenu={handleMainMenu} 
+          />
+        )}
       </div>
-      {!isPaused && <PauseButton onPause={handlePause} />}
-      {isPaused && (
-        <PauseMenu 
-          onContinue={handleContinue} 
-          onMainMenu={handleMainMenu} 
+      {showProfileModal && user && (
+        <ProfileModal 
+          onClose={() => {
+            setShowProfileModal(false);
+            setIsPaused(false);
+          }}
+          userId={user.id}
+          showToast={toast.showError}
         />
       )}
-    </div>
+      <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
+    </>
   );
 }

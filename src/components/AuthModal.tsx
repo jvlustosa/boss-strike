@@ -1,12 +1,16 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabase';
+import { useAuth } from '../contexts/AuthContext';
+import { parseSupabaseError } from '../utils/supabaseErrors';
 
 interface AuthModalProps {
   onAuthSuccess: () => void;
   onSkip?: () => void;
+  showToast?: (message: string, errorCode?: string, duration?: number) => string;
+  showSuccess?: (message: string, duration?: number) => string;
 }
 
-export function AuthModal({ onAuthSuccess, onSkip }: AuthModalProps) {
+export function AuthModal({ onAuthSuccess, onSkip, showToast, showSuccess }: AuthModalProps) {
   const [isSignUp, setIsSignUp] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -15,16 +19,31 @@ export function AuthModal({ onAuthSuccess, onSkip }: AuthModalProps) {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [buttonHovered, setButtonHovered] = useState(false);
+  const { user, refreshProfile } = useAuth();
 
   useEffect(() => {
-    checkSession();
-  }, []);
-
-  const checkSession = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
+    if (user) {
       onAuthSuccess();
     }
+  }, [user, onAuthSuccess]);
+
+  const validateUsername = (username: string): string | null => {
+    if (!username) return null; // Optional field
+    
+    // Length validation (3-30 characters)
+    if (username.length < 3) {
+      return 'Nome de usuário deve ter pelo menos 3 caracteres';
+    }
+    if (username.length > 30) {
+      return 'Nome de usuário deve ter no máximo 30 caracteres';
+    }
+    
+    // Format validation (alphanumeric and underscore only)
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      return 'Nome de usuário pode conter apenas letras, números e underscore (_)';
+    }
+    
+    return null;
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -32,6 +51,16 @@ export function AuthModal({ onAuthSuccess, onSkip }: AuthModalProps) {
     setLoading(true);
     setError(null);
     setMessage(null);
+
+    // Validate username if provided
+    if (username) {
+      const usernameError = validateUsername(username);
+      if (usernameError) {
+        setError(usernameError);
+        setLoading(false);
+        return;
+      }
+    }
 
     try {
       const { data, error: signUpError } = await supabase.auth.signUp({
@@ -47,14 +76,23 @@ export function AuthModal({ onAuthSuccess, onSkip }: AuthModalProps) {
       if (signUpError) throw signUpError;
 
       if (data.user) {
-        setMessage('Conta criada! Verifique seu email para confirmar (ou faça login se já confirmou).');
-        // Auto login if email confirmation is disabled
+        const successMsg = 'Conta criada! Verifique seu email para confirmar (ou faça login se já confirmou).';
+        setMessage(successMsg);
+        if (showSuccess) {
+          showSuccess('Conta criada com sucesso!');
+        }
+        // Refresh profile and auto login if email confirmation is disabled
+        await refreshProfile();
         setTimeout(() => {
           onAuthSuccess();
         }, 1000);
       }
     } catch (err: any) {
-      setError(err.message || 'Erro ao criar conta');
+      const errorInfo = parseSupabaseError(err);
+      setError(errorInfo.message);
+      if (showToast) {
+        showToast(errorInfo.message, errorInfo.code);
+      }
     } finally {
       setLoading(false);
     }
@@ -74,16 +112,25 @@ export function AuthModal({ onAuthSuccess, onSkip }: AuthModalProps) {
 
       if (signInError) throw signInError;
 
+      // Refresh profile after successful login
+      await refreshProfile();
+      
+      if (showSuccess) {
+        showSuccess('Login realizado com sucesso!');
+      }
       onAuthSuccess();
     } catch (err: any) {
-      setError(err.message || 'Erro ao fazer login');
+      const errorInfo = parseSupabaseError(err);
+      setError(errorInfo.message);
+      if (showToast) {
+        showToast(errorInfo.message, errorInfo.code);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  const isLandscape = isMobile && window.innerHeight < window.innerWidth;
 
   const modalStyle: React.CSSProperties = {
     position: 'fixed',
@@ -130,11 +177,6 @@ export function AuthModal({ onAuthSuccess, onSkip }: AuthModalProps) {
     outline: 'none',
     boxSizing: 'border-box' as const,
     transition: 'border-color 0.2s',
-  };
-
-  const inputFocusStyle: React.CSSProperties = {
-    ...inputStyle,
-    border: '3px solid #4ade80',
   };
 
   const buttonStyle = (hovered: boolean): React.CSSProperties => ({
@@ -191,14 +233,29 @@ export function AuthModal({ onAuthSuccess, onSkip }: AuthModalProps) {
 
         <form onSubmit={isSignUp ? handleSignUp : handleSignIn}>
           {isSignUp && (
-            <input
-              type="text"
-              placeholder="Nome de usuário (opcional)"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              style={inputStyle}
-              disabled={loading}
-            />
+            <div>
+              <input
+                type="text"
+                placeholder="Nome de usuário (3-30 caracteres, opcional)"
+                value={username}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Only allow alphanumeric and underscore
+                  if (value === '' || /^[a-zA-Z0-9_]*$/.test(value)) {
+                    setUsername(value);
+                  }
+                }}
+                style={inputStyle}
+                disabled={loading}
+                maxLength={30}
+                minLength={3}
+              />
+              {username && username.length > 0 && username.length < 3 && (
+                <div style={{ ...errorStyle, fontSize: isMobile ? '11px' : '12px', marginTop: '-12px', marginBottom: '12px' }}>
+                  Mínimo 3 caracteres
+                </div>
+              )}
+            </div>
           )}
           <input
             type="email"

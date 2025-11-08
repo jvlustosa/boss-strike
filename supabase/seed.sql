@@ -21,8 +21,13 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   username TEXT UNIQUE,
   email TEXT,
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT username_length CHECK (char_length(username) >= 3 AND char_length(username) <= 30),
+  CONSTRAINT username_format CHECK (username ~ '^[a-zA-Z0-9_]+$')
 );
+
+-- Add comment explaining username validation
+COMMENT ON COLUMN public.profiles.username IS 'Username must be 3-30 characters, alphanumeric and underscores only';
 
 -- Game progress table
 CREATE TABLE IF NOT EXISTS public.game_progress (
@@ -142,21 +147,43 @@ CREATE POLICY "Users can update own skins"
   USING (auth.uid() = user_id);
 
 -- Function to automatically create profile on user signup
+-- This trigger fires when a new user is created in auth.users
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  v_username TEXT;
+  v_base_username TEXT;
 BEGIN
-  INSERT INTO public.profiles (id, email, username)
-  VALUES (
-    NEW.id,
-    NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1))
-  );
+  -- Get username from metadata or generate from email
+  v_base_username := COALESCE(NEW.raw_user_meta_data->>'username', split_part(NEW.email, '@', 1));
   
-  -- Initialize game progress
+  -- Clean username: remove invalid characters, keep only alphanumeric and underscore
+  v_username := regexp_replace(v_base_username, '[^a-zA-Z0-9_]', '', 'g');
+  
+  -- Ensure minimum length (pad with numbers if needed)
+  IF char_length(v_username) < 3 THEN
+    v_username := v_username || '123';
+  END IF;
+  
+  -- Ensure maximum length
+  IF char_length(v_username) > 30 THEN
+    v_username := substring(v_username FROM 1 FOR 30);
+  END IF;
+  
+  -- If username is still invalid, use a default based on user ID
+  IF v_username IS NULL OR v_username = '' THEN
+    v_username := 'user' || substring(replace(NEW.id::text, '-', '') FROM 1 FOR 8);
+  END IF;
+  
+  -- Create profile record linked to auth.users
+  INSERT INTO public.profiles (id, email, username)
+  VALUES (NEW.id, NEW.email, v_username);
+  
+  -- Initialize game progress (level 1, 0 victories)
   INSERT INTO public.game_progress (user_id, level, victories)
   VALUES (NEW.id, 1, 0);
   
-  -- Initialize game stats
+  -- Initialize game stats (all zeros)
   INSERT INTO public.game_stats (user_id)
   VALUES (NEW.id);
   

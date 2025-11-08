@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabase';
+import { useAuth } from '../contexts/AuthContext';
 import type { Profile, GameProgress } from '../../supabase/supabase-structure';
 import { getVictoryCount, getNextLevel } from '../game/core/progressCache';
+import { parseSupabaseError } from '../utils/supabaseErrors';
 
 interface ProfileModalProps {
   onClose: () => void;
   userId: string;
+  showToast?: (message: string, errorCode?: string, duration?: number) => string;
 }
 
-export function ProfileModal({ onClose, userId }: ProfileModalProps) {
+export function ProfileModal({ onClose, userId, showToast }: ProfileModalProps) {
+  const { profile: authProfile, refreshProfile } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [progress, setProgress] = useState<GameProgress | null>(null);
   const [victoryCount, setVictoryCount] = useState(0);
@@ -17,31 +21,56 @@ export function ProfileModal({ onClose, userId }: ProfileModalProps) {
 
   useEffect(() => {
     loadProfileData();
-  }, [userId]);
+  }, [userId, authProfile]);
 
   const loadProfileData = async () => {
     try {
-      const [profileData, progressData, victories, level] = await Promise.all([
-        supabase.from('profiles').select('*').eq('id', userId).single(),
+      // Use profile from auth context if available, otherwise fetch
+      if (authProfile && authProfile.id === userId) {
+        setProfile(authProfile);
+      } else {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', userId)
+          .single();
+        if (profileData) setProfile(profileData as Profile);
+      }
+
+      const [progressData, victories, level] = await Promise.all([
         supabase.from('game_progress').select('*').eq('user_id', userId).single(),
         getVictoryCount(),
         getNextLevel(),
       ]);
 
-      if (profileData.data) setProfile(profileData.data as Profile);
       if (progressData.data) setProgress(progressData.data as GameProgress);
       setVictoryCount(victories);
       setNextLevel(level);
     } catch (error) {
       console.error('Error loading profile:', error);
+      const errorInfo = parseSupabaseError(error);
+      if (showToast) {
+        showToast(`Erro ao carregar perfil: ${errorInfo.message}`, errorInfo.code);
+      }
     } finally {
       setLoading(false);
     }
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    onClose();
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      // Auth context will handle clearing state automatically
+      // Reload page to reset app state
+      window.location.reload();
+    } catch (error) {
+      const errorInfo = parseSupabaseError(error);
+      if (showToast) {
+        showToast(`Erro ao fazer logout: ${errorInfo.message}`, errorInfo.code);
+      }
+    }
   };
 
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);

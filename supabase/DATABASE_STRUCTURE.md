@@ -49,10 +49,16 @@ Extends Supabase `auth.users` with additional game-specific user information.
 - One profile per auth user (1:1 relationship)
 - Profile is automatically created when user signs up via trigger
 
+**Username Validation:**
+- **Length**: 3-30 characters (enforced by CHECK constraint `username_length`)
+- **Format**: Only alphanumeric characters and underscore (`^[a-zA-Z0-9_]+$`) - enforced by CHECK constraint `username_format`
+- **Unique**: Must be unique across all users
+- **Auto-generated**: If not provided or invalid, automatically generated from email or user ID
+
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | UUID | PRIMARY KEY, FK → auth.users(id) | User ID (matches auth.users) |
-| `username` | TEXT | UNIQUE | Username (optional) |
+| `username` | TEXT | UNIQUE, CHECK constraints | Username (3-30 chars, alphanumeric + underscore) |
 | `email` | TEXT | | User email |
 | `created_at` | TIMESTAMPTZ | DEFAULT NOW() | Profile creation timestamp |
 | `updated_at` | TIMESTAMPTZ | DEFAULT NOW() | Last update timestamp |
