@@ -74,10 +74,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
           }
           
           if (mounted) {
-            if (session?.user) {
-              setUser(session.user);
-              await loadProfile(session.user.id);
-              localStorage.setItem('supabase_user_id', session.user.id);
+          if (session?.user) {
+            setUser(session.user);
+            void loadProfile(session.user.id);
+            localStorage.setItem('supabase_user_id', session.user.id);
             } else {
               setUser(null);
               setProfile(null);
@@ -88,7 +88,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           // User retrieved successfully
           if (currentUser) {
             setUser(currentUser);
-            await loadProfile(currentUser.id);
+            void loadProfile(currentUser.id);
             localStorage.setItem('supabase_user_id', currentUser.id);
           } else {
             setUser(null);
@@ -121,7 +121,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
         if (session?.user) {
           setUser(session.user);
-          await loadProfile(session.user.id);
+          void loadProfile(session.user.id);
           localStorage.setItem('supabase_user_id', session.user.id);
         } else {
           setUser(null);
