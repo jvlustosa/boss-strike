@@ -5,7 +5,7 @@ export function JoystickDemo() {
   const [lastInput, setLastInput] = useState<string>('');
 
   const handleMove = (x: number, y: number) => {
-    setLastInput(`Native: x=${x.toFixed(2)}, y=${y.toFixed(2)}`);
+    setLastInput(`Joystick: x=${x.toFixed(2)}, y=${y.toFixed(2)}`);
   };
 
   const handleFire = () => {
@@ -41,13 +41,11 @@ export function JoystickDemo() {
       </div>
 
       <div style={{ fontSize: '12px', color: '#ccc' }}>
-        <p>• Touch/click the joystick to move</p>
-        <p>• Supports all directions (horizontal, vertical, diagonal)</p>
-        <p>• Variable speed based on distance from center</p>
+        <p>• Touch/click the joystick on mobile</p>
         <p>• Press the Fire button to shoot</p>
+        <p>• Continuous X/Y values</p>
       </div>
 
-      {/* Render the native joystick */}
       <NativeJoystick onMove={handleMove} onFire={handleFire} position="bottom-left" />
     </div>
   );

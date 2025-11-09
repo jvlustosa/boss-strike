@@ -1,4 +1,4 @@
-import type { GameState } from './types';
+import type { Bomb, GameState, LevelConfig } from './types';
 import { LOGICAL_W, LOGICAL_H, PLAYER_W, PLAYER_H, BOSS_W, BOSS_H } from './config';
 import { getLevelConfig } from './levelLoader';
 
@@ -27,8 +27,39 @@ function getMaxShieldsForLevel(level: number): number {
   return levelConfig.base;
 }
 
+export function createBombForLevel(levelConfig: LevelConfig): Bomb | null {
+  const fraction = levelConfig.bombDamageFraction;
+  if (!fraction || fraction <= 0) {
+    return null;
+  }
+
+  const size = 8;
+  const safeMargin = 8;
+  const minY = LOGICAL_H * 0.55;
+  const maxY = LOGICAL_H - size - safeMargin;
+
+  const bomb: Bomb = {
+    pos: {
+      x: safeMargin + Math.random() * (LOGICAL_W - size - safeMargin * 2),
+      y: Math.max(minY, Math.min(maxY, minY + Math.random() * (maxY - minY))),
+    },
+    w: size,
+    h: size,
+    state: 'idle',
+    speed: 70,
+    damageFraction: fraction,
+    floatTimer: 0,
+    aimAngle: Math.PI / 4,
+    aimDirection: 1,
+  };
+
+  return bomb;
+}
+
 export function createInitialState(level: number = 1): GameState {
   const levelConfig = getLevelConfig(level);
+  const bombFraction = levelConfig.bombDamageFraction;
+  const bombEnabled = !!bombFraction && bombFraction > 0;
   return {
     time: 0,
     level,
@@ -83,9 +114,16 @@ export function createInitialState(level: number = 1): GameState {
     shieldCooldown: 0,
     explosionParticles: [],
     smokeParticles: [],
+    pixelParticles: [],
     shieldFragments: [],
     magicTrailParticles: [],
     damageNumbers: [],
+    bomb: null,
+    bombTrailParticles: [],
+    bombUsedThisLevel: !bombEnabled,
+    bombSpawnTimer: 0,
+    scorchMarks: [],
+    bossShakeTimer: 0,
     keys: {},
     status: 'menu',
     victoryTimer: 0,

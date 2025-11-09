@@ -281,6 +281,11 @@ export function damageBoss(boss: Boss, damage: number, state?: GameState, isCrit
     // Tocar som de hit do boss
     audioManager.playSound('boss_hit', 0.3, 0.2);
     
+    // Tocar som de critical hit se for crítico
+    if (isCritical) {
+      audioManager.playCriticalSound('critical_hit', 0.8);
+    }
+    
     // Criar número de dano na posição do weak spot do boss
     const weakSpotCenterX = boss.weakSpot.x + boss.weakSpot.w / 2;
     const weakSpotCenterY = boss.weakSpot.y + boss.weakSpot.h / 2;

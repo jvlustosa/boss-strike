@@ -43,18 +43,18 @@ export function MobileCredits({
 
     switch (position) {
       case 'top-left':
-        return { ...baseStyles, top: '60px', left: '15px' }; // Moved below level title
+        return { ...baseStyles, top: '45px', left: '15px' }; // Below level title (15px + ~30px for level title)
       case 'top-right':
         return { ...baseStyles, top: '15px', right: '15px' };
       case 'top-center':
         return { 
           ...baseStyles, 
-          top: '60px', // Moved below level title
+          top: '45px', // Below level title
           left: '50%', 
           transform: 'translateX(-50%)' 
         };
       default:
-        return { ...baseStyles, top: '60px', left: '15px' }; // Moved below level title
+        return { ...baseStyles, top: '45px', left: '15px' }; // Below level title
     }
   };
 

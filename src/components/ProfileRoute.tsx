@@ -32,6 +32,11 @@ export function ProfileRoute() {
   const [selectedSkinForModal, setSelectedSkinForModal] = useState<Skin | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [errorDetails, setErrorDetails] = useState<string>('');
+  const [logoutHovered, setLogoutHovered] = useState(false);
+  const [voltarHovered, setVoltarHovered] = useState(false);
+  const [jogarHovered, setJogarHovered] = useState(false);
+  const [contaTabHovered, setContaTabHovered] = useState(false);
+  const [skinsTabHovered, setSkinsTabHovered] = useState(false);
   const toast = useToast();
 
   const isCheatMode = () => {
@@ -246,6 +251,18 @@ export function ProfileRoute() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      window.location.href = '/';
+    } catch (error) {
+      console.error('Error logging out:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido ao fazer logout';
+      toast.showError(`Erro ao fazer logout: ${errorMessage}`);
+    }
+  };
+
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
   const getRarityColor = (rarity: string): string => {
@@ -259,6 +276,44 @@ export function ProfileRoute() {
     }
   };
 
+  const formatRelativeTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) {
+      return 'há poucos segundos';
+    }
+
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) {
+      return diffInMinutes === 1 ? 'há 1 minuto' : `há ${diffInMinutes} minutos`;
+    }
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) {
+      return diffInHours === 1 ? 'há 1 hora' : `há ${diffInHours} horas`;
+    }
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) {
+      return diffInDays === 1 ? 'há 1 dia' : `há ${diffInDays} dias`;
+    }
+
+    const diffInWeeks = Math.floor(diffInDays / 7);
+    if (diffInWeeks < 4) {
+      return diffInWeeks === 1 ? 'há 1 semana' : `há ${diffInWeeks} semanas`;
+    }
+
+    const diffInMonths = Math.floor(diffInDays / 30);
+    if (diffInMonths < 12) {
+      return diffInMonths === 1 ? 'há 1 mês' : `há ${diffInMonths} meses`;
+    }
+
+    const diffInYears = Math.floor(diffInDays / 365);
+    return diffInYears === 1 ? 'há 1 ano' : `há ${diffInYears} anos`;
+  };
+
   const renderProfileTab = () => {
     if (loading) {
       return <div style={{ textAlign: 'center', color: '#fff', padding: '40px' }}>Carregando...</div>;
@@ -266,62 +321,165 @@ export function ProfileRoute() {
 
     const infoRowStyle: React.CSSProperties = {
       display: 'flex',
+      alignItems: 'center',
       justifyContent: 'space-between',
       marginBottom: '16px',
       fontSize: isMobile ? '14px' : '16px',
-      padding: '12px',
-      backgroundColor: '#222',
-      border: '2px solid #666',
+      padding: isMobile ? '12px 0' : '14px 0',
+      transition: 'all 0.2s ease',
+      position: 'relative',
     };
 
     const labelStyle: React.CSSProperties = {
-      color: '#aaa',
-      fontWeight: '400',
+      color: '#999',
+      fontWeight: '500',
+      fontSize: isMobile ? '13px' : '14px',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      textTransform: 'uppercase',
+      letterSpacing: '0.5px',
     };
 
-    const valueStyle: React.CSSProperties = {
-      color: '#fff',
-      fontWeight: '600',
-    };
+    const valueStyle = (highlight?: boolean): React.CSSProperties => ({
+      color: highlight ? '#4ade80' : '#fff',
+      fontWeight: '700',
+      fontSize: isMobile ? '15px' : '17px',
+      textShadow: highlight ? '0 0 8px rgba(74, 222, 128, 0.5)' : 'none',
+    });
 
     return (
       <div style={{
         width: '100%',
         boxSizing: 'border-box',
       }}>
-        <div style={infoRowStyle}>
-          <span style={labelStyle}>Usuário:</span>
-          <span style={valueStyle}>{profile?.username || 'Sem nome'}</span>
+        <div 
+          style={infoRowStyle}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '0.8';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '1';
+          }}
+        >
+          <span style={labelStyle}>
+            <span style={{ fontSize: '18px' }}>👤</span>
+            Usuário
+          </span>
+          <span style={{ ...valueStyle(true), color: '#4ade80' }}>{profile?.username || 'Sem nome'}</span>
         </div>
 
-        <div style={infoRowStyle}>
-          <span style={labelStyle}>Email:</span>
-          <span style={valueStyle}>{profile?.email || 'N/A'}</span>
+        <div 
+          style={infoRowStyle}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '0.8';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '1';
+          }}
+        >
+          <span style={labelStyle}>
+            <span style={{ fontSize: '18px' }}>📧</span>
+            Email
+          </span>
+          <span style={valueStyle()}>{profile?.email || 'N/A'}</span>
         </div>
 
-        <div style={infoRowStyle}>
-          <span style={labelStyle}>Nível Atual:</span>
-          <span style={valueStyle}>{progress?.level || 1}</span>
+        <div 
+          style={infoRowStyle}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '0.8';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '1';
+          }}
+        >
+          <span style={labelStyle}>
+            <span style={{ fontSize: '18px' }}>🎯</span>
+            Nível Atual
+          </span>
+          <span style={valueStyle(true)}>{progress?.level || 1}</span>
         </div>
 
-        <div style={infoRowStyle}>
-          <span style={labelStyle}>Próximo Nível:</span>
-          <span style={valueStyle}>{nextLevel}</span>
+        <div 
+          style={infoRowStyle}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '0.8';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '1';
+          }}
+        >
+          <span style={labelStyle}>
+            <span style={{ fontSize: '18px' }}>⬆️</span>
+            Próximo Nível
+          </span>
+          <span style={valueStyle()}>{nextLevel}</span>
         </div>
 
-        <div style={infoRowStyle}>
-          <span style={labelStyle}>Vitórias:</span>
-          <span style={valueStyle}>🏆 {victoryCount}</span>
+        <div 
+          style={infoRowStyle}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '0.8';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '1';
+          }}
+        >
+          <span style={labelStyle}>
+            <span style={{ fontSize: '18px' }}>🏆</span>
+            Vitórias
+          </span>
+          <span style={valueStyle(true)}>{victoryCount}</span>
         </div>
 
         {progress?.last_played_at && (
-          <div style={infoRowStyle}>
-            <span style={labelStyle}>Última Jogada:</span>
-            <span style={valueStyle}>
-              {new Date(progress.last_played_at).toLocaleDateString('pt-BR')}
+          <div 
+            style={infoRowStyle}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '0.8';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1';
+            }}
+          >
+            <span style={labelStyle}>
+              <span style={{ fontSize: '18px' }}>🕐</span>
+              Última Jogada
+            </span>
+            <span style={valueStyle()}>
+              {formatRelativeTime(progress.last_played_at)}
             </span>
           </div>
         )}
+
+        {/* Botão de sair - apenas se for o próprio perfil */}
+        {user && authProfile?.username === username && (
+          <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid #333' }}>
+            <button
+              onClick={handleLogout}
+              onMouseEnter={() => setLogoutHovered(true)}
+              onMouseLeave={() => setLogoutHovered(false)}
+              style={{
+                padding: isMobile ? '6px 12px' : '8px 14px',
+                backgroundColor: logoutHovered ? '#2a1a1a' : 'transparent',
+                border: '1px solid #666',
+                color: '#ff4444',
+                fontFamily: PIXEL_FONT,
+                fontSize: isMobile ? '10px' : '11px',
+                cursor: 'pointer',
+                textTransform: 'uppercase',
+                letterSpacing: '1px',
+                transition: 'all 0.2s ease',
+                opacity: logoutHovered ? 1 : 0.8,
+                width: '100%',
+              }}
+            >
+              Sair
+            </button>
+          </div>
+        )}
+
       </div>
     );
   };
@@ -1097,7 +1255,7 @@ export function ProfileRoute() {
               fontWeight: '700',
               margin: 0,
             }}>
-              {profile.username}'s Perfil
+              <span style={{ color: '#4ade80', textShadow: '0 0 8px rgba(74, 222, 128, 0.5)' }}>{profile.username}</span>'s Perfil
             </h1>
             <div style={{
               display: 'flex',
@@ -1106,24 +1264,31 @@ export function ProfileRoute() {
             }}>
               <button
                 onClick={() => navigate('/')}
+                onMouseEnter={() => setVoltarHovered(true)}
+                onMouseLeave={() => setVoltarHovered(false)}
                 style={{
                   padding: isMobile ? '8px 16px' : '10px 20px',
-                  backgroundColor: '#222',
+                  backgroundColor: voltarHovered ? '#333' : '#222',
                   border: '2px solid #fff',
                   color: '#fff',
                   fontFamily: PIXEL_FONT,
                   fontSize: isMobile ? '12px' : '14px',
                   cursor: 'pointer',
                   textTransform: 'uppercase',
+                  transition: 'all 0.2s ease',
+                  transform: voltarHovered ? 'scale(1.05)' : 'scale(1)',
+                  boxShadow: voltarHovered ? '0 4px 8px rgba(255, 255, 255, 0.2)' : 'none',
                 }}
               >
                 Voltar
               </button>
               <button
                 onClick={() => navigate('/')}
+                onMouseEnter={() => setJogarHovered(true)}
+                onMouseLeave={() => setJogarHovered(false)}
                 style={{
                   padding: isMobile ? '8px 16px' : '10px 20px',
-                  backgroundColor: '#4ade80',
+                  backgroundColor: jogarHovered ? '#5ade90' : '#4ade80',
                   border: '2px solid #fff',
                   color: '#000',
                   fontFamily: PIXEL_FONT,
@@ -1131,6 +1296,9 @@ export function ProfileRoute() {
                   cursor: 'pointer',
                   textTransform: 'uppercase',
                   fontWeight: '600',
+                  transition: 'all 0.2s ease',
+                  transform: jogarHovered ? 'scale(1.05)' : 'scale(1)',
+                  boxShadow: jogarHovered ? '0 4px 8px rgba(74, 222, 128, 0.4)' : 'none',
                 }}
               >
                 JOGAR
@@ -1147,12 +1315,14 @@ export function ProfileRoute() {
             width: '100%',
           }}>
             <button
+              onMouseEnter={() => setContaTabHovered(true)}
+              onMouseLeave={() => setContaTabHovered(false)}
               style={{
                 padding: isMobile ? '10px 16px' : '12px 24px',
-                backgroundColor: activeTab === 'profile' ? '#222' : 'transparent',
-                border: activeTab === 'profile' ? '3px solid #fff' : '3px solid transparent',
-                borderBottom: activeTab === 'profile' ? '3px solid #fff' : '3px solid transparent',
-                color: activeTab === 'profile' ? '#fff' : '#666',
+                backgroundColor: activeTab === 'profile' ? '#222' : (contaTabHovered ? '#1a1a1a' : 'transparent'),
+                border: activeTab === 'profile' ? '3px solid #fff' : (contaTabHovered ? '3px solid #888' : '3px solid transparent'),
+                borderBottom: activeTab === 'profile' ? '3px solid #fff' : (contaTabHovered ? '3px solid #888' : '3px solid transparent'),
+                color: activeTab === 'profile' ? '#fff' : (contaTabHovered ? '#999' : '#666'),
                 fontFamily: PIXEL_FONT,
                 fontSize: isMobile ? '14px' : '16px',
                 fontWeight: '600',
@@ -1160,7 +1330,7 @@ export function ProfileRoute() {
                 textTransform: 'uppercase',
                 letterSpacing: '2px',
                 marginBottom: '-3px',
-                transition: 'none',
+                transition: 'all 0.2s ease',
                 width: isMobile ? '180px' : '260px',
                 minWidth: isMobile ? '180px' : '260px',
                 maxWidth: isMobile ? '180px' : '260px',
@@ -1176,12 +1346,14 @@ export function ProfileRoute() {
               Conta
             </button>
             <button
+              onMouseEnter={() => setSkinsTabHovered(true)}
+              onMouseLeave={() => setSkinsTabHovered(false)}
               style={{
                 padding: isMobile ? '10px 16px' : '12px 24px',
-                backgroundColor: activeTab === 'skins' ? '#222' : 'transparent',
-                border: activeTab === 'skins' ? '3px solid #fff' : '3px solid transparent',
-                borderBottom: activeTab === 'skins' ? '3px solid #fff' : '3px solid transparent',
-                color: activeTab === 'skins' ? '#fff' : '#666',
+                backgroundColor: activeTab === 'skins' ? '#222' : (skinsTabHovered ? '#1a1a1a' : 'transparent'),
+                border: activeTab === 'skins' ? '3px solid #fff' : (skinsTabHovered ? '3px solid #888' : '3px solid transparent'),
+                borderBottom: activeTab === 'skins' ? '3px solid #fff' : (skinsTabHovered ? '3px solid #888' : '3px solid transparent'),
+                color: activeTab === 'skins' ? '#fff' : (skinsTabHovered ? '#999' : '#666'),
                 fontFamily: PIXEL_FONT,
                 fontSize: isMobile ? '14px' : '16px',
                 fontWeight: '600',
@@ -1189,7 +1361,7 @@ export function ProfileRoute() {
                 textTransform: 'uppercase',
                 letterSpacing: '2px',
                 marginBottom: '-3px',
-                transition: 'none',
+                transition: 'all 0.2s ease',
                 width: isMobile ? '180px' : '260px',
                 minWidth: isMobile ? '180px' : '260px',
                 maxWidth: isMobile ? '180px' : '260px',
@@ -1215,6 +1387,38 @@ export function ProfileRoute() {
           }}>
             {activeTab === 'profile' && renderProfileTab()}
             {activeTab === 'skins' && renderSkinsTab()}
+          </div>
+
+          {/* Footer */}
+          <div style={{
+            marginTop: 'auto',
+            paddingTop: '24px',
+            paddingBottom: '24px',
+            borderTop: '1px solid #333',
+            textAlign: 'center',
+            color: '#666',
+            fontSize: isMobile ? '11px' : '12px',
+            fontFamily: PIXEL_FONT,
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '12px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <img 
+                src="/logo/logo.svg" 
+                alt="Boss Attack Logo" 
+                style={{
+                  width: isMobile ? '24px' : '32px',
+                  height: isMobile ? '24px' : '32px',
+                  imageRendering: 'pixelated' as any,
+                }}
+              />
+              <span style={{ color: '#999', fontWeight: '600' }}>Boss Attack</span>
+            </div>
+            <div style={{ color: '#666', fontSize: isMobile ? '10px' : '11px' }}>
+              © {new Date().getFullYear()} by Duspace
+            </div>
           </div>
         </div>
       </div>

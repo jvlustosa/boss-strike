@@ -220,7 +220,7 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      window.location.reload();
+      window.location.href = '/';
     } catch (error) {
       const errorInfo = parseSupabaseError(error);
       if (showToast) {
@@ -264,8 +264,7 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
   const titleStyle: React.CSSProperties = {
     fontSize: isMobile ? '24px' : '32px',
     fontWeight: '700',
-    marginBottom: '24px',
-    textAlign: 'center',
+    margin: 0,
     textShadow: '2px 2px 0px #333',
     color: '#fff',
   };
@@ -277,12 +276,12 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
     borderBottom: '3px solid #666',
   };
 
-  const tabStyle = (active: boolean): React.CSSProperties => ({
+  const tabStyle = (active: boolean, hovered: boolean): React.CSSProperties => ({
     padding: isMobile ? '10px 16px' : '12px 24px',
-    backgroundColor: active ? '#222' : 'transparent',
-    border: active ? '3px solid #fff' : '3px solid transparent',
-    borderBottom: active ? '3px solid #fff' : '3px solid transparent',
-    color: active ? '#fff' : '#666',
+    backgroundColor: active ? '#222' : (hovered ? '#1a1a1a' : 'transparent'),
+    border: active ? '3px solid #fff' : (hovered ? '3px solid #888' : '3px solid transparent'),
+    borderBottom: active ? '3px solid #fff' : (hovered ? '3px solid #888' : '3px solid transparent'),
+    color: active ? '#fff' : (hovered ? '#999' : '#666'),
     fontFamily: PIXEL_FONT,
     fontSize: isMobile ? '14px' : '16px',
     fontWeight: '600',
@@ -290,28 +289,37 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
     textTransform: 'uppercase',
     letterSpacing: '2px',
     marginBottom: '-3px',
-    transition: 'none',
+    transition: 'all 0.2s ease',
   });
 
-  const infoRowStyle: React.CSSProperties = {
+  const infoRowStyle = (icon?: string): React.CSSProperties => ({
     display: 'flex',
+    alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: '16px',
     fontSize: isMobile ? '14px' : '16px',
-    padding: '12px',
-    backgroundColor: '#222',
-    border: '2px solid #666',
-  };
+    padding: isMobile ? '12px 0' : '14px 0',
+    transition: 'all 0.2s ease',
+    position: 'relative',
+  });
 
   const labelStyle: React.CSSProperties = {
-    color: '#aaa',
-    fontWeight: '400',
+    color: '#999',
+    fontWeight: '500',
+    fontSize: isMobile ? '13px' : '14px',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    textTransform: 'uppercase',
+    letterSpacing: '0.5px',
   };
 
-  const valueStyle: React.CSSProperties = {
-    color: '#fff',
-    fontWeight: '600',
-  };
+  const valueStyle = (highlight?: boolean): React.CSSProperties => ({
+    color: highlight ? '#4ade80' : '#fff',
+    fontWeight: '700',
+    fontSize: isMobile ? '15px' : '17px',
+    textShadow: highlight ? '0 0 8px rgba(74, 222, 128, 0.5)' : 'none',
+  });
 
   const buttonStyle = (hovered: boolean): React.CSSProperties => ({
     width: '100%',
@@ -330,22 +338,27 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
     transition: 'none',
   });
 
-  const closeButtonStyle: React.CSSProperties = {
+  const closeButtonStyle = (hovered: boolean): React.CSSProperties => ({
     position: 'absolute',
     top: '12px',
     right: '12px',
-    background: 'none',
+    background: hovered ? '#333' : 'none',
     border: 'none',
-    color: '#fff',
+    color: hovered ? '#ff4444' : '#fff',
     fontSize: '24px',
     cursor: 'pointer',
     fontFamily: PIXEL_FONT,
     padding: '8px',
     lineHeight: '1',
-  };
+    borderRadius: '4px',
+    transition: 'all 0.2s ease',
+    transform: hovered ? 'scale(1.1)' : 'scale(1)',
+  });
 
   const [logoutHovered, setLogoutHovered] = useState(false);
   const [closeHovered, setCloseHovered] = useState(false);
+  const [contaTabHovered, setContaTabHovered] = useState(false);
+  const [skinsTabHovered, setSkinsTabHovered] = useState(false);
 
   // Skins rendering
   const getRarityColor = (rarity: string): string => {
@@ -357,6 +370,44 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
       case 'mythic': return '#ff00ff';
       default: return '#fff';
     }
+  };
+
+  const formatRelativeTime = (dateString: string): string => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) {
+      return 'há poucos segundos';
+    }
+
+    const diffInMinutes = Math.floor(diffInSeconds / 60);
+    if (diffInMinutes < 60) {
+      return diffInMinutes === 1 ? 'há 1 minuto' : `há ${diffInMinutes} minutos`;
+    }
+
+    const diffInHours = Math.floor(diffInMinutes / 60);
+    if (diffInHours < 24) {
+      return diffInHours === 1 ? 'há 1 hora' : `há ${diffInHours} horas`;
+    }
+
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) {
+      return diffInDays === 1 ? 'há 1 dia' : `há ${diffInDays} dias`;
+    }
+
+    const diffInWeeks = Math.floor(diffInDays / 7);
+    if (diffInWeeks < 4) {
+      return diffInWeeks === 1 ? 'há 1 semana' : `há ${diffInWeeks} semanas`;
+    }
+
+    const diffInMonths = Math.floor(diffInDays / 30);
+    if (diffInMonths < 12) {
+      return diffInMonths === 1 ? 'há 1 mês' : `há ${diffInMonths} meses`;
+    }
+
+    const diffInYears = Math.floor(diffInDays / 365);
+    return diffInYears === 1 ? 'há 1 ano' : `há ${diffInYears} anos`;
   };
 
   // Função removida - agora usa getSkinPreviewStyle que extrai do CSS
@@ -665,48 +716,130 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
 
     return (
       <div>
-        <div style={infoRowStyle}>
-          <span style={labelStyle}>Usuário:</span>
-          <span style={valueStyle}>{profile?.username || 'Sem nome'}</span>
+        <div 
+          style={infoRowStyle()}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '0.8';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '1';
+          }}
+        >
+          <span style={labelStyle}>
+            <span style={{ fontSize: '18px' }}>👤</span>
+            Usuário
+          </span>
+          <span style={{ ...valueStyle(true), color: '#4ade80' }}>{profile?.username || 'Sem nome'}</span>
         </div>
 
-        <div style={infoRowStyle}>
-          <span style={labelStyle}>Email:</span>
-          <span style={valueStyle}>{profile?.email || 'N/A'}</span>
+        <div 
+          style={infoRowStyle()}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '0.8';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '1';
+          }}
+        >
+          <span style={labelStyle}>
+            <span style={{ fontSize: '18px' }}>📧</span>
+            Email
+          </span>
+          <span style={valueStyle()}>{profile?.email || 'N/A'}</span>
         </div>
 
-        <div style={infoRowStyle}>
-          <span style={labelStyle}>Nível Atual:</span>
-          <span style={valueStyle}>{progress?.level || 1}</span>
+        <div 
+          style={infoRowStyle()}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '0.8';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '1';
+          }}
+        >
+          <span style={labelStyle}>
+            <span style={{ fontSize: '18px' }}>🎯</span>
+            Nível Atual
+          </span>
+          <span style={valueStyle(true)}>{progress?.level || 1}</span>
         </div>
 
-        <div style={infoRowStyle}>
-          <span style={labelStyle}>Próximo Nível:</span>
-          <span style={valueStyle}>{nextLevel}</span>
+        <div 
+          style={infoRowStyle()}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '0.8';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '1';
+          }}
+        >
+          <span style={labelStyle}>
+            <span style={{ fontSize: '18px' }}>⬆️</span>
+            Próximo Nível
+          </span>
+          <span style={valueStyle()}>{nextLevel}</span>
         </div>
 
-        <div style={infoRowStyle}>
-          <span style={labelStyle}>Vitórias:</span>
-          <span style={valueStyle}>🏆 {victoryCount}</span>
+        <div 
+          style={infoRowStyle()}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = '0.8';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = '1';
+          }}
+        >
+          <span style={labelStyle}>
+            <span style={{ fontSize: '18px' }}>🏆</span>
+            Vitórias
+          </span>
+          <span style={valueStyle(true)}>{victoryCount}</span>
         </div>
 
         {progress?.last_played_at && (
-          <div style={infoRowStyle}>
-            <span style={labelStyle}>Última Jogada:</span>
-            <span style={valueStyle}>
-              {new Date(progress.last_played_at).toLocaleDateString('pt-BR')}
+          <div 
+            style={infoRowStyle()}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '0.8';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '1';
+            }}
+          >
+            <span style={labelStyle}>
+              <span style={{ fontSize: '18px' }}>🕐</span>
+              Última Jogada
+            </span>
+            <span style={valueStyle()}>
+              {formatRelativeTime(progress.last_played_at)}
             </span>
           </div>
         )}
 
-        <button
-          style={buttonStyle(logoutHovered)}
-          onClick={handleLogout}
-          onMouseEnter={() => setLogoutHovered(true)}
-          onMouseLeave={() => setLogoutHovered(false)}
-        >
-          Sair
-        </button>
+        {/* Botão de sair */}
+        <div style={{ marginTop: '32px', paddingTop: '24px', borderTop: '1px solid #333' }}>
+          <button
+            onClick={handleLogout}
+            onMouseEnter={() => setLogoutHovered(true)}
+            onMouseLeave={() => setLogoutHovered(false)}
+            style={{
+              padding: isMobile ? '6px 12px' : '8px 14px',
+              backgroundColor: logoutHovered ? '#2a1a1a' : 'transparent',
+              border: '1px solid #666',
+              color: '#ff4444',
+              fontFamily: PIXEL_FONT,
+              fontSize: isMobile ? '10px' : '11px',
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+              letterSpacing: '1px',
+              transition: 'all 0.2s ease',
+              opacity: logoutHovered ? 1 : 0.8,
+              width: '100%',
+            }}
+          >
+            Sair
+          </button>
+        </div>
       </div>
     );
   };
@@ -860,27 +993,37 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
       `}</style>
     <div style={modalStyle} onClick={onClose}>
       <div style={contentStyle} onClick={(e) => e.stopPropagation()}>
-        <button
-          style={closeButtonStyle}
-          onClick={onClose}
-          onMouseEnter={() => setCloseHovered(true)}
-          onMouseLeave={() => setCloseHovered(false)}
-        >
-          ✕
-        </button>
-
-        <h2 style={titleStyle}>Meu Perfil</h2>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '24px',
+        }}>
+          <h2 style={titleStyle}>Meu Perfil</h2>
+          <button
+            style={closeButtonStyle(closeHovered)}
+            onClick={onClose}
+            onMouseEnter={() => setCloseHovered(true)}
+            onMouseLeave={() => setCloseHovered(false)}
+          >
+            ✕
+          </button>
+        </div>
 
         <div style={tabContainerStyle}>
           <button
-            style={tabStyle(activeTab === 'profile')}
+            style={tabStyle(activeTab === 'profile', contaTabHovered)}
             onClick={() => setActiveTab('profile')}
+            onMouseEnter={() => setContaTabHovered(true)}
+            onMouseLeave={() => setContaTabHovered(false)}
           >
             Conta
           </button>
           <button
-            style={tabStyle(activeTab === 'skins')}
+            style={tabStyle(activeTab === 'skins', skinsTabHovered)}
             onClick={() => setActiveTab('skins')}
+            onMouseEnter={() => setSkinsTabHovered(true)}
+            onMouseLeave={() => setSkinsTabHovered(false)}
           >
             Skins ({userSkins.length}/{allSkins.length})
           </button>

@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { GameCanvas } from './components/GameCanvas';
 import { MainMenu } from './components/MainMenu';
 import { PauseMenu } from './components/PauseMenu';
@@ -7,6 +7,7 @@ import { LevelTitle } from './components/LevelTitle';
 import { AuthModal } from './components/AuthModal';
 import { ProfilePage } from './components/ProfilePage';
 import { ProfileRoute } from './components/ProfileRoute';
+import { LevelsPage } from './components/LevelsPage';
 import { ToastContainer } from './components/ToastContainer';
 import { UserHeader } from './components/UserHeader';
 import { SkinUnlockAnimation } from './components/SkinUnlockAnimation';
@@ -18,6 +19,7 @@ import { updateUrlLevel, getLevelFromUrl } from './game/core/urlParams';
 import { saveProgress, clearProgress, clearVictories } from './game/core/progressCache';
 
 function GameApp() {
+  const location = useLocation();
   const [gameStarted, setGameStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [gameState, setGameState] = useState<any>(null);
@@ -28,8 +30,33 @@ function GameApp() {
   const skinUnlock = useSkinUnlock();
   const { user, profile: authProfile, initialized, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const [showRestartPrompt, setShowRestartPrompt] = useState(false);
+  
+  // Auto-start game when on /play route
+  useEffect(() => {
+    if (location.pathname === '/play' && !gameStarted) {
+      const startGame = async () => {
+        const urlLevel = getLevelFromUrl();
+        const targetLevel = urlLevel || 1;
+        updateUrlLevel(targetLevel);
+        
+        if (targetLevel === 1) {
+          await clearProgress();
+        }
+        
+        if (targetLevel === 1 && !user && !authSkipped) {
+          setShowAuthModal(true);
+          return;
+        }
+        
+        setIsPaused(false);
+        setGameStarted(true);
+      };
+      startGame();
+    }
+  }, [location.pathname, gameStarted, user, authSkipped]);
 
-  const handleStartGame = async (level?: number, clearTrophies?: boolean) => {
+  const handleStartGame = useCallback(async (level?: number, clearTrophies?: boolean) => {
     // Verificar se há nível na URL primeiro, senão usar o nível passado ou 1
     const urlLevel = getLevelFromUrl();
     const targetLevel = level || urlLevel || 1;
@@ -54,7 +81,7 @@ function GameApp() {
     // Start game directly
     setIsPaused(false);
     setGameStarted(true);
-  };
+  }, [user, authSkipped]);
 
   const handlePause = () => {
     if (gameState) {
@@ -77,14 +104,14 @@ function GameApp() {
     setIsPaused(false);
   };
 
-  const handleGameStateChange = (state: any) => {
+  const handleGameStateChange = useCallback((state: any) => {
     setGameState(state);
     
     // Salvar progresso automaticamente quando o jogador avança de fase
     if (state.status === 'won' && state.victoryTimer > 0) {
       saveProgress(state).catch(console.error);
     }
-  };
+  }, []);
 
 
   const togglePause = () => {
@@ -114,6 +141,29 @@ function GameApp() {
       window.removeEventListener('togglePause', handleTogglePause);
     };
   }, [gameStarted, isPaused]);
+
+  // Listen for startGame event from LevelsPage
+  useEffect(() => {
+    const handleStartGameEvent = (event: CustomEvent) => {
+      const { level } = event.detail;
+      if (level) {
+        // Update URL immediately
+        updateUrlLevel(level);
+        // Force game restart by setting gameStarted to false first, then starting
+        setGameStarted(false);
+        setIsPaused(false);
+        // Small delay to ensure state is reset before starting new game
+        setTimeout(() => {
+          handleStartGame(level);
+        }, 50);
+      }
+    };
+
+    window.addEventListener('startGame', handleStartGameEvent as EventListener);
+    return () => {
+      window.removeEventListener('startGame', handleStartGameEvent as EventListener);
+    };
+  }, [handleStartGame]);
 
   // Auto-pause when tab becomes hidden
   useEffect(() => {
@@ -153,10 +203,141 @@ function GameApp() {
     setGameStarted(true);
   };
 
+  const handleRestartGame = useCallback(async (resetTrophies: boolean) => {
+    setShowRestartPrompt(false);
+    setIsPaused(false);
+    await handleStartGame(1, resetTrophies);
+  }, [handleStartGame]);
+
+  const handleCancelRestart = () => {
+    setShowRestartPrompt(false);
+    if (gameStarted) {
+      handleMainMenu();
+    }
+  };
+
+  const restartButton = (
+    <button
+      type="button"
+      onClick={() => setShowRestartPrompt(true)}
+      style={{
+        position: 'fixed',
+        bottom: '16px',
+        left: '16px',
+        zIndex: 1200,
+        background: '#111',
+        color: '#fff',
+        border: '2px solid #fff',
+        padding: '6px 10px',
+        fontFamily: PIXEL_FONT,
+        fontSize: '10px',
+        letterSpacing: '1px',
+        cursor: 'pointer',
+        textTransform: 'uppercase',
+        boxShadow: '2px 2px 0px #333',
+      }}
+    >
+      Reiniciar
+    </button>
+  );
+
+  const restartPrompt = showRestartPrompt ? (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0, 0, 0, 0.65)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1300,
+        padding: '16px',
+      }}
+    >
+      <div
+        style={{
+          background: '#111',
+          border: '3px solid #fff',
+          boxShadow: '4px 4px 0px #333',
+          padding: '16px',
+          maxWidth: '260px',
+          width: '100%',
+          color: '#fff',
+          fontFamily: PIXEL_FONT,
+          textAlign: 'center',
+        }}
+      >
+        <div style={{ fontSize: '11px', marginBottom: '12px', lineHeight: 1.4 }}>
+          você gostaria de reiniciar seus troféus também?
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleCancelRestart}
+            style={{
+              background: '#222',
+              color: '#fff',
+              border: '2px solid #fff',
+              padding: '6px 8px',
+              fontFamily: PIXEL_FONT,
+              fontSize: '10px',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              boxShadow: '2px 2px 0px #333',
+            }}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={() => handleRestartGame(true)}
+            style={{
+              background: '#44aa44',
+              color: '#fff',
+              border: '2px solid #fff',
+              padding: '6px 8px',
+              fontFamily: PIXEL_FONT,
+              fontSize: '10px',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              boxShadow: '2px 2px 0px #113311',
+            }}
+          >
+            Sim
+          </button>
+          <button
+            type="button"
+            onClick={() => handleRestartGame(false)}
+            style={{
+              background: '#ff4444',
+              color: '#fff',
+              border: '2px solid #fff',
+              padding: '6px 8px',
+              fontFamily: PIXEL_FONT,
+              fontSize: '10px',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              boxShadow: '2px 2px 0px #331111',
+            }}
+          >
+            Não
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   if (!gameStarted) {
     return (
       <>
+        {restartButton}
+        {restartPrompt}
         {user && (
           <UserHeader onProfileClick={() => {
             if (user && authProfile?.username) {
@@ -226,18 +407,18 @@ function GameApp() {
   
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isLandscape = isMobile && window.innerHeight < window.innerWidth;
-
+  
   return (
     <>
       {user && (
         <UserHeader 
           onProfileClick={() => {
-            if (user && authProfile?.username) {
-              navigate(`/profile/${authProfile.username}`);
-            } else {
-              setIsPaused(true);
-              setShowProfileModal(true);
-            }
+          if (user && authProfile?.username) {
+            navigate(`/profile/${authProfile.username}`);
+          } else {
+            setIsPaused(true);
+            setShowProfileModal(true);
+          }
           }}
           onPause={!isPaused ? handlePause : undefined}
         />
@@ -295,7 +476,7 @@ function GameApp() {
             height: isLandscape ? '100vh' : 'auto',
           }}
         >
-          {gameState && !isLandscape && <LevelTitle key={gameState.level} gameState={gameState} />}
+          {gameState && (isMobile || !isLandscape) && <LevelTitle key={gameState.level} gameState={gameState} />}
           <div style={{ 
             position: 'relative',
             maxHeight: isLandscape ? '100vh' : 'calc(100vh - 100px)',
@@ -306,16 +487,18 @@ function GameApp() {
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-            <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} />
+            <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} gameStarted={gameStarted} gameState={gameState} />
           </div>
         </div>
-        {isPaused && (
+        {isPaused && gameState && !(gameState.status === 'won' && gameState.victoryTimer <= 0) && (
           <PauseMenu 
             onContinue={handleContinue} 
             onMainMenu={handleMainMenu} 
           />
         )}
       </div>
+      {!gameStarted && restartButton}
+      {restartPrompt}
       {showProfileModal && user && (
         <ProfilePage 
           onClose={() => {
@@ -342,17 +525,84 @@ export default function App() {
 
   if (!initialized) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        background: '#000',
-        color: '#fff',
-        fontFamily: PIXEL_FONT,
-      }}>
-        Carregando...
-      </div>
+      <>
+        <style>{`
+          @keyframes spin3d {
+            0% {
+              transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+            }
+            25% {
+              transform: rotateX(90deg) rotateY(0deg) rotateZ(90deg);
+            }
+            50% {
+              transform: rotateX(180deg) rotateY(90deg) rotateZ(180deg);
+            }
+            75% {
+              transform: rotateX(270deg) rotateY(180deg) rotateZ(270deg);
+            }
+            100% {
+              transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg);
+            }
+          }
+          @keyframes pulse {
+            0%, 100% {
+              opacity: 0.6;
+            }
+            50% {
+              opacity: 1;
+            }
+          }
+        `}</style>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
+          background: '#000',
+          color: '#fff',
+          fontFamily: PIXEL_FONT,
+          gap: '24px',
+        }}>
+          <div style={{
+            position: 'relative',
+            width: '64px',
+            height: '64px',
+          }}>
+            <div style={{
+              position: 'absolute',
+              width: '32px',
+              height: '32px',
+              border: '4px solid #0f0',
+              boxShadow: '0 0 20px rgba(0, 255, 0, 0.5), inset 0 0 20px rgba(0, 255, 0, 0.3)',
+              animation: 'spin3d 2s linear infinite',
+              transformOrigin: 'center center',
+              imageRendering: 'pixelated' as any,
+            }} />
+            <div style={{
+              position: 'absolute',
+              width: '32px',
+              height: '32px',
+              border: '4px solid #0ff',
+              boxShadow: '0 0 20px rgba(0, 255, 255, 0.5), inset 0 0 20px rgba(0, 255, 255, 0.3)',
+              animation: 'spin3d 2s linear infinite reverse',
+              transformOrigin: 'center center',
+              top: '16px',
+              left: '16px',
+              imageRendering: 'pixelated' as any,
+            }} />
+          </div>
+          <div style={{
+            fontSize: '14px',
+            letterSpacing: '2px',
+            textTransform: 'uppercase',
+            opacity: 0.8,
+            animation: 'pulse 1.5s ease-in-out infinite',
+          }}>
+            Carregando...
+          </div>
+        </div>
+      </>
     );
   }
 
@@ -360,8 +610,24 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/profile/:username" element={<ProfileRoute />} />
+        <Route path="/fases" element={<LevelsPageRoute />} />
         <Route path="*" element={<GameApp />} />
       </Routes>
     </BrowserRouter>
   );
+}
+
+function LevelsPageRoute() {
+  const navigate = useNavigate();
+  const handleStartGame = async (level: number) => {
+    // Update URL first
+    updateUrlLevel(level);
+    // Navigate to home
+    navigate('/');
+    // Dispatch event after a small delay to ensure navigation completed
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('startGame', { detail: { level } }));
+    }, 50);
+  };
+  return <LevelsPage onStartGame={handleStartGame} />;
 }

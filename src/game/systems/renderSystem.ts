@@ -4,12 +4,13 @@ import { LOGICAL_W, LOGICAL_H } from '../core/config';
 import { renderPlayer } from '../components/PlayerRenderer';
 
 const FONT_XS = '6px "Press Start 2P", "Pixelify Sans", monospace';
+const FONT_XXS = '4px "Press Start 2P", "Pixelify Sans", monospace';
 const FONT_SM = '8px "Press Start 2P", "Pixelify Sans", monospace';
 const FONT_MD = '12px "Press Start 2P", "Pixelify Sans", monospace';
 const FONT_LG = '16px "Press Start 2P", "Pixelify Sans", monospace';
 const FONT_XL = '20px "Press Start 2P", "Pixelify Sans", monospace';
 
-export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, isPaused: boolean = false, nextBtnHover: boolean = false, nextBtnPressed: boolean = false): void {
+export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, isPaused: boolean = false): void {
   // Clear screen
   ctx.fillStyle = colors.background;
   ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
@@ -101,18 +102,31 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
   // Player - usando componente dedicado
   renderPlayer(ctx, state.player);
 
-  // Boss
-  ctx.fillStyle = colors.boss;
-  ctx.fillRect(state.boss.pos.x, state.boss.pos.y, state.boss.w, state.boss.h);
-  
-  // Boss weak spot (exposto na parte inferior, alinhado ao fundo)
-  ctx.fillStyle = colors.bossWeakSpot;
-  ctx.fillRect(state.boss.weakSpot.x, state.boss.weakSpot.y, state.boss.weakSpot.w, state.boss.weakSpot.h);
-  
-  // Boss arms
-  ctx.fillStyle = colors.bossArm;
-  for (const arm of state.boss.arms) {
-    ctx.fillRect(arm.pos.x, arm.pos.y, arm.w, arm.h);
+  // Boss (with optional shake)
+  const bossIsShaking = state.bossShakeTimer > 0;
+  const shouldRenderBoss = state.boss.hp > 0 && state.pixelParticles.length === 0;
+
+  if (shouldRenderBoss) {
+    const shakeMagnitude = bossIsShaking ? 1 + (state.bossShakeTimer / 2) * 2 : 0;
+    const shakeOffsetX = bossIsShaking ? Math.sin(state.time * 80) * shakeMagnitude : 0;
+    const shakeOffsetY = bossIsShaking ? Math.cos(state.time * 95) * shakeMagnitude : 0;
+
+    ctx.save();
+    if (bossIsShaking) {
+      ctx.translate(shakeOffsetX, shakeOffsetY);
+    }
+
+    ctx.fillStyle = colors.boss;
+    ctx.fillRect(state.boss.pos.x, state.boss.pos.y, state.boss.w, state.boss.h);
+    
+    ctx.fillStyle = colors.bossWeakSpot;
+    ctx.fillRect(state.boss.weakSpot.x, state.boss.weakSpot.y, state.boss.weakSpot.w, state.boss.weakSpot.h);
+    
+    ctx.fillStyle = colors.bossArm;
+    for (const arm of state.boss.arms) {
+      ctx.fillRect(arm.pos.x, arm.pos.y, arm.w, arm.h);
+    }
+    ctx.restore();
   }
 
   // Bullets
@@ -193,7 +207,6 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     const scale = 0.8 + lifeProgress * 0.4; // Começa menor e cresce
     
     ctx.save();
-    ctx.globalAlpha = alpha;
     
     // Posição
     const x = Math.floor(damageNumber.pos.x);
@@ -201,38 +214,202 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     
     const isCritical = damageNumber.isCritical || false;
     
-    // Escala do texto (menor para crítico)
-    const fontSize = isCritical 
-      ? Math.max(4, Math.floor(6 * scale)) // Menor para crítico
-      : Math.max(5, Math.floor(7 * scale));
+    // Tamanhos diferentes baseados no valor e tipo
+    const baseSize = isCritical ? 8 : 7;
+    const valueMultiplier = Math.min(1.5, 1 + (damageNumber.value / 100)); // Aumenta com dano
+    const fontSize = Math.max(4, Math.floor(baseSize * scale * valueMultiplier));
+    
     ctx.font = `bold ${fontSize}px 'Pixelify Sans', monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     
-    // Cor e estilo diferentes para crítico
+    // Efeitos de brilho diferentes
     if (isCritical) {
-      // Contorno para crítico
+      // Glow intenso pulsante para crítico
+      const pulse = 0.7 + Math.sin(state.time * 8) * 0.3;
+      const glowIntensity = pulse * alpha;
+      
+      // Múltiplas camadas de glow roxo/dourado
+      for (let i = 3; i >= 1; i--) {
+        ctx.globalAlpha = (glowIntensity * 0.3) / i;
+        ctx.fillStyle = i === 3 ? '#9333ea' : (i === 2 ? '#fbbf24' : '#ffffff');
+        ctx.fillText('Critical!', x, y - fontSize - 2);
+        ctx.fillText(damageNumber.value.toString(), x, y);
+      }
+      
+      // Glow externo mais suave
+      ctx.globalAlpha = glowIntensity * 0.2;
+      ctx.fillStyle = '#9333ea';
+      for (let offset = 1; offset <= 4; offset++) {
+        ctx.fillText('Critical!', x + offset, y - fontSize - 2);
+        ctx.fillText('Critical!', x - offset, y - fontSize - 2);
+        ctx.fillText('Critical!', x, y - fontSize - 2 + offset);
+        ctx.fillText('Critical!', x, y - fontSize - 2 - offset);
+        ctx.fillText(damageNumber.value.toString(), x + offset, y);
+        ctx.fillText(damageNumber.value.toString(), x - offset, y);
+        ctx.fillText(damageNumber.value.toString(), x, y + offset);
+        ctx.fillText(damageNumber.value.toString(), x, y - offset);
+      }
+      
+      // Contorno preto
+      ctx.globalAlpha = alpha;
       ctx.strokeStyle = '#000000';
       ctx.lineWidth = 2;
       ctx.strokeText('Critical!', x, y - fontSize - 2);
       ctx.strokeText(damageNumber.value.toString(), x, y);
       
-      // Texto roxo para crítico
-      ctx.fillStyle = '#9333ea'; // Roxo vibrante para crítico
+      // Texto principal roxo/dourado
+      ctx.fillStyle = '#9333ea';
       ctx.fillText('Critical!', x, y - fontSize - 2);
+      ctx.fillStyle = '#fbbf24';
       ctx.fillText(damageNumber.value.toString(), x, y);
     } else {
-      // Contorno preto (outline) estilo Fortnite
+      // Glow suave amarelo para dano normal
+      const glowIntensity = alpha * 0.4;
+      
+      // Glow externo
+      ctx.globalAlpha = glowIntensity;
+      ctx.fillStyle = '#ffff00';
+      for (let offset = 1; offset <= 2; offset++) {
+        ctx.fillText(damageNumber.value.toString(), x + offset, y);
+        ctx.fillText(damageNumber.value.toString(), x - offset, y);
+        ctx.fillText(damageNumber.value.toString(), x, y + offset);
+        ctx.fillText(damageNumber.value.toString(), x, y - offset);
+      }
+      
+      // Contorno preto
+      ctx.globalAlpha = alpha;
       ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 2; // Reduzido proporcionalmente
+      ctx.lineWidth = 2;
       ctx.strokeText(damageNumber.value.toString(), x, y);
       
-      // Texto branco/amarelo
-      ctx.fillStyle = '#ffff00'; // Amarelo como Fortnite
+      // Texto principal amarelo
+      ctx.fillStyle = '#ffff00';
       ctx.fillText(damageNumber.value.toString(), x, y);
     }
     
     ctx.restore();
+  }
+
+  // Bomb Trail (renderizar antes do foguete) - Fumaça cinza escura
+  if (state.bombTrailParticles.length > 0) {
+    for (const particle of state.bombTrailParticles) {
+      const lifeProgress = particle.life / particle.maxLife;
+      const alpha = lifeProgress * 0.7; // Fade away gradual
+      const size = 2 + (1 - lifeProgress) * 1; // Cresce ligeiramente ao desaparecer
+      
+      // Cinza escuro (fumaça) que fica mais claro e transparente ao desaparecer
+      const grayValue = Math.floor(40 + (1 - lifeProgress) * 20); // 40-60 (escuro para mais claro)
+      ctx.fillStyle = `rgba(${grayValue}, ${grayValue}, ${grayValue}, ${alpha})`;
+      ctx.fillRect(
+        Math.floor(particle.pos.x - size / 2),
+        Math.floor(particle.pos.y - size / 2),
+        Math.max(1, Math.floor(size)),
+        Math.max(1, Math.floor(size))
+      );
+    }
+  }
+
+  // Bomb (Rocket)
+  if (state.bomb) {
+    const bomb = state.bomb;
+    const bobOffset = bomb.state === 'carried' ? 0 : Math.sin(bomb.floatTimer * 4) * 1.5;
+    const renderX = Math.floor(bomb.pos.x);
+    const renderY = Math.floor(bomb.pos.y + bobOffset);
+    const centerX = renderX + bomb.w / 2;
+    const centerY = renderY + bomb.h / 2;
+    
+    // Rotação baseada no estado (quando voando, aponta na direção do movimento)
+    let rotation = 0;
+    if (bomb.state === 'thrown') {
+      // A direção do movimento é (cos(aimAngle), -sin(aimAngle))
+      // O foguete está desenhado apontando para cima (ponta em y=-4, que é -π/2 no canvas)
+      // Calculamos o ângulo da direção do movimento e ajustamos para o foguete apontar corretamente
+      const dx = Math.cos(bomb.aimAngle);
+      const dy = -Math.sin(bomb.aimAngle);
+      const movementAngle = Math.atan2(dy, dx);
+      // O foguete aponta para cima quando rotation=0, que é -π/2 no sistema do canvas
+      // Então rotacionamos: movementAngle - (-π/2) = movementAngle + π/2
+      rotation = movementAngle + Math.PI / 2;
+    }
+
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(rotation);
+    
+    // Chama na parte traseira quando está voando
+    if (bomb.state === 'thrown') {
+      const flameTime = state.time * 25;
+      const flameIntensity = 0.7 + Math.sin(flameTime) * 0.3;
+      const flameSize = 2 + Math.sin(flameTime * 1.5) * 1;
+      
+      // Chama externa (laranja/amarelo)
+      ctx.fillStyle = `rgba(255, ${Math.floor(100 + flameIntensity * 50)}, 0, ${flameIntensity})`;
+      ctx.fillRect(-2, 4, 4, Math.floor(flameSize + 1));
+      
+      // Chama interna (amarelo brilhante)
+      ctx.fillStyle = `rgba(255, ${Math.floor(200 + flameIntensity * 30)}, 0, ${flameIntensity * 0.9})`;
+      ctx.fillRect(-1, 5, 2, Math.floor(flameSize));
+    }
+    
+    // Aletas/estabilizadores na base
+    ctx.fillStyle = '#cc4400';
+    ctx.fillRect(-4, 2, 2, 2); // Aleta esquerda
+    ctx.fillRect(2, 2, 2, 2);  // Aleta direita
+    
+    // Corpo principal do foguete (laranja/vermelho)
+    ctx.fillStyle = '#ff6600';
+    ctx.fillRect(-2, -3, 4, 6);
+    
+    // Detalhes do corpo (faixas)
+    ctx.fillStyle = '#ff8800';
+    ctx.fillRect(-2, -1, 4, 1);
+    ctx.fillRect(-2, 1, 4, 1);
+    
+    // Ponta afiada do foguete
+    ctx.fillStyle = '#ff4400';
+    ctx.beginPath();
+    ctx.moveTo(0, -4);
+    ctx.lineTo(-2, -2);
+    ctx.lineTo(2, -2);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Janela/olho do foguete
+    ctx.fillStyle = '#ffee88';
+    ctx.fillRect(-1, -2, 2, 1);
+    
+    ctx.restore();
+
+    if (bomb.state === 'carried') {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255, 165, 0, 0.55)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      const lineLength = 42;
+      const aimX = centerX + Math.cos(bomb.aimAngle) * lineLength;
+      const aimY = centerY - Math.sin(bomb.aimAngle) * lineLength;
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(aimX, aimY);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  // Scorch marks from bomb explosions
+  for (const mark of state.scorchMarks) {
+    const fade = Math.max(0, Math.min(1, mark.life / mark.maxLife));
+    const alpha = 0.35 * fade;
+    const size = Math.max(4, Math.floor(mark.size));
+    const x = Math.floor(mark.pos.x - (size - mark.size) / 2);
+    const y = Math.floor(mark.pos.y - (size - mark.size) / 2);
+
+    ctx.fillStyle = `rgba(60, 40, 20, ${alpha})`;
+    ctx.fillRect(x, y, size, size);
+
+    ctx.fillStyle = `rgba(30, 20, 10, ${alpha * 1.2})`;
+    ctx.fillRect(x + 1, y + 1, Math.max(1, size - 2), Math.max(1, size - 2));
   }
 
   // Hearts
@@ -282,6 +459,27 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
       ctx.fillRect(x + 6, y + 4, 1, 1);      // borda direita base
       ctx.fillRect(x + 3, y + 5, 2, 1);      // base inferior
     }
+  }
+
+  // Pixel particles (boss explosion)
+  for (const pixel of state.pixelParticles) {
+    const alpha = pixel.life / pixel.maxLife;
+    const size = pixel.size * alpha;
+    
+    ctx.save();
+    ctx.translate(pixel.pos.x, pixel.pos.y);
+    ctx.rotate(pixel.rotation);
+    ctx.globalAlpha = alpha;
+    
+    ctx.fillStyle = pixel.color;
+    ctx.fillRect(
+      Math.floor(-size / 2),
+      Math.floor(-size / 2),
+      Math.max(1, Math.floor(size)),
+      Math.max(1, Math.floor(size))
+    );
+    
+    ctx.restore();
   }
 
   // Explosion particles
@@ -422,66 +620,28 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     ctx.fillRect(4 + i * 6, LOGICAL_H - 8, 4, 4);
   }
 
-  // Shield Hits Remaining Display (canto esquerdo)
+  // Shield Hits Remaining Display (quadrado azul à direita dos quadrados de vida)
   if (state.player.shieldHits > 0) {
+    const healthEndX = 4 + state.player.maxHealth * 6;
+    const shieldX = healthEndX + 8;
+    
+    // Quadrado azul do escudo
     ctx.fillStyle = '#00aaff';
-    ctx.font = FONT_XS;
+    ctx.fillRect(shieldX, LOGICAL_H - 8, 4, 4);
+    
+    // Número do escudo com fonte reduzida
+    ctx.fillStyle = '#00aaff';
+    ctx.font = '3px "Press Start 2P", "Pixelify Sans", monospace';
     ctx.textBaseline = 'top';
     ctx.textAlign = 'left';
-    ctx.fillText(`${state.player.shieldHits}`, 4, 20);
+    ctx.fillText(`${state.player.shieldHits}`, shieldX + 6, LOGICAL_H - 7);
   }
 
-  // Victory Overlay
-  if (state.status === 'won' && state.victoryTimer <= 0) {
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+  // Victory Overlay - Removido, agora é um componente React separado
+  // O modal de vitória é renderizado como componente HTML sobreposto
 
-    // Box
-    const boxW = 120;
-    const boxH = 60;
-    const boxX = (LOGICAL_W - boxW) / 2;
-    const boxY = (LOGICAL_H - boxH) / 2;
-    ctx.fillStyle = '#111';
-    ctx.fillRect(boxX, boxY, boxW, boxH);
-    ctx.strokeStyle = '#fff';
-    ctx.strokeRect(boxX, boxY, boxW, boxH);
-
-    // Title
-    ctx.fillStyle = '#0f0';
-    ctx.font = FONT_SM;
-    ctx.textBaseline = 'top';
-    ctx.fillText('VITÓRIA!', boxX + 8, boxY + 8);
-
-    // Button
-    const btnW = 96;
-    const btnH = 16;
-    const btnX = boxX + (boxW - btnW) / 2;
-    const btnY = boxY + boxH - btnH - 8;
-    
-    // Button colors based on state
-    const btnBgColor = nextBtnPressed ? '#0f0' : (nextBtnHover ? '#333' : '#222');
-    const btnBorderColor = nextBtnPressed ? '#fff' : (nextBtnHover ? '#4f4' : '#0f0');
-    const btnTextColor = nextBtnPressed ? '#000' : (nextBtnHover ? '#4f4' : '#0f0');
-    
-    ctx.fillStyle = btnBgColor;
-    ctx.fillRect(btnX, btnY, btnW, btnH);
-    ctx.strokeStyle = btnBorderColor;
-    ctx.lineWidth = nextBtnHover || nextBtnPressed ? 2 : 1;
-    ctx.strokeRect(btnX, btnY, btnW, btnH);
-    ctx.fillStyle = btnTextColor;
-    ctx.font = FONT_XS;
-    ctx.fillText('Próxima Fase', btnX + 8, btnY + 4);
-
-    // Expor bounds do botão no estado para clique
-    // @ts-ignore
-    (state as any)._nextBtn = { x: btnX, y: btnY, w: btnW, h: btnH };
-  } else {
-    // @ts-ignore
-    (state as any)._nextBtn = undefined;
-  }
-
-  // Show pause indicator
-  if (isPaused) {
+  // Show pause indicator (não mostrar se o modal de vitória estiver visível)
+  if (isPaused && !(state.status === 'won' && state.victoryTimer <= 0)) {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
     ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
     

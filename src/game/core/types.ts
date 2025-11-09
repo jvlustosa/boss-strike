@@ -57,6 +57,27 @@ export type Shield = {
   collected: boolean;
 };
 
+export type BombState = 'idle' | 'carried' | 'thrown';
+
+export type Bomb = {
+  pos: Vec2;
+  w: number;
+  h: number;
+  state: BombState;
+  speed: number;
+  damageFraction: number;
+  floatTimer: number;
+  aimAngle: number;
+  aimDirection: 1 | -1;
+};
+
+export type ScorchMark = {
+  pos: Vec2;
+  size: number;
+  life: number;
+  maxLife: number;
+};
+
 export type ShieldFragment = {
   pos: Vec2;
   vel: Vec2;
@@ -82,6 +103,17 @@ export type SmokeParticle = {
   size: number;
   alpha: number;
   drift: number;
+};
+
+export type PixelParticle = {
+  pos: Vec2;
+  vel: Vec2;
+  life: number;
+  maxLife: number;
+  size: number;
+  color: string;
+  rotation: number;
+  rotationSpeed: number;
 };
 
 export type MagicTrailParticle = {
@@ -127,6 +159,7 @@ export type LevelConfig = {
     speed?: number;
     amplitude?: number;
   };
+  bombDamageFraction?: number;
 };
 
 export type GameState = {
@@ -144,9 +177,16 @@ export type GameState = {
   shieldCooldown: number; // Tempo desde que pegou o último escudo
   explosionParticles: ExplosionParticle[];
   smokeParticles: SmokeParticle[];
+  pixelParticles: PixelParticle[];
   shieldFragments: ShieldFragment[];
   magicTrailParticles: MagicTrailParticle[];
   damageNumbers: DamageNumber[];
+  bomb: Bomb | null;
+  bombTrailParticles: BombTrailParticle[];
+  bombUsedThisLevel: boolean;
+  bombSpawnTimer: number;
+  scorchMarks: ScorchMark[];
+  bossShakeTimer: number;
   keys: Record<string, boolean>;
   status: 'menu' | 'playing' | 'paused' | 'won' | 'lost';
   victoryTimer: number;
