@@ -31,7 +31,7 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
     bossMovement: { type: 'horizontal', speed: 1.2, amplitude: 40 } // 40% da velocidade padrão (3 * 0.40 = 1.2)
   },
   4: {
-    name: "Spread Mortal",
+    name: "Rajada Mortal",
     bossHp: 26,
     armMoveSpeed: 2.1,
     armAmplitude: 4.5,

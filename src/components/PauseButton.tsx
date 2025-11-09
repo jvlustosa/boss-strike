@@ -1,3 +1,6 @@
+import type { CSSProperties } from 'react';
+import { PIXEL_FONT } from '../utils/fonts';
+
 interface PauseButtonProps {
   onPause: () => void;
 }
@@ -5,7 +8,7 @@ interface PauseButtonProps {
 export function PauseButton({ onPause }: PauseButtonProps) {
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-  const buttonStyle: React.CSSProperties = {
+  const buttonStyle: CSSProperties = {
     position: 'fixed',
     top: isMobile ? '70px' : '70px', // Below UserHeader
     right: isMobile ? '15px' : '10px',
@@ -14,7 +17,7 @@ export function PauseButton({ onPause }: PauseButtonProps) {
     backgroundColor: '#222',
     border: '2px solid #fff',
     color: '#fff',
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: PIXEL_FONT,
     fontSize: isMobile ? '20px' : '16px',
     fontWeight: 'bold',
     cursor: 'pointer',

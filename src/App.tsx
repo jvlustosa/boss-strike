@@ -11,6 +11,7 @@ import { ToastContainer } from './components/ToastContainer';
 import { UserHeader } from './components/UserHeader';
 import { useToast } from './hooks/useToast';
 import { useAuth } from './contexts/AuthContext';
+import { PIXEL_FONT } from './utils/fonts';
 import { updateUrlLevel, getLevelFromUrl } from './game/core/urlParams';
 import { saveProgress, clearProgress, clearVictories } from './game/core/progressCache';
 
@@ -21,6 +22,7 @@ export default function App() {
   const [showPlayroomSession, setShowPlayroomSession] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [authSkipped, setAuthSkipped] = useState(false);
   const toast = useToast();
   const { user, initialized, refreshProfile } = useAuth();
 
@@ -41,7 +43,7 @@ export default function App() {
     }
     
     // Show auth modal on first game start if not logged in
-    if (targetLevel === 1 && !user) {
+    if (targetLevel === 1 && !user && !authSkipped) {
       setShowAuthModal(true);
       return;
     }
@@ -93,6 +95,7 @@ export default function App() {
   const handleAuthSuccess = async () => {
     await refreshProfile();
     setShowAuthModal(false);
+    setAuthSkipped(false);
     // Small delay to ensure state is updated
     setTimeout(() => {
       setShowPlayroomSession(true);
@@ -112,6 +115,7 @@ export default function App() {
   }, [gameStarted, isPaused]);
 
   const handleAuthSkip = () => {
+    setAuthSkipped(true);
     setShowAuthModal(false);
     setShowPlayroomSession(true);
   };
@@ -126,7 +130,7 @@ export default function App() {
         minHeight: '100vh',
         background: '#000',
         color: '#fff',
-        fontFamily: "'Pixelify Sans', monospace",
+        fontFamily: PIXEL_FONT,
       }}>
         Carregando...
       </div>
@@ -138,6 +142,33 @@ export default function App() {
       <>
         {user && (
           <UserHeader onProfileClick={() => setShowProfileModal(true)} />
+        )}
+        {!user && !showAuthModal && (
+          <button
+            type="button"
+            onClick={() => {
+              setAuthSkipped(false);
+              setShowAuthModal(true);
+            }}
+            style={{
+              position: 'fixed',
+              top: '16px',
+              right: '16px',
+              zIndex: 1100,
+              background: '#111',
+              color: '#fff',
+              border: '3px solid #fff',
+              padding: '10px 16px',
+              fontFamily: PIXEL_FONT,
+              fontSize: '12px',
+              letterSpacing: '2px',
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+              boxShadow: '3px 3px 0px #333',
+            }}
+          >
+            Login
+          </button>
         )}
         <MainMenu 
           onStartGame={handleStartGame}
@@ -175,17 +206,56 @@ export default function App() {
           setShowProfileModal(true);
         }} />
       )}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        background: '#000',
-        position: 'relative',
-      }}>
-        {gameState && <LevelTitle key={gameState.level} gameState={gameState} />}
-        <div style={{ position: 'relative' }}>
-          <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} />
+      {!user && !showAuthModal && (
+        <button
+          type="button"
+          onClick={() => {
+            setAuthSkipped(false);
+            setIsPaused(true);
+            setShowAuthModal(true);
+          }}
+          style={{
+            position: 'fixed',
+            top: '16px',
+            right: '16px',
+            zIndex: 1100,
+            background: '#111',
+            color: '#fff',
+            border: '3px solid #fff',
+            padding: '10px 16px',
+            fontFamily: PIXEL_FONT,
+            fontSize: '12px',
+            letterSpacing: '2px',
+            cursor: 'pointer',
+            textTransform: 'uppercase',
+            boxShadow: '3px 3px 0px #333',
+          }}
+        >
+          Login
+        </button>
+      )}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
+          background: '#000',
+          position: 'relative',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '12px',
+          }}
+        >
+          {gameState && <LevelTitle key={gameState.level} gameState={gameState} />}
+          <div style={{ position: 'relative' }}>
+            <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} />
+          </div>
         </div>
         {!isPaused && <PauseButton onPause={handlePause} />}
         {isPaused && (

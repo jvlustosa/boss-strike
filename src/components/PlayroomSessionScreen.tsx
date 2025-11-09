@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { shouldUsePlayroom } from '../game/core/environmentDetector';
 // Note: Warning about createRoot import comes from PlayroomKit internally, not our code
 import { playroomSession } from '../game/core/playroomSession';
+import { PIXEL_FONT } from '../utils/fonts';
 
 interface PlayroomSessionScreenProps {
   onSessionReady: () => void;
@@ -237,7 +238,7 @@ export function PlayroomSessionScreen({ onSessionReady }: PlayroomSessionScreenP
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 1, // Very low z-index to stay below Playroom
-      fontFamily: "'Pixelify Sans', monospace",
+      fontFamily: PIXEL_FONT,
       color: '#fff',
       pointerEvents: status === 'ready' ? 'none' : 'auto', // Allow clicks through when ready
     }}>

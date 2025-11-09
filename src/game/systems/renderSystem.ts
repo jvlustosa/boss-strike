@@ -3,6 +3,12 @@ import { colors } from '../core/assets';
 import { LOGICAL_W, LOGICAL_H } from '../core/config';
 import { isDesktop } from '../core/environmentDetector';
 
+const FONT_XS = '6px "Press Start 2P", "Pixelify Sans", monospace';
+const FONT_SM = '8px "Press Start 2P", "Pixelify Sans", monospace';
+const FONT_MD = '12px "Press Start 2P", "Pixelify Sans", monospace';
+const FONT_LG = '16px "Press Start 2P", "Pixelify Sans", monospace';
+const FONT_XL = '20px "Press Start 2P", "Pixelify Sans", monospace';
+
 export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, isPaused: boolean = false): void {
   // Clear screen
   ctx.fillStyle = colors.background;
@@ -224,7 +230,7 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
   // Shield Hits Remaining Display (canto esquerdo)
   if (state.player.shieldHits > 0) {
     ctx.fillStyle = '#00aaff';
-    ctx.font = '6px "Pixelify Sans", monospace';
+    ctx.font = FONT_XS;
     ctx.textBaseline = 'top';
     ctx.textAlign = 'left';
     ctx.fillText(`${state.player.shieldHits}`, 4, 20);
@@ -247,7 +253,7 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
 
     // Title
     ctx.fillStyle = '#0f0';
-    ctx.font = '8px "Pixelify Sans", monospace';
+    ctx.font = FONT_SM;
     ctx.textBaseline = 'top';
     ctx.fillText('VITÓRIA!', boxX + 8, boxY + 8);
 
@@ -261,7 +267,7 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     ctx.strokeStyle = '#0f0';
     ctx.strokeRect(btnX, btnY, btnW, btnH);
     ctx.fillStyle = '#0f0';
-    ctx.font = '6px "Pixelify Sans", monospace';
+    ctx.font = FONT_XS;
     ctx.fillText('Próxima Fase', btnX + 8, btnY + 4);
 
     // Expor bounds do botão no estado para clique
@@ -278,7 +284,7 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
     
     ctx.fillStyle = '#fff';
-    ctx.font = '12px "Pixelify Sans", monospace';
+    ctx.font = FONT_MD;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('PAUSADO', LOGICAL_W / 2, LOGICAL_H / 2);
@@ -305,14 +311,14 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
 
     // Game Over Title
     ctx.fillStyle = '#f00';
-    ctx.font = '16px "Pixelify Sans", monospace';
+    ctx.font = FONT_MD;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillText('GAME OVER', boxX + boxW / 2, boxY + 8);
 
     // Restart message
     ctx.fillStyle = '#fff';
-    ctx.font = '8px "Pixelify Sans", monospace';
+    ctx.font = FONT_SM;
     ctx.fillText('Reiniciando em...', boxX + boxW / 2, boxY + 32);
 
     // Countdown based on restart timer
@@ -321,7 +327,7 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     const countdown = Math.ceil(timeLeft);
     
     ctx.fillStyle = '#ff0';
-    ctx.font = '12px "Pixelify Sans", monospace';
+    ctx.font = FONT_SM;
     ctx.fillText(countdown.toString(), boxX + boxW / 2, boxY + 48);
   }
 }

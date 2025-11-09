@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { supabase } from '../utils/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { parseSupabaseError } from '../utils/supabaseErrors';
+import { PIXEL_FONT } from '../utils/fonts';
 
 interface AuthModalProps {
   onAuthSuccess: () => void;
@@ -151,7 +152,7 @@ export function AuthModal({ onAuthSuccess, onSkip, showToast, showSuccess }: Aut
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10000,
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: PIXEL_FONT,
   };
 
   const contentStyle: React.CSSProperties = {
@@ -180,7 +181,7 @@ export function AuthModal({ onAuthSuccess, onSkip, showToast, showSuccess }: Aut
     backgroundColor: '#222',
     border: '3px solid #666',
     color: '#fff',
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: PIXEL_FONT,
     fontSize: isMobile ? '14px' : '16px',
     outline: 'none',
     boxSizing: 'border-box' as const,
@@ -194,7 +195,7 @@ export function AuthModal({ onAuthSuccess, onSkip, showToast, showSuccess }: Aut
     backgroundColor: hovered ? '#333' : '#222',
     border: '3px solid #fff',
     color: '#fff',
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: PIXEL_FONT,
     fontSize: isMobile ? '16px' : '18px',
     fontWeight: '600',
     cursor: loading ? 'not-allowed' : 'pointer',
@@ -258,7 +259,7 @@ export function AuthModal({ onAuthSuccess, onSkip, showToast, showSuccess }: Aut
     backgroundColor: hovered ? '#333' : '#222',
     border: '3px solid #4ade80',
     color: '#fff',
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: PIXEL_FONT,
     fontSize: isMobile ? '16px' : '18px',
     fontWeight: '600',
     cursor: 'pointer',
