@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { shouldUsePlayroom } from '../game/core/environmentDetector';
+import { isMobile } from '../game/core/environmentDetector';
 
 interface MobileCreditsProps {
   visible?: boolean;
@@ -12,9 +12,9 @@ export function MobileCredits({
 }: MobileCreditsProps) {
   const [shouldRender, setShouldRender] = useState(false);
 
-  // Only render on mobile/touch devices
+  // Only render on mobile devices
   useEffect(() => {
-    setShouldRender(shouldUsePlayroom());
+    setShouldRender(isMobile());
   }, []);
 
   if (!shouldRender || !visible) {

@@ -10,6 +10,7 @@ interface AuthContextType {
   initialized: boolean;
   refreshProfile: () => Promise<void>;
   getUserId: () => string | null;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -179,6 +180,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return user?.id || null;
   };
 
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      
+      // Clear local state
+      setUser(null);
+      setProfile(null);
+      localStorage.removeItem('supabase_user_id');
+      
+      // Clear game progress from localStorage
+      localStorage.removeItem('game_progress');
+      localStorage.removeItem('victories');
+    } catch (error) {
+      console.error('Error logging out:', error);
+      throw error;
+    }
+  };
+
   const value: AuthContextType = {
     user,
     profile,
@@ -186,6 +206,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     initialized,
     refreshProfile,
     getUserId,
+    logout,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

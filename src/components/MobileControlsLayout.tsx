@@ -1,31 +1,25 @@
 import { useState, useEffect } from 'react';
-import { PlayroomJoystick } from './PlayroomJoystick';
-import { PlayroomAngularJoystick } from './PlayroomAngularJoystick';
+import { NativeJoystick } from './NativeJoystick';
 import { PixelatedFireButton } from './PixelatedFireButton';
 import { emitSubtleLog } from './SubtleLogger';
-import { shouldUsePlayroom, getEnvironmentInfo } from '../game/core/environmentDetector';
 import { isJoystickDisabled } from '../game/core/urlParams';
 
 interface MobileControlsLayoutProps {
   onFire: () => void;
-  defaultType?: 'dpad' | 'angular';
 }
 
-export function MobileControlsLayout({ 
-  onFire, 
-  defaultType = 'dpad' 
-}: MobileControlsLayoutProps) {
-  const [joystickType, setJoystickType] = useState<'dpad' | 'angular'>(defaultType);
+export function MobileControlsLayout({ onFire }: MobileControlsLayoutProps) {
   const [shouldRender, setShouldRender] = useState(false);
   const [layout, setLayout] = useState<'default' | 'compact' | 'spread'>('default');
 
   // Check environment on mount
   useEffect(() => {
-    const usePlayroom = shouldUsePlayroom();
     const disabled = isJoystickDisabled();
-    setShouldRender(usePlayroom && !disabled);
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
-    if (usePlayroom && !disabled) {
+    setShouldRender(isMobile && !disabled);
+    
+    if (isMobile && !disabled) {
       emitSubtleLog('📱', 'system');
       
       // Auto-detect layout based on screen size
@@ -42,8 +36,8 @@ export function MobileControlsLayout({
     }
   }, []);
 
-  // Handle angular joystick input (pass through continuous values)
-  const handleAngularMove = (x: number, y: number) => {
+  // Handle joystick input (pass through continuous values)
+  const handleJoystickMove = (x: number, y: number) => {
     // Pass through continuous values directly to the input system
     // The input system will handle simultaneous key presses
     if (window.handleJoystickMove) {
@@ -59,20 +53,6 @@ export function MobileControlsLayout({
     }
   };
 
-  // Toggle joystick type with keyboard shortcut (Ctrl+J)
-  useEffect(() => {
-    const handleKeyPress = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === 'j' && e.ctrlKey) {
-        e.preventDefault();
-        const newType = joystickType === 'dpad' ? 'angular' : 'dpad';
-        setJoystickType(newType);
-        // emitSubtleLog(newType.toUpperCase(), 'system');
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    return () => window.removeEventListener('keydown', handleKeyPress);
-  }, [joystickType]);
 
   // Don't render anything on desktop
   if (!shouldRender) {
@@ -138,11 +118,7 @@ export function MobileControlsLayout({
     <div style={getLayoutStyles()}>
       {/* Joystick Area */}
       <div style={{ pointerEvents: 'auto' }}>
-        {joystickType === 'dpad' ? (
-          <PlayroomJoystick onFire={onFire} />
-        ) : (
-          <PlayroomAngularJoystick onMove={handleAngularMove} onFire={onFire} />
-        )}
+        <NativeJoystick onMove={handleJoystickMove} onFire={onFire} position="bottom-left" />
       </div>
 
       {/* Fire Button Area */}

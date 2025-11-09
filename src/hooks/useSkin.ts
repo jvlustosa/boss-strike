@@ -85,6 +85,7 @@ export function useSkin() {
     let cancelled = false;
 
     async function loadSkin() {
+      if (!user) return;
       try {
         const selectedSkin = await getSelectedSkinWithDetails(user.id);
         
@@ -147,9 +148,9 @@ export function useSkin() {
             if (textureName) {
               // Only update player color, keep everything else default
               if (playerColor) {
-                const newColors = { ...defaultColors, player: playerColor };
+                const newColors: Partial<typeof defaultColors> = { player: playerColor as typeof defaultColors.player };
                 setColors(newColors);
-                setGameColors({ player: playerColor });
+                setGameColors(newColors);
               }
               
               // Store complete skin data for PlayerRenderer

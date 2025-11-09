@@ -1,7 +1,6 @@
 import type { GameState } from '../core/types';
-import { colors } from '../core/assets';
+import { colors, getSkinData } from '../core/assets';
 import { LOGICAL_W, LOGICAL_H } from '../core/config';
-import { isDesktop } from '../core/environmentDetector';
 import { renderPlayer } from '../components/PlayerRenderer';
 
 const FONT_XS = '6px "Press Start 2P", "Pixelify Sans", monospace';

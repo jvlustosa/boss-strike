@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { shouldUsePlayroom } from '../game/core/environmentDetector';
+import { isMobile } from '../game/core/environmentDetector';
 
 interface LogEntry {
   id: number;
@@ -22,8 +22,8 @@ export function SubtleLogger({
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [nextId, setNextId] = useState(1);
 
-  // Only show logs on mobile/touch devices where Playroom is active
-  const shouldShowLogs = enabled && shouldUsePlayroom();
+  // Only show logs on mobile devices
+  const shouldShowLogs = enabled && isMobile();
 
   useEffect(() => {
     if (!shouldShowLogs) return;

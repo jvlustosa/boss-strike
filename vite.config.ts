@@ -11,8 +11,7 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks: {
-          vendor: ['react', 'react-dom'],
-          playroom: ['playroomkit']
+          vendor: ['react', 'react-dom']
         }
       }
     }
@@ -25,7 +24,4 @@ export default defineConfig({
     port: 3000,
     host: true
   },
-  optimizeDeps: {
-    include: ['playroomkit']
-  }
 })

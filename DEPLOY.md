@@ -57,16 +57,15 @@ O Vercel detectará automaticamente:
 ## 📊 Otimizações Implementadas
 
 ### Build Performance
-- **Code Splitting**: Vendor, Playroom e App separados
+- **Code Splitting**: Vendor e App separados
 - **Minificação**: ESBuild (mais rápido que Terser)
 - **Assets**: Cache de 1 ano para arquivos estáticos
 - **Build Otimizado**: Script `build` usa apenas Vite (sem TypeScript check no deploy)
 
 ### Bundle Sizes
 - **Vendor**: ~141KB (React + React-DOM)
-- **Playroom**: ~27KB (Joystick mobile)
 - **App**: ~159KB (Game logic)
-- **Total**: ~327KB (comprimido: ~100KB)
+- **Total**: ~300KB (comprimido: ~90KB)
 
 ### Cache Strategy
 - **Audio files**: Cache permanente

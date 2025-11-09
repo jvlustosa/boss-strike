@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { shouldUsePlayroom } from '../game/core/environmentDetector';
+import { isMobile } from '../game/core/environmentDetector';
 
 interface PixelatedFireButtonProps {
   onFire: () => void;
@@ -10,9 +10,9 @@ export function PixelatedFireButton({ onFire, position = 'bottom-right' }: Pixel
   const [isPressed, setIsPressed] = useState(false);
   const [shouldRender, setShouldRender] = useState(false);
 
-  // Only render on mobile/touch devices
+  // Only render on mobile devices
   useEffect(() => {
-    setShouldRender(shouldUsePlayroom());
+    setShouldRender(isMobile());
   }, []);
 
   if (!shouldRender) {

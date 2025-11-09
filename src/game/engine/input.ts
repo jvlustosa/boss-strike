@@ -85,10 +85,11 @@ export function registerInput(keys: Record<string, boolean>) {
     keys['arrowup'] = false;
     keys['arrowdown'] = false;
 
-    // Use smaller deadzone for more responsive movement
-    const deadzone = 0.05;
+    // Deadzone configuration - prevents accidental movement from slight input
+    const deadzone = 0.05; // 5% deadzone for responsive control
     
     // Set keys based on joystick values - allow simultaneous movement
+    // Handle horizontal movement (left/right)
     if (Math.abs(x) > deadzone) {
       if (x < 0) {
         keys['a'] = true;
@@ -99,6 +100,8 @@ export function registerInput(keys: Record<string, boolean>) {
       }
     }
     
+    // Handle vertical movement (up/down)
+    // Note: In screen coordinates, negative y is up, positive y is down
     if (Math.abs(y) > deadzone) {
       if (y < 0) {
         keys['w'] = true;
