@@ -24,37 +24,12 @@ export function isTouchDevice(): boolean {
   return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 }
 
-export function shouldUsePlayroom(): boolean {
-  // Use Playroom only on mobile/touch devices
-  const mobile = isMobile();
-  const touch = isTouchDevice();
-  const desktop = isDesktop();
-  const result = mobile || (touch && !desktop);
-  
-  if (DEBUG_LOGS) {
-    console.log('🔍 shouldUsePlayroom check:', {
-      mobile,
-      touch,
-      desktop,
-      result,
-      userAgent: navigator.userAgent,
-      maxTouchPoints: navigator.maxTouchPoints,
-      windowInnerWidth: window.innerWidth,
-      windowInnerHeight: window.innerHeight,
-      screenWidth: screen.width,
-      screenHeight: screen.height
-    });
-  }
-  
-  return result;
-}
 
 export function getEnvironmentInfo() {
   return {
     isDesktop: isDesktop(),
     isMobile: isMobile(),
     isTouchDevice: isTouchDevice(),
-    shouldUsePlayroom: shouldUsePlayroom(),
     userAgent: navigator.userAgent,
     maxTouchPoints: navigator.maxTouchPoints
   };

@@ -4,9 +4,10 @@ import { PIXEL_FONT } from '../utils/fonts';
 
 interface UserHeaderProps {
   onProfileClick: () => void;
+  onPause?: () => void;
 }
 
-export function UserHeader({ onProfileClick }: UserHeaderProps) {
+export function UserHeader({ onProfileClick, onPause }: UserHeaderProps) {
   const { user, profile, loading } = useAuth();
 
   if (loading || !user || !profile) {
@@ -23,44 +24,46 @@ export function UserHeader({ onProfileClick }: UserHeaderProps) {
     zIndex: 1000,
     display: 'flex',
     alignItems: 'center',
-    gap: isMobile ? '10px' : '12px',
+    gap: isMobile ? '8px' : '10px',
     fontFamily: PIXEL_FONT,
     pointerEvents: 'auto',
   };
 
   const usernameStyle: React.CSSProperties = {
     color: '#fff',
-    fontSize: isMobile ? '13px' : '15px',
+    fontSize: isMobile ? '11px' : '15px',
     fontWeight: '600',
     textShadow: '2px 2px 0px #333',
     imageRendering: 'pixelated' as any,
   };
 
-  const profileButtonStyle: React.CSSProperties = {
+  const buttonStyle: React.CSSProperties = {
     background: '#222',
-    border: '3px solid #fff',
+    border: '2px solid #fff',
     borderRadius: '50%',
-    width: isMobile ? '36px' : '40px',
-    height: isMobile ? '36px' : '40px',
+    width: isMobile ? '32px' : '36px',
+    height: isMobile ? '32px' : '36px',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
     fontFamily: PIXEL_FONT,
-    fontSize: isMobile ? '18px' : '20px',
+    fontSize: isMobile ? '14px' : '18px',
     color: '#fff',
     boxShadow: '0 0 0 2px #333, 4px 4px 0px #333',
     transition: 'none',
     imageRendering: 'pixelated' as any,
+    touchAction: 'none',
   };
 
-  const profileButtonHoverStyle: React.CSSProperties = {
-    ...profileButtonStyle,
+  const buttonHoverStyle: React.CSSProperties = {
+    ...buttonStyle,
     background: '#333',
     boxShadow: 'inset 0 0 0 2px #fff, 0 0 0 2px #fff, 4px 4px 0px #333',
   };
 
-  const [hovered, setHovered] = useState(false);
+  const [profileHovered, setProfileHovered] = useState(false);
+  const [pauseHovered, setPauseHovered] = useState(false);
 
   return (
     <div style={headerStyle}>
@@ -68,14 +71,26 @@ export function UserHeader({ onProfileClick }: UserHeaderProps) {
         {profile.username || profile.email?.split('@')[0] || 'Usuário'}
       </span>
       <button
-        style={hovered ? profileButtonHoverStyle : profileButtonStyle}
+        style={profileHovered ? buttonHoverStyle : buttonStyle}
         onClick={onProfileClick}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseEnter={() => setProfileHovered(true)}
+        onMouseLeave={() => setProfileHovered(false)}
         aria-label="Abrir perfil"
       >
         👤
       </button>
+      {onPause && (
+        <button
+          style={pauseHovered ? buttonHoverStyle : buttonStyle}
+          onClick={onPause}
+          onMouseEnter={() => setPauseHovered(true)}
+          onMouseLeave={() => setPauseHovered(false)}
+          aria-label="Pausar jogo"
+          title="Pausar jogo"
+        >
+          ⏸
+        </button>
+      )}
     </div>
   );
 }

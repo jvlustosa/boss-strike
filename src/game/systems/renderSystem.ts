@@ -343,6 +343,27 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     }
   }
 
+  // Pixel particles (boss explosion)
+  for (const pixel of state.pixelParticles) {
+    const alpha = pixel.life / pixel.maxLife;
+    const size = pixel.size * alpha;
+    
+    ctx.save();
+    ctx.translate(pixel.pos.x, pixel.pos.y);
+    ctx.rotate(pixel.rotation);
+    ctx.globalAlpha = alpha;
+    
+    ctx.fillStyle = pixel.color;
+    ctx.fillRect(
+      Math.floor(-size / 2),
+      Math.floor(-size / 2),
+      Math.max(1, Math.floor(size)),
+      Math.max(1, Math.floor(size))
+    );
+    
+    ctx.restore();
+  }
+
   // Explosion particles
   for (const particle of state.explosionParticles) {
     const alpha = particle.life / particle.maxLife;

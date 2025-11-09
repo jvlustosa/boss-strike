@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AnimatedBackground } from './AnimatedBackground';
 import { hasProgress, getNextLevel, getVictoryCount } from '../game/core/progressCache';
 import { getLevelFromUrl } from '../game/core/urlParams';
@@ -11,17 +12,16 @@ interface MainMenuProps {
 }
 
 export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
+  const navigate = useNavigate();
   const [primaryHovered, setPrimaryHovered] = useState(false);
-  const [restartHovered, setRestartHovered] = useState(false);
+  const [phasesHovered, setPhasesHovered] = useState(false);
   const [victoryCount, setVictoryCount] = useState(0);
   const [canContinue, setCanContinue] = useState(false);
   const [nextLevel, setNextLevel] = useState(1);
-  const [showRestartDialog, setShowRestartDialog] = useState(false);
-  const [yesHovered, setYesHovered] = useState(false);
-  const [noHovered, setNoHovered] = useState(false);
   const [profileHovered, setProfileHovered] = useState(false);
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isLandscape = isMobile && window.innerHeight < window.innerWidth;
+
 
   // Load progress and victory count
   useEffect(() => {
@@ -40,34 +40,64 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
     };
     
     loadData();
-  }, [showRestartDialog]);
+  }, []);
 
   const hasVictories = victoryCount > 0;
   const showContinueButton = canContinue && nextLevel > 1;
-  const showRestart = showContinueButton || hasVictories || (canContinue && nextLevel <= 1);
 
-  const getButtonStyle = (hovered: boolean, isSecondary: boolean = false): React.CSSProperties => ({
-    fontFamily: PIXEL_FONT,
-    fontSize: isLandscape ? '12px' : (isMobile ? '15px' : '16px'),
-    fontWeight: '600',
-    color: isSecondary ? '#ccc' : '#fff',
-    backgroundColor: hovered ? (isSecondary ? '#333' : '#444') : (isSecondary ? '#111' : '#222'),
-    border: isMobile ? `3px solid ${isSecondary ? '#666' : '#fff'}` : `4px solid ${isSecondary ? '#666' : '#fff'}`,
-    padding: isLandscape ? '6px 10px' : (isMobile ? '12px 24px' : '14px 28px'),
-    cursor: 'pointer',
-    textTransform: 'uppercase',
-    letterSpacing: isLandscape ? '1px' : (isMobile ? '2px' : '2px'),
-    imageRendering: 'pixelated' as any,
-    boxShadow: hovered 
-      ? `inset 0 0 0 3px ${isSecondary ? '#666' : '#fff'}, 0 0 0 3px ${isSecondary ? '#666' : '#fff'}, 3px 3px 0px #333` 
-      : `inset 0 0 0 3px ${isSecondary ? '#666' : '#fff'}, 3px 3px 0px #333`,
-    transition: 'none',
-    outline: 'none',
-    minWidth: isLandscape ? '110px' : (isMobile ? '180px' : '200px'),
-    textShadow: '1px 1px 0px #333',
-    display: 'block',
-    margin: `0 auto ${isLandscape ? '10px' : (isMobile ? '20px' : '24px')} auto`,
-  });
+  const getButtonStyle = (hovered: boolean, isSecondary: boolean = false, isContinue: boolean = false): React.CSSProperties => {
+    const greenColor = '#4ade80';
+    const greenHover = '#22c55e';
+    const greenDark = '#16a34a';
+    
+    if (isContinue) {
+      return {
+        fontFamily: PIXEL_FONT,
+        fontSize: isLandscape ? '10px' : (isMobile ? '15px' : '16px'),
+        fontWeight: '700',
+        color: '#000',
+        backgroundColor: hovered ? greenHover : greenColor,
+        border: isLandscape ? `2px solid ${greenDark}` : (isMobile ? `3px solid ${greenDark}` : `4px solid ${greenDark}`),
+        padding: isLandscape ? '4px 8px' : (isMobile ? '12px 24px' : '14px 28px'),
+        cursor: 'pointer',
+        textTransform: 'uppercase',
+        letterSpacing: isLandscape ? '0.5px' : (isMobile ? '2px' : '2px'),
+        imageRendering: 'pixelated' as any,
+        boxShadow: hovered 
+          ? `inset 0 0 0 ${isLandscape ? '2px' : '3px'} ${greenDark}, 0 0 0 ${isLandscape ? '2px' : '3px'} ${greenDark}, 0 0 ${isLandscape ? '8px' : '12px'} ${greenColor}80, ${isLandscape ? '2px' : '3px'} ${isLandscape ? '2px' : '3px'} 0px #333` 
+          : `inset 0 0 0 ${isLandscape ? '2px' : '3px'} ${greenDark}, 0 0 ${isLandscape ? '8px' : '12px'} ${greenColor}80, ${isLandscape ? '2px' : '3px'} ${isLandscape ? '2px' : '3px'} 0px #333`,
+        transition: 'none',
+        outline: 'none',
+        width: isLandscape ? '140px' : (isMobile ? '280px' : '320px'),
+        textShadow: '1px 1px 0px rgba(0, 0, 0, 0.3)',
+        display: 'block',
+        margin: `0 auto ${isLandscape ? '6px' : (isMobile ? '20px' : '24px')} auto`,
+      };
+    }
+    
+    return {
+      fontFamily: PIXEL_FONT,
+      fontSize: isLandscape ? '10px' : (isMobile ? '15px' : '16px'),
+      fontWeight: '600',
+      color: isSecondary ? '#ccc' : '#fff',
+      backgroundColor: hovered ? (isSecondary ? '#333' : '#444') : (isSecondary ? '#111' : '#222'),
+      border: isLandscape ? `2px solid ${isSecondary ? '#666' : '#fff'}` : (isMobile ? `3px solid ${isSecondary ? '#666' : '#fff'}` : `4px solid ${isSecondary ? '#666' : '#fff'}`),
+      padding: isLandscape ? '4px 8px' : (isMobile ? '12px 24px' : '14px 28px'),
+      cursor: 'pointer',
+      textTransform: 'uppercase',
+      letterSpacing: isLandscape ? '0.5px' : (isMobile ? '2px' : '2px'),
+      imageRendering: 'pixelated' as any,
+      boxShadow: hovered 
+        ? `inset 0 0 0 ${isLandscape ? '2px' : '3px'} ${isSecondary ? '#666' : '#fff'}, 0 0 0 ${isLandscape ? '2px' : '3px'} ${isSecondary ? '#666' : '#fff'}, ${isLandscape ? '2px' : '3px'} ${isLandscape ? '2px' : '3px'} 0px #333` 
+        : `inset 0 0 0 ${isLandscape ? '2px' : '3px'} ${isSecondary ? '#666' : '#fff'}, ${isLandscape ? '2px' : '3px'} ${isLandscape ? '2px' : '3px'} 0px #333`,
+      transition: 'none',
+      outline: 'none',
+      width: isLandscape ? '140px' : (isMobile ? '280px' : '320px'),
+      textShadow: '1px 1px 0px #333',
+      display: 'block',
+      margin: `0 auto ${isLandscape ? '6px' : (isMobile ? '20px' : '24px')} auto`,
+    };
+  };
 
   const containerStyle: React.CSSProperties = {
     display: 'flex',
@@ -83,24 +113,24 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
     imageRendering: 'pixelated' as any,
     position: 'relative',
     zIndex: 1,
-    padding: isLandscape ? '8px 20px' : (isMobile ? '15px 20px' : '20px 0'),
+    padding: isLandscape ? '4px 12px' : (isMobile ? '15px 20px' : '20px 0'),
   };
 
   const titleStyle: React.CSSProperties = {
-    fontSize: isLandscape ? '20px' : (isMobile ? '26px' : '36px'),
+    fontSize: isLandscape ? '16px' : (isMobile ? '26px' : '36px'),
     fontWeight: '700',
-    marginBottom: isLandscape ? '6px' : (isMobile ? '12px' : '18px'),
+    marginBottom: isLandscape ? '4px' : (isMobile ? '12px' : '18px'),
     textAlign: 'center',
-    letterSpacing: isLandscape ? '2px' : (isMobile ? '3px' : '6px'),
-    textShadow: '3px 3px 0px #333, 6px 6px 0px #666',
+    letterSpacing: isLandscape ? '1px' : (isMobile ? '3px' : '6px'),
+    textShadow: isLandscape ? '2px 2px 0px #333, 4px 4px 0px #666' : '3px 3px 0px #333, 6px 6px 0px #666',
     imageRendering: 'pixelated' as any,
     color: '#fff',
     lineHeight: '1.1',
   };
 
   const creditStyle: React.CSSProperties = {
-    fontSize: isLandscape ? '11px' : (isMobile ? '13px' : '15px'),
-    marginBottom: isLandscape ? '12px' : (isMobile ? '25px' : '35px'),
+    fontSize: isLandscape ? '9px' : (isMobile ? '13px' : '15px'),
+    marginBottom: isLandscape ? '6px' : (isMobile ? '25px' : '35px'),
     textAlign: 'center',
     letterSpacing: isMobile ? '2px' : '3px',
     color: '#aaa',
@@ -111,8 +141,8 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
   };
 
   const trophyStyle: React.CSSProperties = {
-    fontSize: isLandscape ? '12px' : (isMobile ? '15px' : '17px'),
-    marginBottom: isLandscape ? '12px' : (isMobile ? '25px' : '30px'),
+    fontSize: isLandscape ? '10px' : (isMobile ? '15px' : '17px'),
+    marginBottom: isLandscape ? '6px' : (isMobile ? '25px' : '30px'),
     textAlign: 'center',
     color: '#ffd700',
     fontFamily: "'Pixelify Sans', monospace",
@@ -123,8 +153,8 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
   };
 
   const subtitleStyle: React.CSSProperties = {
-    fontSize: isLandscape ? '9px' : (isMobile ? '11px' : '13px'),
-    marginBottom: isLandscape ? '8px' : (isMobile ? '20px' : '25px'),
+    fontSize: isLandscape ? '8px' : (isMobile ? '11px' : '13px'),
+    marginBottom: isLandscape ? '4px' : (isMobile ? '20px' : '25px'),
     textAlign: 'center',
     color: '#666',
     fontFamily: "'Pixelify Sans', monospace",
@@ -133,99 +163,10 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
     textTransform: 'uppercase',
   };
 
-  const handleRestartYes = () => {
-    setShowRestartDialog(false);
-    onStartGame(1, true);
-  };
-
-  const handleRestartNo = () => {
-    setShowRestartDialog(false);
-    onStartGame(1, false);
-  };
-
-  const dialogStyle: React.CSSProperties = {
-    position: 'fixed',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    backgroundColor: '#111',
-    border: '4px solid #fff',
-    padding: isMobile ? '20px' : '30px',
-    zIndex: 1000,
-    textAlign: 'center',
-    fontFamily: "'Pixelify Sans', monospace",
-    color: '#fff',
-    minWidth: isMobile ? '280px' : '350px',
-    boxShadow: '0 0 0 4px #333, 8px 8px 0px #333',
-  };
-
-  const dialogButtonStyle = (hovered: boolean): React.CSSProperties => ({
-    fontFamily: "'Pixelify Sans', monospace",
-    fontSize: isMobile ? '16px' : '18px',
-    fontWeight: '600',
-    color: '#fff',
-    backgroundColor: hovered ? '#444' : '#222',
-    border: '3px solid #fff',
-    padding: isMobile ? '12px 24px' : '14px 28px',
-    cursor: 'pointer',
-    textTransform: 'uppercase',
-    letterSpacing: '2px',
-    margin: '10px',
-    minWidth: '100px',
-    textShadow: '1px 1px 0px #333',
-    boxShadow: hovered 
-      ? 'inset 0 0 0 2px #fff, 0 0 0 2px #fff, 4px 4px 0px #333' 
-      : 'inset 0 0 0 2px #fff, 4px 4px 0px #333',
-    transition: 'none',
-    outline: 'none',
-  });
 
   return (
     <>
       <AnimatedBackground />
-      {showRestartDialog && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          zIndex: 999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <div style={dialogStyle}>
-            <div style={{
-              fontSize: isMobile ? '18px' : '22px',
-              marginBottom: '20px',
-              color: '#fff',
-              textShadow: '2px 2px 0px #333',
-            }}>
-              Você quer reiniciar os seus troféus também?
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-              <button
-                style={dialogButtonStyle(yesHovered)}
-                onMouseEnter={() => setYesHovered(true)}
-                onMouseLeave={() => setYesHovered(false)}
-                onClick={handleRestartYes}
-              >
-                SIM
-              </button>
-              <button
-                style={dialogButtonStyle(noHovered)}
-                onMouseEnter={() => setNoHovered(true)}
-                onMouseLeave={() => setNoHovered(false)}
-                onClick={handleRestartNo}
-              >
-                NÃO
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       <div style={containerStyle}>
         <div style={{ textAlign: 'center' }}>
           <h1 style={titleStyle}>
@@ -235,7 +176,7 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
           <div style={creditStyle}>by Duspace</div>
         </div>
         
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: isLandscape ? '5px' : (isMobile ? '18px' : '22px') }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: isLandscape ? '2px' : (isMobile ? '18px' : '22px') }}>
           <div style={trophyStyle}>
             🏆 {victoryCount} Vitórias
           </div>
@@ -244,12 +185,12 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
             display: 'flex', 
             flexDirection: 'column', 
             alignItems: 'center', 
-            gap: isLandscape ? '12px' : '16px',
+            gap: isLandscape ? '6px' : '16px',
             justifyContent: 'center'
           }}>
             <button
               style={{
-                ...getButtonStyle(primaryHovered, false),
+                ...getButtonStyle(primaryHovered, false, showContinueButton),
                 margin: 0,
               }}
               onMouseEnter={() => setPrimaryHovered(true)}
@@ -265,36 +206,35 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
               {showContinueButton ? `CONTINUAR (FASE ${nextLevel})` : 'JOGAR'}
             </button>
 
-            {showRestart && (
-              <button
-                style={{
-                  ...getButtonStyle(restartHovered, true),
-                  margin: 0,
-                }}
-                onMouseEnter={() => setRestartHovered(true)}
-                onMouseLeave={() => setRestartHovered(false)}
-                onClick={() => setShowRestartDialog(true)}
-              >
-                REINICIAR
-              </button>
-            )}
+            <button
+              style={{
+                ...getButtonStyle(phasesHovered, true),
+                margin: 0,
+              }}
+              onMouseEnter={() => setPhasesHovered(true)}
+              onMouseLeave={() => setPhasesHovered(false)}
+              onClick={() => navigate('/fases')}
+            >
+              VER FASES
+            </button>
           </div>
         </div>
         
         <div style={{ 
-          marginTop: isLandscape ? '3px' : (isMobile ? '5px' : '8px'),
+          marginTop: isLandscape ? '2px' : (isMobile ? '5px' : '8px'),
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: isLandscape ? '6px' : (isMobile ? '10px' : '12px')
+          gap: isLandscape ? '4px' : (isMobile ? '10px' : '12px')
         }}>
           {user && onShowProfile && (
             <button
               style={{
                 ...getButtonStyle(profileHovered, true),
-                fontSize: isLandscape ? '12px' : (isMobile ? '14px' : '16px'),
-                padding: isLandscape ? '6px 10px' : (isMobile ? '10px 20px' : '12px 24px'),
+                fontSize: isLandscape ? '10px' : (isMobile ? '14px' : '16px'),
+                padding: isLandscape ? '4px 8px' : (isMobile ? '10px 20px' : '12px 24px'),
                 marginBottom: 0,
+                width: isLandscape ? '140px' : (isMobile ? '280px' : '320px'),
               }}
               onMouseEnter={() => setProfileHovered(true)}
               onMouseLeave={() => setProfileHovered(false)}

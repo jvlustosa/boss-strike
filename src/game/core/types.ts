@@ -105,6 +105,17 @@ export type SmokeParticle = {
   drift: number;
 };
 
+export type PixelParticle = {
+  pos: Vec2;
+  vel: Vec2;
+  life: number;
+  maxLife: number;
+  size: number;
+  color: string;
+  rotation: number;
+  rotationSpeed: number;
+};
+
 export type MagicTrailParticle = {
   pos: Vec2;
   life: number;
@@ -166,6 +177,7 @@ export type GameState = {
   shieldCooldown: number; // Tempo desde que pegou o último escudo
   explosionParticles: ExplosionParticle[];
   smokeParticles: SmokeParticle[];
+  pixelParticles: PixelParticle[];
   shieldFragments: ShieldFragment[];
   magicTrailParticles: MagicTrailParticle[];
   damageNumbers: DamageNumber[];
