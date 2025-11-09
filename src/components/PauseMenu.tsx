@@ -4,9 +4,10 @@ import { isMobile } from '../game/core/environmentDetector';
 interface PauseMenuProps {
   onContinue: () => void;
   onMainMenu: () => void;
+  onRestart?: () => void;
 }
 
-export function PauseMenu({ onContinue, onMainMenu }: PauseMenuProps) {
+export function PauseMenu({ onContinue, onMainMenu, onRestart }: PauseMenuProps) {
   const mobile = isMobile();
 
   const overlayStyle: React.CSSProperties = {
@@ -130,6 +131,21 @@ export function PauseMenu({ onContinue, onMainMenu }: PauseMenuProps) {
           >
             ▶ Continuar
           </button>
+          
+          {onRestart && (
+            <button
+              style={getButtonStyle(false)}
+              onClick={onRestart}
+              onMouseEnter={(e) => {
+                Object.assign(e.currentTarget.style, getButtonHoverStyle(false));
+              }}
+              onMouseLeave={(e) => {
+                Object.assign(e.currentTarget.style, getButtonStyle(false));
+              }}
+            >
+              🔄 Reiniciar
+            </button>
+          )}
           
           <button
             style={getButtonStyle(false)}

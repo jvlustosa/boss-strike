@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnimatedBackground } from './AnimatedBackground';
-import { hasProgress, getNextLevel, getVictoryCount } from '../game/core/progressCache';
-import { getLevelFromUrl } from '../game/core/urlParams';
+import { loadProgress, getVictoryCount } from '../game/core/progressCache';
 import { PIXEL_FONT } from '../utils/fonts';
 
 interface MainMenuProps {
@@ -16,41 +15,50 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
   const [primaryHovered, setPrimaryHovered] = useState(false);
   const [phasesHovered, setPhasesHovered] = useState(false);
   const [victoryCount, setVictoryCount] = useState(0);
-  const [canContinue, setCanContinue] = useState(false);
   const [nextLevel, setNextLevel] = useState(1);
   const [profileHovered, setProfileHovered] = useState(false);
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isLandscape = isMobile && window.innerHeight < window.innerWidth;
 
 
-  // Load progress and victory count
+  // Load progress from database and victory count
   useEffect(() => {
     const loadData = async () => {
-      const [victoryCount, progressLevel, hasProgressData] = await Promise.all([
-        getVictoryCount(),
-        getNextLevel(),
-        hasProgress(),
-      ]);
-      
-      setVictoryCount(victoryCount);
-      const urlLevel = getLevelFromUrl();
-      const finalLevel = urlLevel && urlLevel > 1 ? urlLevel : progressLevel;
-      setNextLevel(finalLevel);
-      setCanContinue(hasProgressData || !!urlLevel);
+      try {
+        const [progress, victories] = await Promise.all([
+          loadProgress(),
+          getVictoryCount(),
+        ]);
+        
+        setVictoryCount(victories);
+        
+        // Next level is the current unlocked level (not completed yet)
+        if (progress) {
+          // progress.level is the last completed level
+          // So next level to play is progress.level + 1 (capped at maxLevel)
+          setNextLevel(Math.max(1, progress.level + 1));
+        } else {
+          setNextLevel(1);
+        }
+      } catch (error) {
+        console.error('Error loading menu data:', error);
+        // Fallback to level 1 on error
+        setNextLevel(1);
+        setVictoryCount(0);
+      }
     };
     
     loadData();
   }, []);
 
   const hasVictories = victoryCount > 0;
-  const showContinueButton = canContinue && nextLevel > 1;
 
-  const getButtonStyle = (hovered: boolean, isSecondary: boolean = false, isContinue: boolean = false): React.CSSProperties => {
+  const getButtonStyle = (hovered: boolean, isSecondary: boolean = false, isPrimary: boolean = false): React.CSSProperties => {
     const greenColor = '#4ade80';
     const greenHover = '#22c55e';
     const greenDark = '#16a34a';
     
-    if (isContinue) {
+    if (isPrimary) {
       return {
         fontFamily: PIXEL_FONT,
         fontSize: isLandscape ? '10px' : (isMobile ? '15px' : '16px'),
@@ -190,24 +198,16 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
           }}>
             <button
               style={{
-                ...getButtonStyle(primaryHovered, false, showContinueButton),
+                ...getButtonStyle(primaryHovered, false, true),
                 margin: 0,
               }}
               onMouseEnter={() => setPrimaryHovered(true)}
               onMouseLeave={() => setPrimaryHovered(false)}
               onClick={() => {
-                if (showContinueButton) {
-                  onStartGame(nextLevel);
-                } else {
-                  navigate('/play');
-                }
+                onStartGame(nextLevel);
               }}
             >
-              {showContinueButton ? (
-                <>
-                  CONTINUAR → <span style={{ fontSize: isLandscape ? '8px' : (isMobile ? '12px' : '13px') }}>(FASE {nextLevel})</span>
-                </>
-              ) : 'JOGAR'}
+              JOGAR → <span style={{ fontSize: isLandscape ? '8px' : (isMobile ? '12px' : '13px') }}>FASE {nextLevel}</span>
             </button>
 
               <button

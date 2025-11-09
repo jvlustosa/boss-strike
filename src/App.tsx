@@ -16,7 +16,7 @@ import { useSkinUnlock } from './hooks/useSkinUnlock';
 import { useAuth } from './contexts/AuthContext';
 import { PIXEL_FONT } from './utils/fonts';
 import { updateUrlLevel, getLevelFromUrl } from './game/core/urlParams';
-import { saveProgress, clearProgress, clearVictories } from './game/core/progressCache';
+import { saveProgress, clearProgress, clearVictories, getNextLevel } from './game/core/progressCache';
 
 function GameApp() {
   const location = useLocation();
@@ -37,7 +37,9 @@ function GameApp() {
     if (location.pathname === '/play' && !gameStarted) {
       const startGame = async () => {
         const urlLevel = getLevelFromUrl();
-        const targetLevel = urlLevel || 1;
+        // Se não há nível na URL, pega a próxima fase desbloqueada
+        const nextLevel = await getNextLevel();
+        const targetLevel = urlLevel || nextLevel;
         updateUrlLevel(targetLevel);
         
         if (targetLevel === 1) {
@@ -57,9 +59,10 @@ function GameApp() {
   }, [location.pathname, gameStarted, user, authSkipped]);
 
   const handleStartGame = useCallback(async (level?: number, clearTrophies?: boolean) => {
-    // Verificar se há nível na URL primeiro, senão usar o nível passado ou 1
+    // Verificar se há nível na URL primeiro, senão usar o nível passado, senão a próxima fase
     const urlLevel = getLevelFromUrl();
-    const targetLevel = level || urlLevel || 1;
+    const nextLevel = level ? level : (urlLevel || await getNextLevel());
+    const targetLevel = nextLevel;
     updateUrlLevel(targetLevel);
     
     // Se recomeçando (nível 1), limpar o progresso para não mostrar botão "CONTINUAR"
@@ -98,10 +101,10 @@ function GameApp() {
     if (gameState) {
       saveProgress(gameState).catch(console.error);
     }
-    // Reset progress to level 1 when returning to main menu from pause
-    updateUrlLevel(1);
+    // Reset game state and navigate to home
     setGameStarted(false);
     setIsPaused(false);
+    navigate('/');
   };
 
   const handleGameStateChange = useCallback((state: any) => {
@@ -211,35 +214,7 @@ function GameApp() {
 
   const handleCancelRestart = () => {
     setShowRestartPrompt(false);
-    if (gameStarted) {
-      handleMainMenu();
-    }
   };
-
-  const restartButton = (
-    <button
-      type="button"
-      onClick={() => setShowRestartPrompt(true)}
-      style={{
-        position: 'fixed',
-        bottom: '16px',
-        left: '16px',
-        zIndex: 1200,
-        background: '#111',
-        color: '#fff',
-        border: '2px solid #fff',
-        padding: '6px 10px',
-        fontFamily: PIXEL_FONT,
-        fontSize: '10px',
-        letterSpacing: '1px',
-        cursor: 'pointer',
-        textTransform: 'uppercase',
-        boxShadow: '2px 2px 0px #333',
-      }}
-    >
-      Reiniciar
-    </button>
-  );
 
   const restartPrompt = showRestartPrompt ? (
     <div
@@ -336,8 +311,6 @@ function GameApp() {
   if (!gameStarted) {
     return (
       <>
-        {restartButton}
-        {restartPrompt}
         {user && (
           <UserHeader onProfileClick={() => {
             if (user && authProfile?.username) {
@@ -410,6 +383,39 @@ function GameApp() {
   
   return (
     <>
+      {/* Back to Menu button */}
+      <button
+        onClick={handleMainMenu}
+        style={{
+          position: 'fixed',
+          top: isMobile ? '12px' : '16px',
+          left: isMobile ? '12px' : '16px',
+          zIndex: 1100,
+          padding: isMobile ? '10px 16px' : '12px 20px',
+          fontSize: isMobile ? '12px' : '14px',
+          fontFamily: PIXEL_FONT,
+          background: '#222',
+          color: '#fff',
+          border: '2px solid #fff',
+          borderRadius: '8px',
+          cursor: 'pointer',
+          textTransform: 'uppercase',
+          letterSpacing: '1px',
+          boxShadow: '0 0 0 2px #333, 4px 4px 0px #333',
+          transition: 'background 0.2s ease',
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = '#333';
+          e.currentTarget.style.boxShadow = 'inset 0 0 0 2px #fff, 0 0 0 2px #fff, 4px 4px 0px #333';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = '#222';
+          e.currentTarget.style.boxShadow = '0 0 0 2px #333, 4px 4px 0px #333';
+        }}
+      >
+        ← Menu
+      </button>
+
       {user && (
         <UserHeader 
           onProfileClick={() => {
@@ -493,11 +499,11 @@ function GameApp() {
         {isPaused && gameState && !(gameState.status === 'won' && gameState.victoryTimer <= 0) && (
           <PauseMenu 
             onContinue={handleContinue} 
-            onMainMenu={handleMainMenu} 
+            onMainMenu={handleMainMenu}
+            onRestart={() => setShowRestartPrompt(true)}
           />
         )}
       </div>
-      {!gameStarted && restartButton}
       {restartPrompt}
       {showProfileModal && user && (
         <ProfilePage 

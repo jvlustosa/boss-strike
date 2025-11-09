@@ -169,7 +169,8 @@ export async function getNextLevel(): Promise<number> {
   const progress = await loadProgress();
   if (!progress) return 1;
   const maxLevel = getMaxLevel();
-  return Math.min(Math.max(progress.level, 1), maxLevel);
+  // progress.level is the last completed level, so next is progress.level + 1
+  return Math.min(Math.max(progress.level + 1, 1), maxLevel);
 }
 
 export async function saveVictory(level: number): Promise<void> {
