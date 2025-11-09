@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { PIXEL_FONT } from '../utils/fonts';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -35,7 +36,7 @@ export function Toast({ toast, onClose }: ToastProps) {
       marginBottom: '12px',
       backgroundColor: '#111',
       border: '4px solid',
-      fontFamily: "'Pixelify Sans', monospace",
+      fontFamily: PIXEL_FONT,
       fontSize: isMobile ? '13px' : '15px',
       color: '#fff',
       boxShadow: '0 0 0 3px #333, 6px 6px 0px #333',
@@ -99,7 +100,7 @@ export function Toast({ toast, onClose }: ToastProps) {
     color: '#fff',
     fontSize: '18px',
     cursor: 'pointer',
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: PIXEL_FONT,
     padding: '4px 8px',
     lineHeight: '1',
     opacity: 0.7,
@@ -109,7 +110,7 @@ export function Toast({ toast, onClose }: ToastProps) {
     fontSize: isMobile ? '11px' : '12px',
     color: '#aaa',
     marginTop: '6px',
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: PIXEL_FONT,
     opacity: 0.8,
   };
 

@@ -5,6 +5,7 @@ import type { Profile, GameProgress, Skin, UserSkinWithDetails } from '../../sup
 import { getVictoryCount, getNextLevel } from '../game/core/progressCache';
 import { parseSupabaseError } from '../utils/supabaseErrors';
 import { getAllSkins, getUserSkinsWithDetails, equipSkin } from '../utils/skins';
+import { PIXEL_FONT } from '../utils/fonts';
 import { getSkinPreviewStyle } from '../utils/skinPreview';
 
 interface ProfilePageProps {
@@ -218,7 +219,7 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10000,
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: PIXEL_FONT,
     overflow: 'auto',
     padding: isMobile ? '10px' : '20px',
   };
@@ -258,7 +259,7 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
     border: active ? '3px solid #fff' : '3px solid transparent',
     borderBottom: active ? '3px solid #fff' : '3px solid transparent',
     color: active ? '#fff' : '#666',
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: PIXEL_FONT,
     fontSize: isMobile ? '14px' : '16px',
     fontWeight: '600',
     cursor: 'pointer',
@@ -295,7 +296,7 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
     backgroundColor: hovered ? '#333' : '#222',
     border: '3px solid #fff',
     color: '#fff',
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: PIXEL_FONT,
     fontSize: isMobile ? '16px' : '18px',
     fontWeight: '600',
     cursor: 'pointer',
@@ -314,7 +315,7 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
     color: '#fff',
     fontSize: '24px',
     cursor: 'pointer',
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: PIXEL_FONT,
     padding: '8px',
     lineHeight: '1',
   };

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { PIXEL_FONT } from '../utils/fonts';
 
 interface UserHeaderProps {
   onProfileClick: () => void;
@@ -23,7 +24,7 @@ export function UserHeader({ onProfileClick }: UserHeaderProps) {
     display: 'flex',
     alignItems: 'center',
     gap: isMobile ? '10px' : '12px',
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: PIXEL_FONT,
     pointerEvents: 'auto',
   };
 
@@ -45,7 +46,7 @@ export function UserHeader({ onProfileClick }: UserHeaderProps) {
     alignItems: 'center',
     justifyContent: 'center',
     cursor: 'pointer',
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: PIXEL_FONT,
     fontSize: isMobile ? '18px' : '20px',
     color: '#fff',
     boxShadow: '0 0 0 2px #333, 4px 4px 0px #333',

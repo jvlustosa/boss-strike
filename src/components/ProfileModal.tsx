@@ -4,6 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import type { Profile, GameProgress } from '../../supabase/supabase-structure';
 import { getVictoryCount, getNextLevel } from '../game/core/progressCache';
 import { parseSupabaseError } from '../utils/supabaseErrors';
+import { PIXEL_FONT } from '../utils/fonts';
 
 interface ProfileModalProps {
   onClose: () => void;
@@ -87,7 +88,7 @@ export function ProfileModal({ onClose, userId, showToast }: ProfileModalProps) 
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 10000,
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: PIXEL_FONT,
   };
 
   const contentStyle: React.CSSProperties = {
@@ -136,7 +137,7 @@ export function ProfileModal({ onClose, userId, showToast }: ProfileModalProps) 
     backgroundColor: hovered ? '#333' : '#222',
     border: '3px solid #fff',
     color: '#fff',
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: PIXEL_FONT,
     fontSize: isMobile ? '16px' : '18px',
     fontWeight: '600',
     cursor: 'pointer',
@@ -155,7 +156,7 @@ export function ProfileModal({ onClose, userId, showToast }: ProfileModalProps) 
     color: '#fff',
     fontSize: '24px',
     cursor: 'pointer',
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: PIXEL_FONT,
     padding: '8px',
     lineHeight: '1',
   };

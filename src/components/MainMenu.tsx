@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { AnimatedBackground } from './AnimatedBackground';
 import { hasProgress, getNextLevel, getVictoryCount } from '../game/core/progressCache';
 import { getLevelFromUrl } from '../game/core/urlParams';
+import { PIXEL_FONT } from '../utils/fonts';
 
 interface MainMenuProps {
   onStartGame: (level?: number, clearTrophies?: boolean) => void;
@@ -10,8 +11,8 @@ interface MainMenuProps {
 }
 
 export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
-  const [isHovered, setIsHovered] = useState(false);
-  const [continueHovered, setContinueHovered] = useState(false);
+  const [primaryHovered, setPrimaryHovered] = useState(false);
+  const [restartHovered, setRestartHovered] = useState(false);
   const [victoryCount, setVictoryCount] = useState(0);
   const [canContinue, setCanContinue] = useState(false);
   const [nextLevel, setNextLevel] = useState(1);
@@ -33,7 +34,7 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
       
       setVictoryCount(victoryCount);
       const urlLevel = getLevelFromUrl();
-      const finalLevel = urlLevel || progressLevel;
+      const finalLevel = urlLevel && urlLevel > 1 ? urlLevel : progressLevel;
       setNextLevel(finalLevel);
       setCanContinue(hasProgressData || !!urlLevel);
     };
@@ -41,27 +42,31 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
     loadData();
   }, [showRestartDialog]);
 
+  const hasVictories = victoryCount > 0;
+  const showContinueButton = canContinue && nextLevel > 1;
+  const showRestart = showContinueButton || hasVictories || (canContinue && nextLevel <= 1);
+
   const getButtonStyle = (hovered: boolean, isSecondary: boolean = false): React.CSSProperties => ({
-    fontFamily: "'Pixelify Sans', monospace",
-    fontSize: isLandscape ? '14px' : (isMobile ? '18px' : '20px'),
+    fontFamily: PIXEL_FONT,
+    fontSize: isLandscape ? '12px' : (isMobile ? '15px' : '16px'),
     fontWeight: '600',
     color: isSecondary ? '#ccc' : '#fff',
     backgroundColor: hovered ? (isSecondary ? '#333' : '#444') : (isSecondary ? '#111' : '#222'),
     border: isMobile ? `3px solid ${isSecondary ? '#666' : '#fff'}` : `4px solid ${isSecondary ? '#666' : '#fff'}`,
-    padding: isLandscape ? '8px 12px' : (isMobile ? '14px 28px' : '16px 32px'),
+    padding: isLandscape ? '6px 10px' : (isMobile ? '12px 24px' : '14px 28px'),
     cursor: 'pointer',
     textTransform: 'uppercase',
-    letterSpacing: isLandscape ? '1px' : (isMobile ? '2px' : '3px'),
+    letterSpacing: isLandscape ? '1px' : (isMobile ? '2px' : '2px'),
     imageRendering: 'pixelated' as any,
     boxShadow: hovered 
-      ? `inset 0 0 0 3px ${isSecondary ? '#666' : '#fff'}, 0 0 0 3px ${isSecondary ? '#666' : '#fff'}, 4px 4px 0px #333` 
-      : `inset 0 0 0 3px ${isSecondary ? '#666' : '#fff'}, 4px 4px 0px #333`,
+      ? `inset 0 0 0 3px ${isSecondary ? '#666' : '#fff'}, 0 0 0 3px ${isSecondary ? '#666' : '#fff'}, 3px 3px 0px #333` 
+      : `inset 0 0 0 3px ${isSecondary ? '#666' : '#fff'}, 3px 3px 0px #333`,
     transition: 'none',
     outline: 'none',
-    minWidth: isLandscape ? '120px' : (isMobile ? '200px' : '220px'),
+    minWidth: isLandscape ? '110px' : (isMobile ? '180px' : '200px'),
     textShadow: '1px 1px 0px #333',
     display: 'block',
-    margin: `0 auto ${isLandscape ? '12px' : (isMobile ? '25px' : '30px')} auto`,
+    margin: `0 auto ${isLandscape ? '10px' : (isMobile ? '20px' : '24px')} auto`,
   });
 
   const containerStyle: React.CSSProperties = {
@@ -74,7 +79,7 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
     overflow: 'hidden',
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
     color: '#fff',
-    fontFamily: "'Pixelify Sans', monospace",
+    fontFamily: PIXEL_FONT,
     imageRendering: 'pixelated' as any,
     position: 'relative',
     zIndex: 1,
@@ -82,12 +87,12 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
   };
 
   const titleStyle: React.CSSProperties = {
-    fontSize: isLandscape ? '24px' : (isMobile ? '32px' : '48px'),
+    fontSize: isLandscape ? '20px' : (isMobile ? '26px' : '36px'),
     fontWeight: '700',
     marginBottom: isLandscape ? '6px' : (isMobile ? '12px' : '18px'),
     textAlign: 'center',
-    letterSpacing: isLandscape ? '2px' : (isMobile ? '4px' : '8px'),
-    textShadow: '4px 4px 0px #333, 8px 8px 0px #666',
+    letterSpacing: isLandscape ? '2px' : (isMobile ? '3px' : '6px'),
+    textShadow: '3px 3px 0px #333, 6px 6px 0px #666',
     imageRendering: 'pixelated' as any,
     color: '#fff',
     lineHeight: '1.1',
@@ -237,42 +242,42 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
           
           <div style={{ 
             display: 'flex', 
-            flexDirection: isLandscape ? 'row' : 'column', 
+            flexDirection: 'column', 
             alignItems: 'center', 
-            gap: isLandscape ? '15px' : '0',
+            gap: isLandscape ? '12px' : '16px',
             justifyContent: 'center'
           }}>
-            {canContinue && (
-              <button
-                style={{
-                  ...getButtonStyle(continueHovered, false),
-                  marginBottom: isLandscape ? '0' : getButtonStyle(continueHovered, false).marginBottom
-                }}
-                onMouseEnter={() => setContinueHovered(true)}
-                onMouseLeave={() => setContinueHovered(false)}
-                onClick={() => onStartGame(nextLevel)}
-              >
-                CONTINUAR (FASE {nextLevel})
-              </button>
-            )}
-            
             <button
               style={{
-                ...getButtonStyle(isHovered, canContinue),
-                marginBottom: isLandscape ? '0' : getButtonStyle(isHovered, canContinue).marginBottom
+                ...getButtonStyle(primaryHovered, false),
+                margin: 0,
               }}
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
+              onMouseEnter={() => setPrimaryHovered(true)}
+              onMouseLeave={() => setPrimaryHovered(false)}
               onClick={() => {
-                if (canContinue) {
-                  setShowRestartDialog(true);
+                if (showContinueButton) {
+                  onStartGame(nextLevel);
                 } else {
                   onStartGame(1);
                 }
               }}
             >
-              {canContinue ? 'RECOMEÇAR' : 'JOGAR'}
+              {showContinueButton ? `CONTINUAR (FASE ${nextLevel})` : 'JOGAR'}
             </button>
+
+            {showRestart && (
+              <button
+                style={{
+                  ...getButtonStyle(restartHovered, true),
+                  margin: 0,
+                }}
+                onMouseEnter={() => setRestartHovered(true)}
+                onMouseLeave={() => setRestartHovered(false)}
+                onClick={() => setShowRestartDialog(true)}
+              >
+                REINICIAR
+              </button>
+            )}
           </div>
         </div>
         

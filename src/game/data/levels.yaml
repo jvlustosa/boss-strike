@@ -33,7 +33,7 @@ levels:
       burstDelay: 0.1
     
   4:
-    name: "Spread Mortal"
+    name: "Rajada Mortal"
     bossHp: 35
     armMoveSpeed: 2.8
     armAmplitude: 6
