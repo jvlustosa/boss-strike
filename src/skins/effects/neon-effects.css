@@ -1,0 +1,53 @@
+/* Neon Skin Effects - Animações e estilos visuais */
+.skin-neon .player {
+  background: var(--player-color);
+  box-shadow: 
+    0 0 10px var(--player-glow),
+    0 0 20px var(--player-glow),
+    0 0 30px var(--player-glow),
+    inset 0 0 10px rgba(57, 255, 20, 0.5);
+  animation: neon-flicker 0.15s infinite alternate;
+  border: 1px solid var(--player-glow);
+}
+
+@keyframes neon-flicker {
+  0% { 
+    box-shadow: 
+      0 0 5px var(--player-glow),
+      0 0 10px var(--player-glow),
+      0 0 15px var(--player-glow);
+  }
+  100% { 
+    box-shadow: 
+      0 0 10px var(--player-glow),
+      0 0 20px var(--player-glow),
+      0 0 30px var(--player-glow),
+      0 0 40px var(--player-glow);
+  }
+}
+
+.skin-neon .boss {
+  background: var(--boss-color);
+  box-shadow: 
+    0 0 15px #ff00ff,
+    0 0 30px rgba(255, 0, 255, 0.5);
+  border: 1px solid #ff00ff;
+  animation: neon-pulse 1s infinite;
+}
+
+@keyframes neon-pulse {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.3); }
+}
+
+.skin-neon .boss-weakspot {
+  background: var(--boss-weakspot-color);
+  box-shadow: 0 0 20px #ffff00;
+  animation: neon-weakspot 0.5s infinite alternate;
+}
+
+@keyframes neon-weakspot {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0.8; transform: scale(1.05); }
+}
+

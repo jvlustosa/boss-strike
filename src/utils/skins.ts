@@ -46,6 +46,36 @@ export async function getEquippedSkin(userId: string): Promise<UserSkin | null> 
   return data;
 }
 
+export async function getSelectedSkinWithDetails(userId: string): Promise<UserSkinWithDetails | null> {
+  // First get profile to find selected_skin
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('selected_skin')
+    .eq('id', userId)
+    .single();
+
+  if (profileError || !profile?.selected_skin) {
+    return null;
+  }
+
+  // Then get the user_skin with details
+  const { data, error } = await supabase
+    .from('user_skins')
+    .select(`
+      *,
+      skin:skins(*)
+    `)
+    .eq('id', profile.selected_skin)
+    .single();
+
+  if (error) {
+    console.error('Error fetching selected skin with details:', error);
+    return null;
+  }
+
+  return data as UserSkinWithDetails;
+}
+
 export async function unlockSkin(userId: string, skinId: string): Promise<boolean> {
   const { error } = await supabase
     .from('user_skins')
@@ -64,26 +94,27 @@ export async function unlockSkin(userId: string, skinId: string): Promise<boolea
 }
 
 export async function equipSkin(userId: string, skinId: string): Promise<boolean> {
-  // First, unequip all skins
-  const { error: unequipError } = await supabase
+  // Find the user_skin id for this skin
+  const { data: userSkin, error: findError } = await supabase
     .from('user_skins')
-    .update({ is_equipped: false })
-    .eq('user_id', userId);
+    .select('id')
+    .eq('user_id', userId)
+    .eq('skin_id', skinId)
+    .single();
 
-  if (unequipError) {
-    console.error('Error unequipping skins:', unequipError);
+  if (findError || !userSkin) {
+    console.error('Error finding user skin:', findError);
     return false;
   }
 
-  // Then equip the selected skin
-  const { error: equipError } = await supabase
-    .from('user_skins')
-    .update({ is_equipped: true })
-    .eq('user_id', userId)
-    .eq('skin_id', skinId);
+  // Update profile with selected_skin
+  const { error: updateError } = await supabase
+    .from('profiles')
+    .update({ selected_skin: userSkin.id })
+    .eq('id', userId);
 
-  if (equipError) {
-    console.error('Error equipping skin:', equipError);
+  if (updateError) {
+    console.error('Error equipping skin:', updateError);
     return false;
   }
 

@@ -1,0 +1,224 @@
+/* ============================================================================
+   GAME EFFECT BRIDGE
+   Connects effect classes on body to game elements (.player, .boss, etc.)
+   ============================================================================ */
+
+/* Shiny Rare Effect */
+body.effect-shiny-rare .skin-basic-blue .player,
+body.effect-shiny-rare .skin-basic-red .player,
+body.effect-shiny-rare .skin-basic-green .player,
+body.effect-shiny-rare .skin-fire .player,
+body.effect-shiny-rare .skin-ice .player,
+body.effect-shiny-rare .skin-neon .player {
+  position: relative;
+  filter: brightness(1.1) saturate(1.2);
+  box-shadow: 
+    0 0 15px currentColor,
+    0 0 30px rgba(255, 255, 255, 0.3);
+}
+
+body.effect-shiny-rare .skin-basic-blue .player::before,
+body.effect-shiny-rare .skin-basic-red .player::before,
+body.effect-shiny-rare .skin-basic-green .player::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(
+    45deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.3) 50%,
+    transparent 70%
+  );
+  animation: shiny-sweep 2s infinite;
+  pointer-events: none;
+}
+
+@keyframes shiny-sweep {
+  0% { transform: translateX(-100%) translateY(-100%); }
+  100% { transform: translateX(100%) translateY(100%); }
+}
+
+/* Regular Holo Effect */
+body.effect-regular-holo .skin-basic-blue .player,
+body.effect-regular-holo .skin-basic-red .player,
+body.effect-regular-holo .skin-basic-green .player {
+  position: relative;
+  filter: hue-rotate(0deg) saturate(1.3);
+  box-shadow: 
+    0 0 10px currentColor,
+    0 0 20px rgba(255, 255, 255, 0.2);
+  animation: holo-shimmer 3s infinite;
+}
+
+@keyframes holo-shimmer {
+  0%, 100% { filter: hue-rotate(0deg) saturate(1.3); }
+  25% { filter: hue-rotate(90deg) saturate(1.4); }
+  50% { filter: hue-rotate(180deg) saturate(1.3); }
+  75% { filter: hue-rotate(270deg) saturate(1.4); }
+}
+
+/* Reverse Holo Effect */
+body.effect-reverse-holo .skin-ice .player {
+  position: relative;
+  filter: brightness(1.05) contrast(1.1);
+  box-shadow: 
+    0 0 12px rgba(0, 204, 255, 0.5),
+    0 0 24px rgba(0, 204, 255, 0.3);
+}
+
+body.effect-reverse-holo .skin-ice .player::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.1) 1%,
+    transparent 2%
+  );
+  pointer-events: none;
+}
+
+/* Rainbow Holo Effect */
+body.effect-rainbow-holo .skin-void .player {
+  position: relative;
+  animation: rainbow-holo-shift 4s infinite;
+  box-shadow: 
+    0 0 15px currentColor,
+    0 0 30px rgba(255, 255, 255, 0.4);
+}
+
+@keyframes rainbow-holo-shift {
+  0% { filter: hue-rotate(0deg) saturate(1.5); }
+  25% { filter: hue-rotate(90deg) saturate(1.6); }
+  50% { filter: hue-rotate(180deg) saturate(1.5); }
+  75% { filter: hue-rotate(270deg) saturate(1.6); }
+  100% { filter: hue-rotate(360deg) saturate(1.5); }
+}
+
+/* Radiant Holo Effect */
+body.effect-radiant-holo .skin-gold .player {
+  position: relative;
+  filter: brightness(1.2) saturate(1.4);
+  box-shadow: 
+    0 0 20px #ffd700,
+    0 0 40px rgba(255, 215, 0, 0.6),
+    0 0 60px rgba(255, 215, 0, 0.3);
+  animation: radiant-pulse 2s infinite;
+}
+
+@keyframes radiant-pulse {
+  0%, 100% { 
+    filter: brightness(1.2) saturate(1.4); 
+    box-shadow: 0 0 20px #ffd700, 0 0 40px rgba(255, 215, 0, 0.6);
+  }
+  50% { 
+    filter: brightness(1.4) saturate(1.6); 
+    box-shadow: 0 0 30px #ffd700, 0 0 60px rgba(255, 215, 0, 0.8), 0 0 90px rgba(255, 215, 0, 0.4);
+  }
+}
+
+/* Cosmos Holo Effect */
+body.effect-cosmos-holo .skin-rainbow .player {
+  position: relative;
+  background: 
+    radial-gradient(circle at 30% 30%, rgba(255, 0, 0, 0.3), transparent 50%),
+    radial-gradient(circle at 70% 70%, rgba(0, 0, 255, 0.3), transparent 50%),
+    linear-gradient(90deg, 
+      #ff0000 0%, 
+      #ff7f00 14%, 
+      #ffff00 28%, 
+      #00ff00 42%, 
+      #0000ff 57%, 
+      #4b0082 71%, 
+      #9400d3 85%, 
+      #ff0000 100%);
+  background-size: 200% 200%, 200% 200%, 200% 100%;
+  animation: cosmos-shift 5s ease-in-out infinite;
+  box-shadow: 
+    0 0 25px rgba(255, 255, 255, 0.6),
+    0 0 50px rgba(255, 0, 255, 0.4);
+}
+
+@keyframes cosmos-shift {
+  0%, 100% { background-position: 0% 0%, 100% 100%, 0% 50%; }
+  50% { background-position: 100% 100%, 0% 0%, 100% 50%; }
+}
+
+/* V-Max Effect */
+body.effect-v-max .skin-fire .player {
+  position: relative;
+  filter: brightness(1.3) saturate(1.5);
+  box-shadow: 
+    0 0 20px #ff4400,
+    0 0 40px rgba(255, 68, 0, 0.7),
+    0 0 60px rgba(255, 68, 0, 0.4);
+  animation: vmax-power 1.5s infinite;
+}
+
+@keyframes vmax-power {
+  0%, 100% { 
+    transform: scale(1);
+    filter: brightness(1.3) saturate(1.5);
+  }
+  50% { 
+    transform: scale(1.05);
+    filter: brightness(1.5) saturate(1.7);
+  }
+}
+
+/* Shiny V Effect */
+body.effect-shiny-v .skin-neon .player {
+  position: relative;
+  filter: brightness(1.2) saturate(1.4);
+  box-shadow: 
+    0 0 15px #00ff41,
+    0 0 30px rgba(0, 255, 65, 0.6),
+    0 0 45px rgba(0, 255, 65, 0.3);
+  animation: shiny-v-glow 2s infinite;
+}
+
+@keyframes shiny-v-glow {
+  0%, 100% { 
+    box-shadow: 
+      0 0 15px #00ff41,
+      0 0 30px rgba(0, 255, 65, 0.6);
+  }
+  50% { 
+    box-shadow: 
+      0 0 25px #00ff41,
+      0 0 50px rgba(0, 255, 65, 0.8),
+      0 0 75px rgba(0, 255, 65, 0.4);
+  }
+}
+
+/* Secret Rare Effect */
+body.effect-secret-rare .skin-basic-blue .player,
+body.effect-secret-rare .skin-basic-red .player,
+body.effect-secret-rare .skin-basic-green .player {
+  position: relative;
+  filter: brightness(1.15) saturate(1.3) contrast(1.1);
+  box-shadow: 
+    0 0 20px currentColor,
+    0 0 40px rgba(255, 255, 255, 0.4),
+    0 0 60px rgba(255, 255, 255, 0.2);
+  animation: secret-rare-glow 3s infinite;
+}
+
+@keyframes secret-rare-glow {
+  0%, 100% { 
+    filter: brightness(1.15) saturate(1.3) contrast(1.1);
+    box-shadow: 0 0 20px currentColor, 0 0 40px rgba(255, 255, 255, 0.4);
+  }
+  50% { 
+    filter: brightness(1.25) saturate(1.4) contrast(1.2);
+    box-shadow: 0 0 30px currentColor, 0 0 60px rgba(255, 255, 255, 0.6), 0 0 90px rgba(255, 255, 255, 0.3);
+  }
+}
+

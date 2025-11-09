@@ -1,0 +1,11 @@
+/* Rainbow Skin - Variáveis CSS */
+.skin-rainbow {
+  --player-color: #ff0000;
+  --boss-color: #0000ff;
+  --boss-arm-color: #6600cc;
+  --boss-weakspot-color: #ffff00;
+  --player-bullet-color: #ffffff;
+  --boss-bullet-color: #ff00ff;
+  --heart-color: #ff0066;
+  --background-color: #000000;
+}

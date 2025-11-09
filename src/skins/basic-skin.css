@@ -1,0 +1,52 @@
+/* Basic Skin - Variáveis CSS para skins básicas */
+.skin-basic {
+  --player-color: #00aaff;
+  --player-glow: #0088ff;
+  --boss-color: #cc0000;
+  --boss-arm-color: #990000;
+  --boss-weakspot-color: #ffff00;
+  --player-bullet-color: #ffffff;
+  --boss-bullet-color: #ff8800;
+  --heart-color: #ff0066;
+  --background-color: #000000;
+}
+
+/* Basic Blue Variant */
+.skin-basic-blue {
+  --player-color: #00aaff;
+  --player-glow: #0088ff;
+  --boss-color: #cc0000;
+  --boss-arm-color: #990000;
+  --boss-weakspot-color: #ffff00;
+  --player-bullet-color: #ffffff;
+  --boss-bullet-color: #ff8800;
+  --heart-color: #ff0066;
+  --background-color: #000000;
+}
+
+/* Basic Red Variant */
+.skin-basic-red {
+  --player-color: #ff4444;
+  --player-glow: #ff0000;
+  --boss-color: #cc0000;
+  --boss-arm-color: #990000;
+  --boss-weakspot-color: #ffff00;
+  --player-bullet-color: #ffffff;
+  --boss-bullet-color: #ff8800;
+  --heart-color: #ff0066;
+  --background-color: #000000;
+}
+
+/* Basic Green Variant */
+.skin-basic-green {
+  --player-color: #44ff44;
+  --player-glow: #00ff00;
+  --boss-color: #cc0000;
+  --boss-arm-color: #990000;
+  --boss-weakspot-color: #ffff00;
+  --player-bullet-color: #ffffff;
+  --boss-bullet-color: #ff8800;
+  --heart-color: #ff0066;
+  --background-color: #000000;
+}
+

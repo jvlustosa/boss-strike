@@ -1,0 +1,27 @@
+/* Fire Skin Effects - Animações e estilos visuais */
+.skin-fire .player {
+  background: linear-gradient(135deg, var(--player-color), var(--player-glow));
+  box-shadow: 0 0 10px var(--player-glow), 0 0 20px var(--player-glow);
+  animation: fire-flicker 0.3s infinite alternate;
+}
+
+@keyframes fire-flicker {
+  0% { filter: brightness(1); }
+  100% { filter: brightness(1.2); }
+}
+
+.skin-fire .boss {
+  background: linear-gradient(135deg, var(--boss-color), #880000);
+  box-shadow: 0 0 15px rgba(255, 68, 0, 0.5);
+}
+
+.skin-fire .boss-weakspot {
+  background: radial-gradient(circle, var(--boss-weakspot-color), #cc8800);
+  animation: pulse-fire 1s infinite;
+}
+
+@keyframes pulse-fire {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.1); }
+}
+

@@ -84,6 +84,14 @@ export type SmokeParticle = {
   drift: number;
 };
 
+export type IceTrailParticle = {
+  pos: Vec2;
+  life: number;
+  maxLife: number;
+  size: number;
+  alpha: number;
+};
+
 export type BulletPattern = 
   | { type: 'single' }
   | { type: 'double'; spread: number }
@@ -126,6 +134,7 @@ export type GameState = {
   explosionParticles: ExplosionParticle[];
   smokeParticles: SmokeParticle[];
   shieldFragments: ShieldFragment[];
+  iceTrailParticles: IceTrailParticle[];
   keys: Record<string, boolean>;
   status: 'menu' | 'playing' | 'paused' | 'won' | 'lost';
   victoryTimer: number;

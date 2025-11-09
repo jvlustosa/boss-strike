@@ -1,0 +1,12 @@
+/* Ice Skin - Variáveis CSS */
+.skin-ice {
+  --player-color: #00ccff;
+  --player-glow: #66ddff;
+  --boss-color: #0066cc;
+  --boss-arm-color: #004499;
+  --boss-weakspot-color: #ffffff;
+  --player-bullet-color: #88eeff;
+  --boss-bullet-color: #0088ff;
+  --heart-color: #ff0066;
+  --background-color: #000033;
+}

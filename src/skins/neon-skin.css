@@ -1,0 +1,12 @@
+/* Neon Skin - Variáveis CSS */
+.skin-neon {
+  --player-color: #00ff41;
+  --player-glow: #39ff14;
+  --boss-color: #ff00ff;
+  --boss-arm-color: #cc00cc;
+  --boss-weakspot-color: #ffff00;
+  --player-bullet-color: #00ffff;
+  --boss-bullet-color: #ff0080;
+  --heart-color: #ff0066;
+  --background-color: #0a0a0a;
+}

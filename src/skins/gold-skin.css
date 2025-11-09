@@ -1,0 +1,12 @@
+/* Gold Skin - Variáveis CSS */
+.skin-gold {
+  --player-color: #ffd700;
+  --player-glow: #ffed4e;
+  --boss-color: #8b6914;
+  --boss-arm-color: #6b4e0a;
+  --boss-weakspot-color: #ffaa00;
+  --player-bullet-color: #fffacd;
+  --boss-bullet-color: #daa520;
+  --heart-color: #ff0066;
+  --background-color: #1a1a00;
+}

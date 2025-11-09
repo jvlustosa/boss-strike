@@ -84,6 +84,7 @@ export function createInitialState(level: number = 1): GameState {
     explosionParticles: [],
     smokeParticles: [],
     shieldFragments: [],
+    iceTrailParticles: [],
     keys: {},
     status: 'menu',
     victoryTimer: 0,

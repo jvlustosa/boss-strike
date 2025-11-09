@@ -1,0 +1,12 @@
+/* Void Skin - Variáveis CSS */
+.skin-void {
+  --player-color: #6600ff;
+  --player-glow: #9900ff;
+  --boss-color: #330033;
+  --boss-arm-color: #220022;
+  --boss-weakspot-color: #ff00ff;
+  --player-bullet-color: #aa00ff;
+  --boss-bullet-color: #5500aa;
+  --heart-color: #ff0066;
+  --background-color: #000000;
+}

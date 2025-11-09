@@ -6,6 +6,7 @@ import { getVictoryCount, getNextLevel } from '../game/core/progressCache';
 import { parseSupabaseError } from '../utils/supabaseErrors';
 import { getAllSkins, getUserSkinsWithDetails, equipSkin } from '../utils/skins';
 import { PIXEL_FONT } from '../utils/fonts';
+import { getSkinPreviewStyle } from '../utils/skinPreview';
 
 interface ProfilePageProps {
   onClose: () => void;
@@ -29,13 +30,29 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
   const [userSkins, setUserSkins] = useState<UserSkinWithDetails[]>([]);
   const [skinsLoading, setSkinsLoading] = useState(false);
   const [equippingSkin, setEquippingSkin] = useState<string | null>(null);
+  
+  // Cheat mode: check for ?cheat=skins in URL
+  const isCheatMode = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('cheat') === 'skins';
+  };
 
   useEffect(() => {
     if (user) {
       loadProfileData();
       loadSkinsData();
     }
-  }, [user, authProfile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+  
+  // Separar useEffect para atualizar quando selected_skin mudar
+  useEffect(() => {
+    if (user && authProfile?.selected_skin !== profile?.selected_skin) {
+      loadProfileData();
+      loadSkinsData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authProfile?.selected_skin]);
 
   const loadProfileData = async () => {
     if (!user) return;
@@ -100,12 +117,67 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
     
     setEquippingSkin(skinId);
     try {
+      const cheatMode = isCheatMode();
+      
+      // In cheat mode, create the skin if it doesn't exist
+      if (cheatMode) {
+        const hasSkin = userSkins.some(us => us.skin_id === skinId);
+        if (!hasSkin) {
+          // Unlock the skin first
+          const { data: newUserSkin, error: unlockError } = await supabase
+            .from('user_skins')
+            .insert({
+              user_id: user.id,
+              skin_id: skinId,
+            })
+            .select()
+            .single();
+          
+          if (unlockError && unlockError.code !== '23505') { // Ignore duplicate key error
+            console.error('Error unlocking skin in cheat mode:', unlockError);
+            throw new Error('Falha ao desbloquear skin');
+          }
+          
+          // If we just created it, use the newUserSkin directly
+          if (newUserSkin) {
+            // Update profile with selected_skin directly
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ selected_skin: newUserSkin.id })
+              .eq('id', user.id);
+            
+            if (updateError) {
+              console.error('Error equipping newly created skin:', updateError);
+              throw new Error('Falha ao equipar skin');
+            }
+            
+            // Atualizar apenas o necessário, sem recarregar tudo
+            await refreshProfile();
+            // Recarregar apenas skins após um pequeno delay para evitar loop
+            setTimeout(() => {
+              loadSkinsData();
+            }, 100);
+            
+            if (showSuccess) {
+              showSuccess('Skin criada e equipada com sucesso! (CHEAT MODE)');
+            }
+            setEquippingSkin(null);
+            return;
+          }
+        }
+      }
+      
       const success = await equipSkin(user.id, skinId);
       if (success) {
-        await loadSkinsData();
+        // Atualizar profile primeiro
         await refreshProfile();
+        // Recarregar skins após um pequeno delay para evitar loop
+        setTimeout(() => {
+          loadSkinsData();
+        }, 100);
+        
         if (showSuccess) {
-          showSuccess('Skin equipada com sucesso!');
+          showSuccess(cheatMode ? 'Skin criada e equipada com sucesso! (CHEAT MODE)' : 'Skin equipada com sucesso!');
         }
       } else {
         throw new Error('Falha ao equipar skin');
@@ -258,80 +330,232 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
       case 'rare': return '#60a5fa';
       case 'epic': return '#a78bfa';
       case 'legendary': return '#fbbf24';
+      case 'mythic': return '#ff00ff';
       default: return '#fff';
     }
   };
 
-  const skinCardStyle = (isUnlocked: boolean, isEquipped: boolean): React.CSSProperties => ({
-    padding: isMobile ? '12px' : '16px',
-    marginBottom: '12px',
-    backgroundColor: isEquipped ? '#1a2e1a' : '#222',
-    border: isEquipped ? '3px solid #4ade80' : '2px solid #666',
-    opacity: isUnlocked ? 1 : 0.5,
-  });
+  // Função removida - agora usa getSkinPreviewStyle que extrai do CSS
 
   const renderSkinsTab = () => {
     if (skinsLoading) {
       return <div style={{ textAlign: 'center', color: '#fff', padding: '40px' }}>Carregando skins...</div>;
     }
 
+    const cheatMode = isCheatMode();
     const unlockedSkinIds = new Set(userSkins.map(us => us.skin_id));
-    const equippedSkinId = userSkins.find(us => us.is_equipped)?.skin_id;
+    const selectedSkinId = profile?.selected_skin 
+      ? userSkins.find(us => us.id === profile.selected_skin)?.skin_id 
+      : null;
+
+    const rarityOrder: Record<string, number> = {
+      common: 0,
+      rare: 1,
+      epic: 2,
+      legendary: 3,
+      mythic: 4,
+    };
+
+    const sortedSkins = [...allSkins].sort((a, b) => {
+      return rarityOrder[a.rarity] - rarityOrder[b.rarity];
+    });
 
     return (
       <div>
+        {cheatMode && (
+          <div style={{ 
+            marginBottom: '15px', 
+            padding: '10px', 
+            backgroundColor: '#ff00ff22', 
+            border: '2px solid #ff00ff',
+            borderRadius: '8px',
+            fontSize: isMobile ? '12px' : '14px', 
+            color: '#ff00ff',
+            textAlign: 'center',
+            fontWeight: 'bold'
+          }}>
+            🎮 CHEAT MODE ATIVO - Todas as skins disponíveis!
+          </div>
+        )}
         <div style={{ marginBottom: '20px', fontSize: isMobile ? '14px' : '16px', color: '#aaa' }}>
           Você possui {userSkins.length} de {allSkins.length} skins
         </div>
 
-        <div style={{ maxHeight: '400px', overflowY: 'auto' }}>
-          {allSkins.map((skin) => {
-            const isUnlocked = unlockedSkinIds.has(skin.id);
-            const isEquipped = equippedSkinId === skin.id;
-            const userSkin = userSkins.find(us => us.skin_id === skin.id);
+        <div style={{ 
+          display: 'grid',
+          gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
+          gap: isMobile ? '12px' : '16px',
+          maxHeight: '500px',
+          overflowY: 'auto',
+          padding: '4px',
+        }}>
+          {sortedSkins.map((skin) => {
+            // In cheat mode, all skins are considered unlocked
+            const isUnlocked = cheatMode || unlockedSkinIds.has(skin.id);
+            const isEquipped = selectedSkinId === skin.id;
+            const rarityColor = getRarityColor(skin.rarity);
+            
+            // Obter estilos da skin do CSS (mesma lógica do PlayerRenderer)
+            const textureName = skin.sprite_data?.texture_name as string | undefined;
+            const effectName = skin.sprite_data?.effect as string | undefined;
+            const previewStyle = getSkinPreviewStyle(textureName || null, effectName || null);
 
             return (
-              <div key={skin.id} style={skinCardStyle(isUnlocked, isEquipped)}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ 
-                      fontSize: isMobile ? '16px' : '18px', 
-                      fontWeight: '600',
-                      color: getRarityColor(skin.rarity),
-                      marginBottom: '4px',
-                    }}>
-                      {skin.display_name}
-                      {isEquipped && ' ✓'}
-                    </div>
-                    <div style={{ fontSize: isMobile ? '12px' : '13px', color: '#aaa', marginBottom: '4px' }}>
-                      {skin.description || 'Sem descrição'}
-                    </div>
-                    <div style={{ fontSize: isMobile ? '11px' : '12px', color: '#666' }}>
-                      {skin.unlock_condition || 'Desbloqueio especial'}
-                    </div>
-                  </div>
+              <div
+                key={skin.id}
+                style={{
+                  backgroundColor: isEquipped ? '#1a2e1a' : '#222',
+                  border: isEquipped 
+                    ? '3px solid #4ade80' 
+                    : `2px solid ${rarityColor}`,
+                  borderRadius: '8px',
+                  padding: isMobile ? '10px' : '12px',
+                  opacity: isUnlocked ? 1 : 0.6,
+                  position: 'relative',
+                  cursor: isUnlocked ? 'pointer' : 'default',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  overflow: 'hidden',
+                  boxSizing: 'border-box',
+                }}
+              >
+                {isEquipped && (
                   <div style={{
-                    padding: '4px 8px',
+                    position: 'absolute',
+                    top: '8px',
+                    right: '8px',
+                    backgroundColor: '#4ade80',
+                    color: '#000',
+                    borderRadius: '50%',
+                    width: '20px',
+                    height: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    zIndex: 1,
+                  }}>
+                    ✓
+                  </div>
+                )}
+
+                <div 
+                  className={
+                    skin.rarity === 'mythic' || skin.rarity === 'legendary' 
+                      ? 'holo-effect holo-legendary' 
+                      : skin.rarity === 'epic' 
+                      ? 'holo-effect holo-epic' 
+                      : ''
+                  }
+                  style={{
+                    width: '100%',
+                    aspectRatio: '1',
+                    backgroundColor: '#000000',
+                    borderRadius: '4px',
+                    marginBottom: '10px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '20%',
+                    boxSizing: 'border-box',
+                    minHeight: 0,
+                    position: 'relative',
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div 
+                    style={{
+                      width: '60%',
+                      aspectRatio: '1',
+                      backgroundColor: previewStyle.backgroundColor,
+                      background: previewStyle.backgroundGradient || previewStyle.backgroundColor,
+                      borderRadius: '4px',
+                      border: `2px solid ${previewStyle.borderColor}`,
+                      flexShrink: 0,
+                      position: 'relative',
+                      zIndex: 3,
+                      boxShadow: previewStyle.boxShadow !== 'none' 
+                        ? previewStyle.boxShadow 
+                        : (skin.rarity === 'mythic'
+                          ? `0 0 25px ${rarityColor}, 0 0 50px ${rarityColor}, 0 0 75px ${rarityColor}`
+                          : skin.rarity === 'legendary'
+                          ? `0 0 20px ${rarityColor}, 0 0 40px ${rarityColor}`
+                          : skin.rarity === 'epic'
+                          ? `0 0 15px ${rarityColor}, 0 0 30px ${rarityColor}`
+                          : skin.rarity === 'rare'
+                          ? `0 0 10px ${rarityColor}, 0 0 20px ${rarityColor}`
+                          : 'none'),
+                      animation: previewStyle.animation,
+                      backgroundSize: previewStyle.backgroundGradient?.includes('rainbow') || previewStyle.backgroundGradient?.includes('mythic') ? '300% 100%' : 'auto',
+                    }}
+                    className={skin.rarity === 'mythic' || skin.rarity === 'legendary' || skin.rarity === 'epic' ? 'skin-glow' : ''}
+                  />
+                </div>
+
+                <div style={{
+                  fontSize: isMobile ? '12px' : '13px',
+                  fontWeight: '600',
+                  color: rarityColor,
+                  marginBottom: '4px',
+                  textAlign: 'center',
+                }}>
+                  {skin.display_name}
+                </div>
+
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '8px',
+                  marginBottom: '8px',
+                  width: '100%',
+                }}>
+                  <div style={{
+                    padding: '2px 6px',
                     backgroundColor: '#333',
-                    border: `2px solid ${getRarityColor(skin.rarity)}`,
-                    fontSize: isMobile ? '10px' : '11px',
+                    border: `1px solid ${rarityColor}`,
+                    fontSize: isMobile ? '9px' : '10px',
                     textTransform: 'uppercase',
-                    color: getRarityColor(skin.rarity),
+                    color: rarityColor,
+                    borderRadius: '4px',
                   }}>
                     {skin.rarity}
                   </div>
+                  {!isUnlocked && !cheatMode && (
+                    <div style={{
+                      fontSize: isMobile ? '10px' : '11px',
+                      color: '#666',
+                    }}>
+                      🔒
+                    </div>
+                  )}
+                  {!isUnlocked && cheatMode && (
+                    <div style={{
+                      fontSize: isMobile ? '10px' : '11px',
+                      color: '#ff00ff',
+                    }}>
+                      ✨
+                    </div>
+                  )}
                 </div>
-                
-                {isUnlocked && (
+
+                {(isUnlocked || cheatMode) && (
                   <button
                     style={{
-                      ...buttonStyle(false),
-                      marginTop: '8px',
-                      padding: isMobile ? '10px' : '12px',
-                      fontSize: isMobile ? '13px' : '14px',
-                      backgroundColor: isEquipped ? '#1a2e1a' : '#222',
-                      border: isEquipped ? '3px solid #4ade80' : '3px solid #666',
+                      width: '100%',
+                      padding: isMobile ? '8px' : '10px',
+                      fontSize: isMobile ? '11px' : '12px',
+                      backgroundColor: isEquipped ? '#1a2e1a' : cheatMode && !isUnlocked ? '#ff00ff22' : '#333',
+                      border: isEquipped ? '2px solid #4ade80' : cheatMode && !isUnlocked ? '2px solid #ff00ff' : '2px solid #666',
+                      color: cheatMode && !isUnlocked ? '#ff00ff' : '#fff',
+                      fontFamily: "'Pixelify Sans', monospace",
+                      fontWeight: '600',
+                      cursor: isEquipped ? 'default' : 'pointer',
                       opacity: equippingSkin === skin.id ? 0.6 : 1,
+                      borderRadius: '4px',
+                      textTransform: 'uppercase',
                     }}
                     onClick={() => !isEquipped && handleEquipSkin(skin.id)}
                     disabled={isEquipped || equippingSkin === skin.id}
@@ -340,20 +564,23 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
                       ? 'Equipando...' 
                       : isEquipped 
                         ? 'Equipada' 
+                        : cheatMode && !isUnlocked
+                        ? 'Criar & Equipar'
                         : 'Equipar'}
                   </button>
                 )}
-                
-                {!isUnlocked && (
+
+                {!isUnlocked && !cheatMode && (
                   <div style={{
-                    padding: '8px',
+                    padding: isMobile ? '6px' : '8px',
                     backgroundColor: '#1a1a1a',
-                    border: '2px solid #333',
-                    fontSize: isMobile ? '11px' : '12px',
+                    border: '1px solid #333',
+                    fontSize: isMobile ? '10px' : '11px',
                     color: '#666',
                     textAlign: 'center',
+                    borderRadius: '4px',
                   }}>
-                    🔒 Bloqueada
+                    {skin.unlock_condition || 'Bloqueada'}
                   </div>
                 )}
               </div>
@@ -418,8 +645,154 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
   };
 
   return (
-    <div style={modalStyle} onClick={onClose}>
-      <div style={contentStyle} onClick={(e) => e.stopPropagation()}>
+    <>
+      <style>{`
+        @keyframes shine {
+          0% { left: -100%; }
+          100% { left: 100%; }
+        }
+        .skin-glow {
+          animation: glow 2s ease-in-out infinite alternate;
+        }
+        @keyframes glow {
+          0% { 
+            filter: brightness(1);
+          }
+          100% { 
+            filter: brightness(1.3);
+          }
+        }
+        
+        /* Holographic Effect - Inspired by pokemon-cards-css */
+        .holo-effect {
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .holo-effect::before {
+          content: '';
+          position: absolute;
+          top: -50%;
+          left: -50%;
+          width: 200%;
+          height: 200%;
+          background: linear-gradient(
+            45deg,
+            transparent 30%,
+            rgba(255, 255, 255, 0.1) 50%,
+            transparent 70%
+          ),
+          linear-gradient(
+            -45deg,
+            transparent 30%,
+            rgba(255, 255, 255, 0.1) 50%,
+            transparent 70%
+          ),
+          repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(255, 255, 255, 0.03) 2px,
+            rgba(255, 255, 255, 0.03) 4px
+          );
+          animation: holo-shine 3s linear infinite;
+          pointer-events: none;
+          z-index: 2;
+          mix-blend-mode: overlay;
+        }
+        
+        .holo-effect::after {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: 
+            radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3), transparent 50%),
+            radial-gradient(circle at 80% 80%, rgba(255, 119, 198, 0.3), transparent 50%),
+            radial-gradient(circle at 40% 20%, rgba(198, 119, 255, 0.3), transparent 50%);
+          animation: holo-shift 4s ease-in-out infinite;
+          pointer-events: none;
+          z-index: 1;
+          mix-blend-mode: color-dodge;
+          opacity: 0.5;
+        }
+        
+        @keyframes holo-shine {
+          0% {
+            transform: translateX(-100%) translateY(-100%) rotate(45deg);
+          }
+          100% {
+            transform: translateX(100%) translateY(100%) rotate(45deg);
+          }
+        }
+        
+        @keyframes holo-shift {
+          0%, 100% {
+            transform: translate(0, 0) scale(1);
+            opacity: 0.5;
+          }
+          33% {
+            transform: translate(10%, -10%) scale(1.1);
+            opacity: 0.7;
+          }
+          66% {
+            transform: translate(-10%, 10%) scale(0.9);
+            opacity: 0.6;
+          }
+        }
+        
+        .holo-rare {
+          background: linear-gradient(
+            125deg,
+            rgba(96, 165, 250, 0.1) 0%,
+            rgba(59, 130, 246, 0.2) 25%,
+            rgba(37, 99, 235, 0.1) 50%,
+            rgba(59, 130, 246, 0.2) 75%,
+            rgba(96, 165, 250, 0.1) 100%
+          );
+          background-size: 200% 200%;
+          animation: holo-gradient 3s ease infinite;
+        }
+        
+        .holo-epic {
+          background: linear-gradient(
+            125deg,
+            rgba(167, 139, 250, 0.1) 0%,
+            rgba(139, 92, 246, 0.2) 25%,
+            rgba(124, 58, 237, 0.1) 50%,
+            rgba(139, 92, 246, 0.2) 75%,
+            rgba(167, 139, 250, 0.1) 100%
+          );
+          background-size: 200% 200%;
+          animation: holo-gradient 3s ease infinite;
+        }
+        
+        .holo-legendary {
+          background: linear-gradient(
+            125deg,
+            rgba(251, 191, 36, 0.15) 0%,
+            rgba(245, 158, 11, 0.25) 25%,
+            rgba(217, 119, 6, 0.15) 50%,
+            rgba(245, 158, 11, 0.25) 75%,
+            rgba(251, 191, 36, 0.15) 100%
+          );
+          background-size: 200% 200%;
+          animation: holo-gradient 2.5s ease infinite;
+        }
+        
+        @keyframes holo-gradient {
+          0%, 100% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+        }
+      `}</style>
+      <div style={modalStyle} onClick={onClose}>
+        <div style={contentStyle} onClick={(e) => e.stopPropagation()}>
         <button
           style={closeButtonStyle}
           onClick={onClose}
@@ -450,6 +823,7 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
         {activeTab === 'skins' && renderSkinsTab()}
       </div>
     </div>
+    </>
   );
 }
 
