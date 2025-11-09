@@ -34,13 +34,16 @@ async function getCurrentUserId(userId?: string | null): Promise<string | null> 
 
 export async function saveProgress(gameState: GameState): Promise<void> {
   const maxLevel = getMaxLevel();
-  const levelToSave = Math.max(
-    1,
-    Math.min(
-      gameState.status === 'won' ? gameState.level + 1 : gameState.level,
-      maxLevel,
-    ),
-  );
+  const reachedFinalLevel = gameState.status === 'won' && gameState.level >= maxLevel;
+  const levelToSave = reachedFinalLevel
+    ? 1
+    : Math.max(
+        1,
+        Math.min(
+          gameState.status === 'won' ? gameState.level + 1 : gameState.level,
+          maxLevel,
+        ),
+      );
 
   const progress: GameProgress = {
     level: levelToSave,

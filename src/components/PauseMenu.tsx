@@ -1,10 +1,13 @@
+import { PIXEL_FONT } from '../utils/fonts';
+import { isMobile } from '../game/core/environmentDetector';
+
 interface PauseMenuProps {
   onContinue: () => void;
   onMainMenu: () => void;
 }
 
 export function PauseMenu({ onContinue, onMainMenu }: PauseMenuProps) {
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const mobile = isMobile();
 
   const overlayStyle: React.CSSProperties = {
     position: 'fixed',
@@ -12,107 +15,142 @@ export function PauseMenu({ onContinue, onMainMenu }: PauseMenuProps) {
     left: 0,
     width: '100%',
     height: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
+    backdropFilter: 'blur(4px)',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 2000,
-    fontFamily: "'Pixelify Sans', monospace",
-    padding: isMobile ? '20px' : '0',
+    fontFamily: PIXEL_FONT,
+    padding: mobile ? '20px' : '0',
   };
 
   const menuStyle: React.CSSProperties = {
-    backgroundColor: '#111',
-    border: '3px solid #fff',
-    padding: '30px',
+    background: 'linear-gradient(180deg, #1a1a2e 0%, #0a0a0a 100%)',
+    border: '4px solid #fff',
+    borderRadius: '12px',
+    padding: mobile ? '24px' : '32px',
     textAlign: 'center',
-    minWidth: '200px',
+    minWidth: mobile ? '280px' : '320px',
+    maxWidth: '90%',
     imageRendering: 'pixelated' as any,
+    boxShadow: '0 0 0 4px #333, 8px 8px 0px #333, 0 0 30px rgba(0, 0, 0, 0.8)',
+    position: 'relative',
   };
 
   const titleStyle: React.CSSProperties = {
     color: '#fff',
-    fontSize: '24px',
+    fontSize: mobile ? '20px' : '28px',
     fontWeight: 'bold',
-    marginBottom: '30px',
-    letterSpacing: '2px',
-  };
-
-  const buttonStyle: React.CSSProperties = {
-    fontFamily: "'Pixelify Sans', monospace",
-    fontSize: '16px',
-    fontWeight: 'bold',
-    color: '#fff',
-    backgroundColor: '#222',
-    border: '2px solid #fff',
-    padding: '12px 24px',
-    margin: '10px',
-    cursor: 'pointer',
+    marginBottom: mobile ? '24px' : '32px',
+    letterSpacing: '3px',
+    textShadow: '2px 2px 0px #333, 0 0 20px rgba(255, 255, 255, 0.3)',
     textTransform: 'uppercase',
-    letterSpacing: '1px',
-    imageRendering: 'pixelated' as any,
-    transition: 'none',
-    outline: 'none',
-    minWidth: '120px',
   };
 
-  const buttonHoverStyle: React.CSSProperties = {
-    ...buttonStyle,
-    backgroundColor: '#444',
+  const buttonContainerStyle: React.CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: mobile ? '12px' : '16px',
+    marginBottom: mobile ? '20px' : '24px',
+  };
+
+  const getButtonStyle = (isPrimary: boolean = false): React.CSSProperties => {
+    const baseStyle: React.CSSProperties = {
+      fontFamily: PIXEL_FONT,
+      fontSize: mobile ? '14px' : '16px',
+      fontWeight: 'bold',
+      color: isPrimary ? '#000' : '#fff',
+      background: isPrimary
+        ? 'linear-gradient(135deg, #4ade80 0%, #22c55e 100%)'
+        : 'linear-gradient(135deg, #222 0%, #111 100%)',
+      border: isPrimary ? '3px solid #22c55e' : '3px solid #fff',
+      padding: mobile ? '12px 20px' : '14px 24px',
+      cursor: 'pointer',
+      textTransform: 'uppercase',
+      letterSpacing: '2px',
+      imageRendering: 'pixelated' as any,
+      transition: 'all 0.2s ease',
+      outline: 'none',
+      width: '100%',
+      textShadow: isPrimary ? '1px 1px 0px #333' : '1px 1px 0px #333',
+      boxShadow: isPrimary
+        ? '0 0 20px rgba(74, 222, 128, 0.4), 4px 4px 0px #333'
+        : 'inset 0 0 0 3px #fff, 4px 4px 0px #333',
+    };
+    return baseStyle;
+  };
+
+  const getButtonHoverStyle = (isPrimary: boolean = false): React.CSSProperties => {
+    return {
+      ...getButtonStyle(isPrimary),
+      transform: 'translateY(-2px)',
+      boxShadow: isPrimary
+        ? '0 0 25px rgba(74, 222, 128, 0.6), 6px 6px 0px #333'
+        : 'inset 0 0 0 3px #fff, 0 0 15px rgba(255, 255, 255, 0.3), 6px 6px 0px #333',
+    };
+  };
+
+  const footerStyle: React.CSSProperties = {
+    marginTop: mobile ? '24px' : '28px',
+    borderTop: '2px solid #333',
+    paddingTop: mobile ? '16px' : '20px',
+  };
+
+  const linkStyle: React.CSSProperties = {
+    fontSize: mobile ? '10px' : '12px',
+    color: '#666',
+    fontFamily: PIXEL_FONT,
+    fontWeight: '400',
+    imageRendering: 'pixelated' as any,
+    textDecoration: 'none',
+    letterSpacing: '1px',
+    transition: 'color 0.2s ease',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
   };
 
   return (
     <div style={overlayStyle}>
       <div style={menuStyle}>
-        <div style={titleStyle}>PAUSADO</div>
+        <div style={titleStyle}>⏸ PAUSADO</div>
         
-        <button
-          style={buttonStyle}
-          onClick={onContinue}
-          onMouseEnter={(e) => {
-            Object.assign(e.currentTarget.style, buttonHoverStyle);
-          }}
-          onMouseLeave={(e) => {
-            Object.assign(e.currentTarget.style, buttonStyle);
-          }}
-        >
-          Continuar
-        </button>
+        <div style={buttonContainerStyle}>
+          <button
+            style={getButtonStyle(true)}
+            onClick={onContinue}
+            onMouseEnter={(e) => {
+              Object.assign(e.currentTarget.style, getButtonHoverStyle(true));
+            }}
+            onMouseLeave={(e) => {
+              Object.assign(e.currentTarget.style, getButtonStyle(true));
+            }}
+          >
+            ▶ Continuar
+          </button>
+          
+          <button
+            style={getButtonStyle(false)}
+            onClick={onMainMenu}
+            onMouseEnter={(e) => {
+              Object.assign(e.currentTarget.style, getButtonHoverStyle(false));
+            }}
+            onMouseLeave={(e) => {
+              Object.assign(e.currentTarget.style, getButtonStyle(false));
+            }}
+          >
+            🏠 Menu Principal
+          </button>
+        </div>
         
-        <br />
-        
-        <button
-          style={buttonStyle}
-          onClick={onMainMenu}
-          onMouseEnter={(e) => {
-            Object.assign(e.currentTarget.style, buttonHoverStyle);
-          }}
-          onMouseLeave={(e) => {
-            Object.assign(e.currentTarget.style, buttonStyle);
-          }}
-        >
-          Menu Principal
-        </button>
-        
-        <div style={{ marginTop: '30px', borderTop: '1px solid #333', paddingTop: '20px' }}>
+        <div style={footerStyle}>
           <a 
             href="https://github.com/jvlustosa/boss-strike" 
             target="_blank" 
             rel="noopener noreferrer"
-            style={{
-              fontSize: '12px',
-              color: '#666',
-              fontFamily: "'Pixelify Sans', monospace",
-              fontWeight: '400',
-              imageRendering: 'pixelated' as any,
-              textDecoration: 'none',
-              letterSpacing: '1px',
-              transition: 'color 0.2s ease',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '6px'
-            }}
+            style={linkStyle}
             onMouseEnter={(e) => e.currentTarget.style.color = '#fff'}
             onMouseLeave={(e) => e.currentTarget.style.color = '#666'}
           >

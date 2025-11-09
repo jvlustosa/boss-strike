@@ -5,6 +5,7 @@ import { isDesktop } from '../core/environmentDetector';
 import { renderPlayer } from '../components/PlayerRenderer';
 
 const FONT_XS = '6px "Press Start 2P", "Pixelify Sans", monospace';
+const FONT_XXS = '4px "Press Start 2P", "Pixelify Sans", monospace';
 const FONT_SM = '8px "Press Start 2P", "Pixelify Sans", monospace';
 const FONT_MD = '12px "Press Start 2P", "Pixelify Sans", monospace';
 const FONT_LG = '16px "Press Start 2P", "Pixelify Sans", monospace';
@@ -249,7 +250,7 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     ctx.restore();
   }
 
-  // Bomb
+  // Bomb (Rocket)
   if (state.bomb) {
     const bomb = state.bomb;
     const bobOffset = bomb.state === 'carried' ? 0 : Math.sin(bomb.floatTimer * 4) * 1.5;
@@ -257,15 +258,68 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     const renderY = Math.floor(bomb.pos.y + bobOffset);
     const centerX = renderX + bomb.w / 2;
     const centerY = renderY + bomb.h / 2;
+    
+    // Rotação baseada no estado (quando voando, aponta na direção do movimento)
+    let rotation = 0;
+    if (bomb.state === 'thrown') {
+      // A direção do movimento é (cos(aimAngle), -sin(aimAngle))
+      // O foguete está desenhado apontando para cima (ponta em y=-4, que é -π/2 no canvas)
+      // Calculamos o ângulo da direção do movimento e ajustamos para o foguete apontar corretamente
+      const dx = Math.cos(bomb.aimAngle);
+      const dy = -Math.sin(bomb.aimAngle);
+      const movementAngle = Math.atan2(dy, dx);
+      // O foguete aponta para cima quando rotation=0, que é -π/2 no sistema do canvas
+      // Então rotacionamos: movementAngle - (-π/2) = movementAngle + π/2
+      rotation = movementAngle + Math.PI / 2;
+    }
 
-    ctx.fillStyle = '#000000';
-    ctx.fillRect(renderX - 1, renderY - 1, bomb.w + 2, bomb.h + 2);
-
-    ctx.fillStyle = colors.bomb;
-    ctx.fillRect(renderX, renderY, bomb.w, bomb.h);
-
-    ctx.fillStyle = colors.bombCore;
-    ctx.fillRect(renderX + 2, renderY + 2, Math.max(1, bomb.w - 4), Math.max(1, bomb.h - 4));
+    ctx.save();
+    ctx.translate(centerX, centerY);
+    ctx.rotate(rotation);
+    
+    // Chama na parte traseira quando está voando
+    if (bomb.state === 'thrown') {
+      const flameTime = state.time * 25;
+      const flameIntensity = 0.7 + Math.sin(flameTime) * 0.3;
+      const flameSize = 2 + Math.sin(flameTime * 1.5) * 1;
+      
+      // Chama externa (laranja/amarelo)
+      ctx.fillStyle = `rgba(255, ${Math.floor(100 + flameIntensity * 50)}, 0, ${flameIntensity})`;
+      ctx.fillRect(-2, 4, 4, Math.floor(flameSize + 1));
+      
+      // Chama interna (amarelo brilhante)
+      ctx.fillStyle = `rgba(255, ${Math.floor(200 + flameIntensity * 30)}, 0, ${flameIntensity * 0.9})`;
+      ctx.fillRect(-1, 5, 2, Math.floor(flameSize));
+    }
+    
+    // Aletas/estabilizadores na base
+    ctx.fillStyle = '#cc4400';
+    ctx.fillRect(-4, 2, 2, 2); // Aleta esquerda
+    ctx.fillRect(2, 2, 2, 2);  // Aleta direita
+    
+    // Corpo principal do foguete (laranja/vermelho)
+    ctx.fillStyle = '#ff6600';
+    ctx.fillRect(-2, -3, 4, 6);
+    
+    // Detalhes do corpo (faixas)
+    ctx.fillStyle = '#ff8800';
+    ctx.fillRect(-2, -1, 4, 1);
+    ctx.fillRect(-2, 1, 4, 1);
+    
+    // Ponta afiada do foguete
+    ctx.fillStyle = '#ff4400';
+    ctx.beginPath();
+    ctx.moveTo(0, -4);
+    ctx.lineTo(-2, -2);
+    ctx.lineTo(2, -2);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Janela/olho do foguete
+    ctx.fillStyle = '#ffee88';
+    ctx.fillRect(-1, -2, 2, 1);
+    
+    ctx.restore();
 
     if (bomb.state === 'carried') {
       ctx.save();
@@ -506,13 +560,21 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     ctx.fillRect(4 + i * 6, LOGICAL_H - 8, 4, 4);
   }
 
-  // Shield Hits Remaining Display (canto esquerdo)
+  // Shield Hits Remaining Display (quadrado azul à direita dos quadrados de vida)
   if (state.player.shieldHits > 0) {
+    const healthEndX = 4 + state.player.maxHealth * 6;
+    const shieldX = healthEndX + 8;
+    
+    // Quadrado azul do escudo
     ctx.fillStyle = '#00aaff';
-    ctx.font = FONT_XS;
+    ctx.fillRect(shieldX, LOGICAL_H - 8, 4, 4);
+    
+    // Número do escudo com fonte reduzida
+    ctx.fillStyle = '#00aaff';
+    ctx.font = '3px "Press Start 2P", "Pixelify Sans", monospace';
     ctx.textBaseline = 'top';
     ctx.textAlign = 'left';
-    ctx.fillText(`${state.player.shieldHits}`, 4, 20);
+    ctx.fillText(`${state.player.shieldHits}`, shieldX + 6, LOGICAL_H - 7);
   }
 
   // Victory Overlay

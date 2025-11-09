@@ -76,26 +76,26 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
     }
     
     return {
-      fontFamily: PIXEL_FONT,
-      fontSize: isLandscape ? '10px' : (isMobile ? '15px' : '16px'),
-      fontWeight: '600',
-      color: isSecondary ? '#ccc' : '#fff',
-      backgroundColor: hovered ? (isSecondary ? '#333' : '#444') : (isSecondary ? '#111' : '#222'),
-      border: isLandscape ? `2px solid ${isSecondary ? '#666' : '#fff'}` : (isMobile ? `3px solid ${isSecondary ? '#666' : '#fff'}` : `4px solid ${isSecondary ? '#666' : '#fff'}`),
-      padding: isLandscape ? '4px 8px' : (isMobile ? '12px 24px' : '14px 28px'),
-      cursor: 'pointer',
-      textTransform: 'uppercase',
-      letterSpacing: isLandscape ? '0.5px' : (isMobile ? '2px' : '2px'),
-      imageRendering: 'pixelated' as any,
-      boxShadow: hovered 
-        ? `inset 0 0 0 ${isLandscape ? '2px' : '3px'} ${isSecondary ? '#666' : '#fff'}, 0 0 0 ${isLandscape ? '2px' : '3px'} ${isSecondary ? '#666' : '#fff'}, ${isLandscape ? '2px' : '3px'} ${isLandscape ? '2px' : '3px'} 0px #333` 
-        : `inset 0 0 0 ${isLandscape ? '2px' : '3px'} ${isSecondary ? '#666' : '#fff'}, ${isLandscape ? '2px' : '3px'} ${isLandscape ? '2px' : '3px'} 0px #333`,
-      transition: 'none',
-      outline: 'none',
+    fontFamily: PIXEL_FONT,
+    fontSize: isLandscape ? '10px' : (isMobile ? '15px' : '16px'),
+    fontWeight: '600',
+    color: isSecondary ? '#ccc' : '#fff',
+    backgroundColor: hovered ? (isSecondary ? '#333' : '#444') : (isSecondary ? '#111' : '#222'),
+    border: isLandscape ? `2px solid ${isSecondary ? '#666' : '#fff'}` : (isMobile ? `3px solid ${isSecondary ? '#666' : '#fff'}` : `4px solid ${isSecondary ? '#666' : '#fff'}`),
+    padding: isLandscape ? '4px 8px' : (isMobile ? '12px 24px' : '14px 28px'),
+    cursor: 'pointer',
+    textTransform: 'uppercase',
+    letterSpacing: isLandscape ? '0.5px' : (isMobile ? '2px' : '2px'),
+    imageRendering: 'pixelated' as any,
+    boxShadow: hovered 
+      ? `inset 0 0 0 ${isLandscape ? '2px' : '3px'} ${isSecondary ? '#666' : '#fff'}, 0 0 0 ${isLandscape ? '2px' : '3px'} ${isSecondary ? '#666' : '#fff'}, ${isLandscape ? '2px' : '3px'} ${isLandscape ? '2px' : '3px'} 0px #333` 
+      : `inset 0 0 0 ${isLandscape ? '2px' : '3px'} ${isSecondary ? '#666' : '#fff'}, ${isLandscape ? '2px' : '3px'} ${isLandscape ? '2px' : '3px'} 0px #333`,
+    transition: 'none',
+    outline: 'none',
       width: isLandscape ? '140px' : (isMobile ? '280px' : '320px'),
-      textShadow: '1px 1px 0px #333',
-      display: 'block',
-      margin: `0 auto ${isLandscape ? '6px' : (isMobile ? '20px' : '24px')} auto`,
+    textShadow: '1px 1px 0px #333',
+    display: 'block',
+    margin: `0 auto ${isLandscape ? '6px' : (isMobile ? '20px' : '24px')} auto`,
     };
   };
 
@@ -206,17 +206,17 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
               {showContinueButton ? `CONTINUAR (FASE ${nextLevel})` : 'JOGAR'}
             </button>
 
-            <button
-              style={{
+              <button
+                style={{
                 ...getButtonStyle(phasesHovered, true),
-                margin: 0,
-              }}
+                  margin: 0,
+                }}
               onMouseEnter={() => setPhasesHovered(true)}
               onMouseLeave={() => setPhasesHovered(false)}
               onClick={() => navigate('/fases')}
-            >
+              >
               VER FASES
-            </button>
+              </button>
           </div>
         </div>
         
