@@ -7,6 +7,8 @@ export const defaultColors = {
   playerBullet: '#ffffff',
   bossBullet: '#ff8800',
   heart: '#ff0066',
+  bomb: '#ffaa00',
+  bombCore: '#ffee88',
   background: '#000000',
 } as const;
 

@@ -236,6 +236,43 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     ctx.restore();
   }
 
+  // Bomb
+  if (state.bomb) {
+    const bomb = state.bomb;
+    const bobOffset = Math.sin(bomb.floatTimer * 4) * 1.5;
+    const renderX = Math.floor(bomb.pos.x);
+    const renderY = Math.floor(bomb.pos.y + bobOffset);
+
+    ctx.fillStyle = '#000000';
+    ctx.fillRect(renderX - 1, renderY - 1, bomb.w + 2, bomb.h + 2);
+
+    ctx.fillStyle = colors.bomb;
+    ctx.fillRect(renderX, renderY, bomb.w, bomb.h);
+
+    ctx.fillStyle = colors.bombCore;
+    ctx.fillRect(renderX + 2, renderY + 2, Math.max(1, bomb.w - 4), Math.max(1, bomb.h - 4));
+
+    if (bomb.state === 'homing') {
+      ctx.fillStyle = 'rgba(255, 200, 0, 0.5)';
+      ctx.fillRect(renderX + bomb.w / 2 - 1, renderY - 3, 2, 3);
+    }
+  }
+
+  // Scorch marks from bomb explosions
+  for (const mark of state.scorchMarks) {
+    const fade = Math.max(0, Math.min(1, mark.life / mark.maxLife));
+    const alpha = 0.35 * fade;
+    const size = Math.max(4, Math.floor(mark.size));
+    const x = Math.floor(mark.pos.x - (size - mark.size) / 2);
+    const y = Math.floor(mark.pos.y - (size - mark.size) / 2);
+
+    ctx.fillStyle = `rgba(60, 40, 20, ${alpha})`;
+    ctx.fillRect(x, y, size, size);
+
+    ctx.fillStyle = `rgba(30, 20, 10, ${alpha * 1.2})`;
+    ctx.fillRect(x + 1, y + 1, Math.max(1, size - 2), Math.max(1, size - 2));
+  }
+
   // Hearts
   for (const heart of state.hearts) {
     if (!heart.collected) {
