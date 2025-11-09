@@ -34,6 +34,8 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
   const stateRef = useRef<GameState | null>(null);
   const scaleRef = useRef<number>(1);
   const isTransitioningRef = useRef(false);
+  const nextBtnHoverRef = useRef(false);
+  const nextBtnPressedRef = useRef(false);
   
   // Hook loads and applies skin colors automatically
   useSkin();
@@ -63,8 +65,10 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
   const setupCanvas = useCallback((canvas: HTMLCanvasElement) => {
     const ctx = canvas.getContext('2d')!;
     
-    // Pixel-perfect scaling
-    const scale = Math.floor(Math.min(window.innerWidth / LOGICAL_W, window.innerHeight / LOGICAL_H));
+    // Pixel-perfect scaling - considerar espaço para header e outros elementos
+    const availableHeight = Math.min(window.innerHeight - 100, window.innerHeight * 0.9);
+    const availableWidth = window.innerWidth;
+    const scale = Math.floor(Math.min(availableWidth / LOGICAL_W, availableHeight / LOGICAL_H));
     canvas.width = LOGICAL_W * scale;
     canvas.height = LOGICAL_H * scale;
     scaleRef.current = scale;
@@ -191,7 +195,7 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
     };
 
     const render = () => {
-      renderSystem(ctx, state, isPaused);
+      renderSystem(ctx, state, isPaused, nextBtnHoverRef.current, nextBtnPressedRef.current);
     };
 
     const cleanupLoop = createGameLoop(update, render);
@@ -202,6 +206,48 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
     };
     window.addEventListener('resize', handleResize);
 
+    // Mouse move handling for next level button hover
+    const onMouseMove = (e: MouseEvent) => {
+      const currentState = stateRef.current;
+      if (!currentState || currentState.status !== 'won') {
+        const wasHovering = nextBtnHoverRef.current;
+        nextBtnHoverRef.current = false;
+        if (wasHovering) {
+          // Force re-render if hover state changed
+          requestAnimationFrame(() => {
+            if (stateRef.current) {
+              renderSystem(ctx, stateRef.current, isPaused, nextBtnHoverRef.current, nextBtnPressedRef.current);
+            }
+          });
+        }
+        canvas.style.cursor = 'default';
+        return;
+      }
+      const rect = canvas.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / scaleRef.current;
+      const y = (e.clientY - rect.top) / scaleRef.current;
+      const btn = (currentState as any)._nextBtn as { x: number; y: number; w: number; h: number } | undefined;
+      const isHovering = !!(btn && x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h);
+      const wasHovering = nextBtnHoverRef.current;
+      nextBtnHoverRef.current = isHovering;
+      canvas.style.cursor = isHovering ? 'pointer' : 'default';
+      
+      // Force re-render if hover state changed
+      if (wasHovering !== isHovering) {
+        requestAnimationFrame(() => {
+          if (stateRef.current) {
+            renderSystem(ctx, stateRef.current, isPaused, nextBtnHoverRef.current, nextBtnPressedRef.current);
+          }
+        });
+      }
+    };
+
+    const onMouseLeave = () => {
+      nextBtnHoverRef.current = false;
+      nextBtnPressedRef.current = false;
+      canvas.style.cursor = 'default';
+    };
+
     // Click handling for next level button
     const onClick = (e: MouseEvent) => {
       const currentState = stateRef.current;
@@ -211,6 +257,15 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
       const y = (e.clientY - rect.top) / scaleRef.current;
       const btn = (currentState as any)._nextBtn as { x: number; y: number; w: number; h: number } | undefined;
       if (btn && x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
+        nextBtnPressedRef.current = true;
+        // Force re-render to show pressed state
+        setTimeout(() => {
+          const ctx = canvas.getContext('2d');
+          if (ctx && currentState) {
+            renderSystem(ctx, currentState, isPaused, nextBtnHoverRef.current, nextBtnPressedRef.current);
+          }
+        }, 0);
+        
         isTransitioningRef.current = true;
         // Avançar para próxima fase
         const nextLevel = currentState.level + 1;
@@ -285,7 +340,7 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
           if (canvas) {
             const ctx = canvas.getContext('2d');
             if (ctx) {
-              renderSystem(ctx, currentState, isPaused);
+              renderSystem(ctx, currentState, isPaused, nextBtnHoverRef.current, nextBtnPressedRef.current);
             }
           }
         }
@@ -294,6 +349,7 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         // Reset transition flag after a short delay
         setTimeout(() => {
           isTransitioningRef.current = false;
+          nextBtnPressedRef.current = false;
         }, 100);
       }
       
@@ -301,6 +357,8 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
       updateExplosionSystem(state, 0);
     };
     canvas.addEventListener('click', onClick);
+    canvas.addEventListener('mousemove', onMouseMove);
+    canvas.addEventListener('mouseleave', onMouseLeave);
 
     return () => {
       cleanupInput();
@@ -308,6 +366,8 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('keydown', handleKeyDown);
       canvas.removeEventListener('click', onClick);
+      canvas.removeEventListener('mousemove', onMouseMove);
+      canvas.removeEventListener('mouseleave', onMouseLeave);
     };
   }, [setupCanvas, isPaused]);
 
@@ -342,8 +402,9 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         style={{
           border: '2px solid #333',
           display: 'block',
-          maxWidth: '100%',
-          maxHeight: '100%',
+          maxWidth: '100vw',
+          maxHeight: 'calc(100vh - 100px)',
+          objectFit: 'contain',
         }}
       />
       <MobileControlsLayout onFire={handlePlayroomFire} />

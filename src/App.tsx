@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { GameCanvas } from './components/GameCanvas';
 import { MainMenu } from './components/MainMenu';
 import { PauseButton } from './components/PauseButton';
@@ -7,6 +8,7 @@ import { LevelTitle } from './components/LevelTitle';
 import { PlayroomSessionScreen } from './components/PlayroomSessionScreen';
 import { AuthModal } from './components/AuthModal';
 import { ProfilePage } from './components/ProfilePage';
+import { ProfileRoute } from './components/ProfileRoute';
 import { ToastContainer } from './components/ToastContainer';
 import { UserHeader } from './components/UserHeader';
 import { useToast } from './hooks/useToast';
@@ -15,7 +17,7 @@ import { PIXEL_FONT } from './utils/fonts';
 import { updateUrlLevel, getLevelFromUrl } from './game/core/urlParams';
 import { saveProgress, clearProgress, clearVictories } from './game/core/progressCache';
 
-export default function App() {
+function GameApp() {
   const [gameStarted, setGameStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [gameState, setGameState] = useState<any>(null);
@@ -24,7 +26,8 @@ export default function App() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [authSkipped, setAuthSkipped] = useState(false);
   const toast = useToast();
-  const { user, initialized, refreshProfile } = useAuth();
+  const { user, profile: authProfile, initialized, refreshProfile } = useAuth();
+  const navigate = useNavigate();
 
   const handleStartGame = async (level?: number, clearTrophies?: boolean) => {
     // Verificar se há nível na URL primeiro, senão usar o nível passado ou 1
@@ -120,28 +123,18 @@ export default function App() {
     setShowPlayroomSession(true);
   };
 
-  // Show loading state while auth is initializing
-  if (!initialized) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        background: '#000',
-        color: '#fff',
-        fontFamily: PIXEL_FONT,
-      }}>
-        Carregando...
-      </div>
-    );
-  }
 
   if (!gameStarted) {
     return (
       <>
         {user && (
-          <UserHeader onProfileClick={() => setShowProfileModal(true)} />
+          <UserHeader onProfileClick={() => {
+            if (user && authProfile?.username) {
+              navigate(`/profile/${authProfile.username}`);
+            } else {
+              setShowProfileModal(true);
+            }
+          }} />
         )}
         {!user && !showAuthModal && (
           <button
@@ -172,7 +165,13 @@ export default function App() {
         )}
         <MainMenu 
           onStartGame={handleStartGame}
-          onShowProfile={() => setShowProfileModal(true)}
+          onShowProfile={() => {
+            if (user && authProfile?.username) {
+              navigate(`/profile/${authProfile.username}`);
+            } else {
+              setShowProfileModal(true);
+            }
+          }}
           user={user}
         />
         {showAuthModal && (
@@ -202,8 +201,12 @@ export default function App() {
     <>
       {user && (
         <UserHeader onProfileClick={() => {
-          setIsPaused(true);
-          setShowProfileModal(true);
+          if (user && authProfile?.username) {
+            navigate(`/profile/${authProfile.username}`);
+          } else {
+            setIsPaused(true);
+            setShowProfileModal(true);
+          }
         }} />
       )}
       {!user && !showAuthModal && (
@@ -239,7 +242,9 @@ export default function App() {
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center',
-          minHeight: '100vh',
+          height: '100vh',
+          maxHeight: '100vh',
+          overflow: 'hidden',
           background: '#000',
           position: 'relative',
         }}
@@ -250,10 +255,17 @@ export default function App() {
             flexDirection: 'column',
             alignItems: 'center',
             gap: '12px',
+            maxHeight: '100vh',
+            overflow: 'hidden',
+            width: '100%',
           }}
         >
           {gameState && <LevelTitle key={gameState.level} gameState={gameState} />}
-          <div style={{ position: 'relative' }}>
+          <div style={{ 
+            position: 'relative',
+            maxHeight: 'calc(100vh - 100px)',
+            overflow: 'hidden',
+          }}>
             <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} />
           </div>
         </div>
@@ -277,5 +289,34 @@ export default function App() {
       )}
       <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
     </>
+  );
+}
+
+export default function App() {
+  const { initialized } = useAuth();
+
+  if (!initialized) {
+    return (
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '100vh',
+        background: '#000',
+        color: '#fff',
+        fontFamily: PIXEL_FONT,
+      }}>
+        Carregando...
+      </div>
+    );
+  }
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/profile/:username" element={<ProfileRoute />} />
+        <Route path="*" element={<GameApp />} />
+      </Routes>
+    </BrowserRouter>
   );
 }

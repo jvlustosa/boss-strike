@@ -155,7 +155,7 @@ function damagePlayer(state: GameState): void {
   state.player.health--;
   
   // Play hit sound effect with random pitch variation
-  audioManager.playRandomPitch('hit', 0.4, 0.8, 1.2);
+  audioManager.playRandomPitch('hit', 0.25, 0.8, 1.2);
   
   if (state.player.health <= 0) {
     state.player.alive = false;

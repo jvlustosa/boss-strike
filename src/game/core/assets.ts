@@ -39,7 +39,20 @@ export function setColors(newColors: Partial<typeof defaultColors>) {
 }
 
 export function getSkinData(): SkinData {
-  return { ...currentSkinData };
+  try {
+    return { ...currentSkinData };
+  } catch (error) {
+    console.error('Error in getSkinData:', error);
+    // Return safe default
+    return {
+      textureName: null,
+      effectName: null,
+      playerColor: null,
+      playerGlow: null,
+      rarity: null,
+      cssVariables: {},
+    };
+  }
 }
 
 export function setSkinData(skinData: Partial<SkinData>) {

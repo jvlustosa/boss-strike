@@ -91,6 +91,7 @@ export type MagicTrailParticle = {
   size: number;
   alpha: number;
   color: string; // Cor da skin para o rastro
+  emoji?: string; // Emoji para skins especiais (smiley, etc)
 };
 
 export type DamageNumber = {

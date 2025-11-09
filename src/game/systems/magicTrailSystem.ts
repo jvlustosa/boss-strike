@@ -23,6 +23,23 @@ function isRainbowSkin(textureName: string | null): boolean {
 }
 
 /**
+ * Verifica se a skin é smiley
+ */
+function isSmileySkin(textureName: string | null): boolean {
+  if (!textureName) return false;
+  const normalized = textureName.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return normalized.includes('smiley') || normalized.includes('emoji');
+}
+
+/**
+ * Retorna um emoji aleatório de smiley
+ */
+function getRandomSmileyEmoji(): string {
+  const smileys = ['😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😊', '😇', '🙂', '🙃', '😉', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '😋', '😛', '😝', '😜', '🤪', '🤨', '🧐', '🤓', '😎', '🤩', '🥳', '😏', '😒', '😞', '😔', '😟', '😕', '🙁', '☹️', '😣', '😖', '😫', '😩', '🥺', '😢', '😭', '😤', '😠', '😡', '🤬', '🤯', '😳', '🥵', '🥶', '😱', '😨', '😰', '😥', '😓', '🤗', '🤔', '🤭', '🤫', '🤥', '😶', '😐', '😑', '😬', '🙄', '😯', '😦', '😧', '😮', '😲', '🥱', '😴', '🤤', '😪', '😵', '🤐', '🥴', '🤢', '🤮', '🤧', '😷', '🤒', '🤕', '🤑', '🤠', '😈', '👿', '👹', '👺', '🤡', '💩', '👻', '💀', '☠️', '👽', '👾', '🤖', '🎃'];
+  return smileys[Math.floor(Math.random() * smileys.length)];
+}
+
+/**
  * Gera uma cor aleatória do espectro arco-íris
  */
 function getRandomRainbowColor(): string {
@@ -43,10 +60,20 @@ function getRandomRainbowColor(): string {
  * Cria partículas de rastro quando o player se move (para skins raras)
  */
 export function createMagicTrail(state: GameState): void {
-  const skinData = getSkinData();
+  let skinData: ReturnType<typeof getSkinData>;
+  try {
+    skinData = getSkinData();
+  } catch (error) {
+    console.error('Error getting skin data in createMagicTrail:', error);
+    lastPlayerPos = null;
+    return;
+  }
   
-  // Apenas criar rastro se a skin for rara (rare, epic, legendary, mythic)
-  if (!skinData.textureName || !isRareRarity(skinData.rarity)) {
+  // Verificar se é smiley skin (sempre tem rastro, independente da raridade)
+  const isSmiley = isSmileySkin(skinData.textureName);
+  
+  // Apenas criar rastro se a skin for rara (rare, epic, legendary, mythic) ou smiley
+  if (!skinData.textureName || (!isRareRarity(skinData.rarity) && !isSmiley)) {
     lastPlayerPos = null;
     return;
   }
@@ -69,11 +96,15 @@ export function createMagicTrail(state: GameState): void {
   // Criar partículas apenas se o player se moveu significativamente
   if (distance > 0.5 && trailCooldown <= 0) {
     const isRainbow = isRainbowSkin(skinData.textureName);
+    // Reuse isSmiley from above instead of recalculating
     
+    // Para skins smiley, criar menos partículas (emojis) para evitar travamento
     // Para skins arco-íris, criar mais partículas
-    const particleCount = isRainbow 
-      ? 3 + Math.floor(Math.random() * 3) // 3-5 partículas para arco-íris
-      : 2 + Math.floor(Math.random() * 2); // 2-3 partículas normais
+    const particleCount = isSmiley
+      ? 1 + Math.floor(Math.random() * 1) // 1-2 emojis para smiley (reduzido)
+      : isRainbow 
+        ? 3 + Math.floor(Math.random() * 3) // 3-5 partículas para arco-íris
+        : 2 + Math.floor(Math.random() * 2); // 2-3 partículas normais
     
     for (let i = 0; i < particleCount; i++) {
       const offsetX = (Math.random() - 0.5) * player.w * 0.8;
@@ -92,17 +123,20 @@ export function createMagicTrail(state: GameState): void {
         },
         life: 0.8 + Math.random() * 0.4, // 0.8 a 1.2 segundos
         maxLife: 0.8 + Math.random() * 0.4,
-        size: isRainbow 
-          ? 2 + Math.random() * 2 // 2-4 pixels para arco-íris (mais visível)
-          : 1.5 + Math.random() * 1.5, // 1.5 a 3 pixels normais
+        size: isSmiley
+          ? 8 + Math.random() * 2 // 8-10 pixels para emojis (reduzido para performance)
+          : isRainbow 
+            ? 2 + Math.random() * 2 // 2-4 pixels para arco-íris (mais visível)
+            : 1.5 + Math.random() * 1.5, // 1.5 a 3 pixels normais
         alpha: 0.6 + Math.random() * 0.3, // 0.6 a 0.9
         color: trailColor,
+        emoji: isSmiley ? getRandomSmileyEmoji() : undefined,
       };
       
       state.magicTrailParticles.push(particle);
     }
     
-    trailCooldown = isRainbow ? 0.03 : 0.05; // Mais frequente para arco-íris
+    trailCooldown = isSmiley ? 0.1 : (isRainbow ? 0.03 : 0.05); // Menos frequente para smiley (reduzir travamento)
   }
 
   // Atualizar posição anterior

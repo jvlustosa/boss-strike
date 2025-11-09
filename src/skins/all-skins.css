@@ -12,6 +12,7 @@
 @import './rainbow-skin.css';
 @import './gold-skin.css';
 @import './void-skin.css';
+@import './smiley-skin.css';
 
 /* Import skin-specific effects */
 @import './effects/basic-effects.css';

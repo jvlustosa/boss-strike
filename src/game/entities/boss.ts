@@ -279,7 +279,7 @@ export function damageBoss(boss: Boss, damage: number, state?: GameState, isCrit
   // Criar número de dano e tocar som se state for fornecido
   if (state && state.damageNumbers) {
     // Tocar som de hit do boss
-    audioManager.playSound('boss_hit', 0.5, 0.2);
+    audioManager.playSound('boss_hit', 0.3, 0.2);
     
     // Criar número de dano na posição do weak spot do boss
     const weakSpotCenterX = boss.weakSpot.x + boss.weakSpot.w / 2;

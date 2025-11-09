@@ -10,7 +10,7 @@ const FONT_MD = '12px "Press Start 2P", "Pixelify Sans", monospace';
 const FONT_LG = '16px "Press Start 2P", "Pixelify Sans", monospace';
 const FONT_XL = '20px "Press Start 2P", "Pixelify Sans", monospace';
 
-export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, isPaused: boolean = false): void {
+export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, isPaused: boolean = false, nextBtnHover: boolean = false, nextBtnPressed: boolean = false): void {
   // Clear screen
   ctx.fillStyle = colors.background;
   ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
@@ -59,31 +59,42 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     };
     
     for (const trail of state.magicTrailParticles) {
-      const alpha = trail.alpha * (trail.life / trail.maxLife);
-      const size = Math.max(1, Math.floor(trail.size));
-      
-      // Validar que temos uma cor válida
-      const trailColor = trail.color || '#00ccff';
-      
-      // Cor da skin com alpha
-      ctx.fillStyle = hexToRgba(trailColor, alpha);
-      ctx.fillRect(
-        Math.floor(trail.pos.x - size / 2),
-        Math.floor(trail.pos.y - size / 2),
-        size,
-        size
-      );
-      
-      // Adicionar um brilho sutil ao redor (mais claro que a cor base)
-      if (size > 1) {
-        const glowAlpha = alpha * 0.3;
-        ctx.fillStyle = hexToRgba(trailColor, glowAlpha);
+      if (trail.emoji) {
+        // Render emoji trail (for smiley skin)
+        ctx.save();
+        ctx.globalAlpha = trail.alpha;
+        ctx.font = `${trail.size}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(trail.emoji, trail.pos.x, trail.pos.y);
+        ctx.restore();
+      } else {
+        const alpha = trail.alpha * (trail.life / trail.maxLife);
+        const size = Math.max(1, Math.floor(trail.size));
+        
+        // Validar que temos uma cor válida
+        const trailColor = trail.color || '#00ccff';
+        
+        // Cor da skin com alpha
+        ctx.fillStyle = hexToRgba(trailColor, alpha);
         ctx.fillRect(
-          Math.floor(trail.pos.x - size / 2 - 1),
-          Math.floor(trail.pos.y - size / 2 - 1),
-          size + 2,
-          size + 2
+          Math.floor(trail.pos.x - size / 2),
+          Math.floor(trail.pos.y - size / 2),
+          size,
+          size
         );
+        
+        // Adicionar um brilho sutil ao redor (mais claro que a cor base)
+        if (size > 1) {
+          const glowAlpha = alpha * 0.3;
+          ctx.fillStyle = hexToRgba(trailColor, glowAlpha);
+          ctx.fillRect(
+            Math.floor(trail.pos.x - size / 2 - 1),
+            Math.floor(trail.pos.y - size / 2 - 1),
+            size + 2,
+            size + 2
+          );
+        }
       }
     }
   }
@@ -106,10 +117,30 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
   }
 
   // Bullets
+  let skinData: ReturnType<typeof getSkinData> | null = null;
+  let textureName = '';
+  
+  // Only get skin data once if there are player bullets
+  const hasPlayerBullets = state.bullets.some(b => b.from !== 'boss');
+  if (hasPlayerBullets) {
+    try {
+      skinData = getSkinData();
+      const originalTextureName = skinData?.textureName || '';
+      textureName = originalTextureName.toLowerCase().replace(/[^a-z0-9]/g, '') || '';
+      
+      // Debug log (temporário)
+      if (state.bullets.length > 0 && state.bullets[0].from === 'player') {
+        console.log('[Bullet Render] Original textureName:', originalTextureName, 'Normalized:', textureName, 'Full skinData:', skinData);
+      }
+    } catch (error) {
+      console.error('Error getting skin data:', error);
+      textureName = '';
+    }
+  }
+  
   for (const bullet of state.bullets) {
-    ctx.fillStyle = bullet.from === 'player' ? colors.playerBullet : colors.bossBullet;
-    
     if (bullet.from === 'boss') {
+      ctx.fillStyle = colors.bossBullet;
       // Calcular ângulo do tiro baseado na velocidade
       // Adicionar 90 graus (π/2) para corrigir a orientação
       const angle = Math.atan2(bullet.vel.y, bullet.vel.x) + Math.PI / 2;
@@ -125,8 +156,34 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
       
       ctx.restore();
     } else {
-      // Player bullets - manter formato original (retângulo vertical)
-      ctx.fillRect(bullet.pos.x, bullet.pos.y, bullet.w, bullet.h);
+      // Player bullets - check for emoji skins
+      const centerX = bullet.pos.x + bullet.w / 2;
+      const centerY = bullet.pos.y + bullet.h / 2;
+      
+      // Check textureName for fire or ice
+      const normalizedTextureName = textureName || '';
+      
+      if (normalizedTextureName.includes('fire')) {
+        // Fire emoji bullet
+        ctx.save();
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🔥', centerX, centerY);
+        ctx.restore();
+      } else if (normalizedTextureName.includes('ice') || normalizedTextureName.includes('gelo')) {
+        // Ice emoji bullet - usando ❄️ (snowflake) para gelo
+        ctx.save();
+        ctx.font = '14px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('❄️', centerX, centerY);
+        ctx.restore();
+      } else {
+        // Default bullet
+        ctx.fillStyle = colors.playerBullet;
+        ctx.fillRect(bullet.pos.x, bullet.pos.y, bullet.w, bullet.h);
+      }
     }
   }
 
@@ -401,11 +458,18 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     const btnH = 16;
     const btnX = boxX + (boxW - btnW) / 2;
     const btnY = boxY + boxH - btnH - 8;
-    ctx.fillStyle = '#222';
+    
+    // Button colors based on state
+    const btnBgColor = nextBtnPressed ? '#0f0' : (nextBtnHover ? '#333' : '#222');
+    const btnBorderColor = nextBtnPressed ? '#fff' : (nextBtnHover ? '#4f4' : '#0f0');
+    const btnTextColor = nextBtnPressed ? '#000' : (nextBtnHover ? '#4f4' : '#0f0');
+    
+    ctx.fillStyle = btnBgColor;
     ctx.fillRect(btnX, btnY, btnW, btnH);
-    ctx.strokeStyle = '#0f0';
+    ctx.strokeStyle = btnBorderColor;
+    ctx.lineWidth = nextBtnHover || nextBtnPressed ? 2 : 1;
     ctx.strokeRect(btnX, btnY, btnW, btnH);
-    ctx.fillStyle = '#0f0';
+    ctx.fillStyle = btnTextColor;
     ctx.font = FONT_XS;
     ctx.fillText('Próxima Fase', btnX + 8, btnY + 4);
 
@@ -450,14 +514,14 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
 
     // Game Over Title
     ctx.fillStyle = '#f00';
-    ctx.font = FONT_MD;
+    ctx.font = FONT_SM;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
     ctx.fillText('GAME OVER', boxX + boxW / 2, boxY + 8);
 
     // Restart message
     ctx.fillStyle = '#fff';
-    ctx.font = FONT_SM;
+    ctx.font = FONT_XS;
     ctx.fillText('Reiniciando em...', boxX + boxW / 2, boxY + 32);
 
     // Countdown based on restart timer
