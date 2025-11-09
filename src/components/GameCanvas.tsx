@@ -18,6 +18,8 @@ import { MobileControlsLayout } from './MobileControlsLayout';
 import { MobileCredits } from './MobileCredits';
 import { DesktopControls } from './DesktopControls';
 import { DesktopCredits } from './DesktopCredits';
+import { useSkin } from '../hooks/useSkin';
+import { setColors } from '../game/core/assets';
 
 interface GameCanvasProps {
   isPaused: boolean;
@@ -30,6 +32,12 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
   const stateRef = useRef<GameState | null>(null);
   const scaleRef = useRef<number>(1);
   const isTransitioningRef = useRef(false);
+  
+  const { colors: skinColors } = useSkin();
+  
+  useEffect(() => {
+    setColors(skinColors);
+  }, [skinColors]);
 
   // Start the game when component mounts - initialize state from URL
   React.useEffect(() => {

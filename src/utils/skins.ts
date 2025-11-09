@@ -46,6 +46,25 @@ export async function getEquippedSkin(userId: string): Promise<UserSkin | null> 
   return data;
 }
 
+export async function getEquippedSkinWithDetails(userId: string): Promise<UserSkinWithDetails | null> {
+  const { data, error } = await supabase
+    .from('user_skins')
+    .select(`
+      *,
+      skin:skins(*)
+    `)
+    .eq('user_id', userId)
+    .eq('is_equipped', true)
+    .single();
+
+  if (error) {
+    console.error('Error fetching equipped skin with details:', error);
+    return null;
+  }
+
+  return data as UserSkinWithDetails;
+}
+
 export async function unlockSkin(userId: string, skinId: string): Promise<boolean> {
   const { error } = await supabase
     .from('user_skins')

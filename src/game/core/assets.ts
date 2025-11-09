@@ -1,5 +1,5 @@
 // Placeholder para sprites - usando formas geométricas por enquanto
-export const colors = {
+export const defaultColors = {
   player: '#00ff00',
   boss: '#ff0000',
   bossWeakSpot: '#ffff00',
@@ -9,3 +9,9 @@ export const colors = {
   heart: '#ff0066',
   background: '#000000',
 } as const;
+
+export let colors = { ...defaultColors };
+
+export function setColors(newColors: Partial<typeof defaultColors>) {
+  colors = { ...defaultColors, ...newColors };
+}
