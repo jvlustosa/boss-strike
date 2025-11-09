@@ -105,26 +105,30 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
 
   // Boss (with optional shake)
   const bossIsShaking = state.bossShakeTimer > 0;
-  const shakeMagnitude = bossIsShaking ? 1 + (state.bossShakeTimer / 2) * 2 : 0;
-  const shakeOffsetX = bossIsShaking ? Math.sin(state.time * 80) * shakeMagnitude : 0;
-  const shakeOffsetY = bossIsShaking ? Math.cos(state.time * 95) * shakeMagnitude : 0;
+  const shouldRenderBoss = state.boss.hp > 0 && state.pixelParticles.length === 0;
 
-  ctx.save();
-  if (bossIsShaking) {
-    ctx.translate(shakeOffsetX, shakeOffsetY);
-  }
+  if (shouldRenderBoss) {
+    const shakeMagnitude = bossIsShaking ? 1 + (state.bossShakeTimer / 2) * 2 : 0;
+    const shakeOffsetX = bossIsShaking ? Math.sin(state.time * 80) * shakeMagnitude : 0;
+    const shakeOffsetY = bossIsShaking ? Math.cos(state.time * 95) * shakeMagnitude : 0;
 
-  ctx.fillStyle = colors.boss;
-  ctx.fillRect(state.boss.pos.x, state.boss.pos.y, state.boss.w, state.boss.h);
-  
-  ctx.fillStyle = colors.bossWeakSpot;
-  ctx.fillRect(state.boss.weakSpot.x, state.boss.weakSpot.y, state.boss.weakSpot.w, state.boss.weakSpot.h);
-  
-  ctx.fillStyle = colors.bossArm;
-  for (const arm of state.boss.arms) {
-    ctx.fillRect(arm.pos.x, arm.pos.y, arm.w, arm.h);
+    ctx.save();
+    if (bossIsShaking) {
+      ctx.translate(shakeOffsetX, shakeOffsetY);
+    }
+
+    ctx.fillStyle = colors.boss;
+    ctx.fillRect(state.boss.pos.x, state.boss.pos.y, state.boss.w, state.boss.h);
+    
+    ctx.fillStyle = colors.bossWeakSpot;
+    ctx.fillRect(state.boss.weakSpot.x, state.boss.weakSpot.y, state.boss.weakSpot.w, state.boss.weakSpot.h);
+    
+    ctx.fillStyle = colors.bossArm;
+    for (const arm of state.boss.arms) {
+      ctx.fillRect(arm.pos.x, arm.pos.y, arm.w, arm.h);
+    }
+    ctx.restore();
   }
-  ctx.restore();
 
   // Bullets
   let skinData: ReturnType<typeof getSkinData> | null = null;

@@ -29,6 +29,7 @@ function GameApp() {
   const skinUnlock = useSkinUnlock();
   const { user, profile: authProfile, initialized, refreshProfile } = useAuth();
   const navigate = useNavigate();
+  const [showRestartPrompt, setShowRestartPrompt] = useState(false);
 
   const handleStartGame = useCallback(async (level?: number, clearTrophies?: boolean) => {
     // Verificar se há nível na URL primeiro, senão usar o nível passado ou 1
@@ -177,10 +178,141 @@ function GameApp() {
     setGameStarted(true);
   };
 
+  const handleRestartGame = useCallback(async (resetTrophies: boolean) => {
+    setShowRestartPrompt(false);
+    setIsPaused(false);
+    await handleStartGame(1, resetTrophies);
+  }, [handleStartGame]);
+
+  const handleCancelRestart = () => {
+    setShowRestartPrompt(false);
+    if (gameStarted) {
+      handleMainMenu();
+    }
+  };
+
+  const restartButton = (
+    <button
+      type="button"
+      onClick={() => setShowRestartPrompt(true)}
+      style={{
+        position: 'fixed',
+        bottom: '16px',
+        left: '16px',
+        zIndex: 1200,
+        background: '#111',
+        color: '#fff',
+        border: '2px solid #fff',
+        padding: '6px 10px',
+        fontFamily: PIXEL_FONT,
+        fontSize: '10px',
+        letterSpacing: '1px',
+        cursor: 'pointer',
+        textTransform: 'uppercase',
+        boxShadow: '2px 2px 0px #333',
+      }}
+    >
+      Reiniciar
+    </button>
+  );
+
+  const restartPrompt = showRestartPrompt ? (
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        background: 'rgba(0, 0, 0, 0.65)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 1300,
+        padding: '16px',
+      }}
+    >
+      <div
+        style={{
+          background: '#111',
+          border: '3px solid #fff',
+          boxShadow: '4px 4px 0px #333',
+          padding: '16px',
+          maxWidth: '260px',
+          width: '100%',
+          color: '#fff',
+          fontFamily: PIXEL_FONT,
+          textAlign: 'center',
+        }}
+      >
+        <div style={{ fontSize: '11px', marginBottom: '12px', lineHeight: 1.4 }}>
+          você gostaria de reiniciar seus troféus também?
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '8px',
+          }}
+        >
+          <button
+            type="button"
+            onClick={handleCancelRestart}
+            style={{
+              background: '#222',
+              color: '#fff',
+              border: '2px solid #fff',
+              padding: '6px 8px',
+              fontFamily: PIXEL_FONT,
+              fontSize: '10px',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              boxShadow: '2px 2px 0px #333',
+            }}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={() => handleRestartGame(true)}
+            style={{
+              background: '#44aa44',
+              color: '#fff',
+              border: '2px solid #fff',
+              padding: '6px 8px',
+              fontFamily: PIXEL_FONT,
+              fontSize: '10px',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              boxShadow: '2px 2px 0px #113311',
+            }}
+          >
+            Sim
+          </button>
+          <button
+            type="button"
+            onClick={() => handleRestartGame(false)}
+            style={{
+              background: '#ff4444',
+              color: '#fff',
+              border: '2px solid #fff',
+              padding: '6px 8px',
+              fontFamily: PIXEL_FONT,
+              fontSize: '10px',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              boxShadow: '2px 2px 0px #331111',
+            }}
+          >
+            Não
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
 
   if (!gameStarted) {
     return (
       <>
+        {restartButton}
+        {restartPrompt}
         {user && (
           <UserHeader onProfileClick={() => {
             if (user && authProfile?.username) {
@@ -340,6 +472,8 @@ function GameApp() {
           />
         )}
       </div>
+      {restartButton}
+      {restartPrompt}
       {showProfileModal && user && (
         <ProfilePage 
           onClose={() => {
