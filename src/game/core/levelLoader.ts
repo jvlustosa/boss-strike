@@ -20,7 +20,7 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
     armShootCooldown: 1.2,
     bossBulletSpeed: 55,
     bulletPattern: { type: 'double', spread: 30 },
-    bombDamageFraction: 0.1
+    bombDamageFraction: 2 / 9
   },
   3: {
     name: "Rajada Veloz",
@@ -86,7 +86,7 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
     bossBulletSpeed: 67, // 71 * 0.94 = 66.74 (redução de 6%)
     bulletPattern: { type: 'wave', waveCount: 2, delayBetweenWaves: 0.3 },
     bossMovement: { type: 'horizontal', speed: 5, amplitude: 50 },
-    bombDamageFraction: 1 / 9
+    bombDamageFraction: 1 / 3
   },
   9: {
     name: "Inferno",

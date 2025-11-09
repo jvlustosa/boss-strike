@@ -7,6 +7,10 @@ import { createBombForLevel } from '../core/state';
 
 const BOMB_SPAWN_DELAY = 5; // seconds before bomb appears
 const SCORCH_LIFETIME = 2; // seconds scorch remains
+const CARRIED_OFFSET_Y = 10;
+const AIM_MIN = Math.PI / 4; // 45 degrees
+const AIM_MAX = (3 * Math.PI) / 4; // 135 degrees
+const AIM_SPEED = Math.PI * 0.64; // radians per second (additional 20% slower)
 
 const PLAYER_AABB = (state: GameState) => ({
   x: state.player.pos.x,
@@ -49,50 +53,57 @@ export function bombSystem(state: GameState, dt: number): void {
 
   bomb.floatTimer += dt;
 
-  // Player touches bomb -> activate homing
+  // Player touches bomb -> start carrying
   if (bomb.state === 'idle' && player.alive) {
     const bombBox = { x: bomb.pos.x, y: bomb.pos.y, w: bomb.w, h: bomb.h };
     if (aabbCollision(PLAYER_AABB(state), bombBox)) {
-      bomb.state = 'homing';
+      bomb.state = 'carried';
+      bomb.floatTimer = 0;
       audioManager.playSound('shoot', 0.3, 0.3);
     }
   }
 
-  if (bomb.state === 'homing') {
-    if (boss.hp <= 0) {
-      state.bomb = null;
-      state.bombUsedThisLevel = true;
-      return;
+  if (bomb.state === 'carried') {
+    const playerCenterX = player.pos.x + player.w / 2 - bomb.w / 2;
+    const playerCenterY = player.pos.y - CARRIED_OFFSET_Y;
+    bomb.pos.x = playerCenterX;
+    bomb.pos.y = playerCenterY;
+
+    bomb.aimAngle += bomb.aimDirection * AIM_SPEED * dt;
+    if (bomb.aimAngle >= AIM_MAX) {
+      bomb.aimAngle = AIM_MAX;
+      bomb.aimDirection = -1;
+    } else if (bomb.aimAngle <= AIM_MIN) {
+      bomb.aimAngle = AIM_MIN;
+      bomb.aimDirection = 1;
     }
 
-    const bombCenterX = bomb.pos.x + bomb.w / 2;
-    const bombCenterY = bomb.pos.y + bomb.h / 2;
-    const bossCenterX = boss.pos.x + boss.w / 2;
-    const bossCenterY = boss.pos.y + boss.h / 2;
-
-    const dirX = bossCenterX - bombCenterX;
-    const dirY = bossCenterY - bombCenterY;
-    const distance = Math.hypot(dirX, dirY);
-
-    if (distance > 0) {
-      const normalizedX = dirX / distance;
-      const normalizedY = dirY / distance;
-      const step = bomb.speed * dt;
-
-      bomb.pos.x += normalizedX * step;
-      bomb.pos.y += normalizedY * step;
+    if (state.keys[' ']) {
+      launchBomb(state, bomb);
     }
 
-    // Check collision with boss body (weak spot or general hitbox)
+    // Allow collision with boss only after launch
+    return;
+  }
+
+  if (bomb.state === 'thrown') {
+    const step = bomb.speed * dt;
+    bomb.pos.x += Math.cos(bomb.aimAngle) * step;
+    bomb.pos.y -= Math.sin(bomb.aimAngle) * step;
+
     const bombBox = { x: bomb.pos.x, y: bomb.pos.y, w: bomb.w, h: bomb.h };
     const bossBox = { x: boss.pos.x, y: boss.pos.y, w: boss.w, h: boss.h };
-
     if (aabbCollision(bombBox, bossBox)) {
       applyBombDamage(state);
     }
   }
 }
 
+function launchBomb(state: GameState, bomb: NonNullable<GameState['bomb']>): void {
+  bomb.state = 'thrown';
+  bomb.speed = 140;
+  audioManager.playSound('boss_shoot', 0.35, 0.2);
+}
 function applyBombDamage(state: GameState): void {
   const bomb = state.bomb;
   if (!bomb) return;
@@ -116,6 +127,7 @@ function applyBombDamage(state: GameState): void {
     life: SCORCH_LIFETIME,
     maxLife: SCORCH_LIFETIME,
   });
+  state.bossShakeTimer = 2;
 
   state.bomb = null;
   state.bombUsedThisLevel = true;

@@ -13,7 +13,7 @@ levels:
   2:
     name: "Duplo Perigo"
     bossHp: 34
-    bombDamageFraction: 0.1
+    bombDamageFraction: 0.222222
     armMoveSpeed: 2.0
     armAmplitude: 4
     armShootCooldown: 1.2
@@ -89,7 +89,7 @@ levels:
   8:
     name: "Caos Controlado"
     bossHp: 46
-    bombDamageFraction: 0.111111
+    bombDamageFraction: 0.333333
     armMoveSpeed: 3.8
     armAmplitude: 8
     armShootCooldown: 0.7

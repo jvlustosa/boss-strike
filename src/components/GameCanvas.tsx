@@ -119,7 +119,9 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         shieldSystem(state, dt);
         bombSystem(state, dt);
         updateShieldFragments(state, dt);
-        updateScorchMarks(state, dt);
+        if (state.bossShakeTimer > 0) {
+          state.bossShakeTimer = Math.max(0, state.bossShakeTimer - dt);
+        }
         collisionSystem(state);
         
         // Handle victory timer
@@ -169,6 +171,7 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
           state.status = next.status;
           state.victoryTimer = next.victoryTimer;
           state.restartTimer = next.restartTimer;
+          state.bossShakeTimer = next.bossShakeTimer;
           state.keys = keysRef;
           
           // Atualizar moveSpeed dos braços do boss com a nova configuração
@@ -196,6 +199,8 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
           }
         }
       }
+
+      updateScorchMarks(state, dt);
       
       // Notify parent component of state changes
       if (onGameStateChange) {
@@ -317,6 +322,7 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         currentState.bombUsedThisLevel = newState.bombUsedThisLevel;
         currentState.bombSpawnTimer = newState.bombSpawnTimer;
         currentState.scorchMarks = newState.scorchMarks;
+        currentState.bossShakeTimer = newState.bossShakeTimer;
         
         // Atualizar moveSpeed dos braços do boss com a nova configuração
         for (let i = 0; i < currentState.boss.arms.length; i++) {

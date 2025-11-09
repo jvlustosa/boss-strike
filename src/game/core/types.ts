@@ -57,7 +57,7 @@ export type Shield = {
   collected: boolean;
 };
 
-export type BombState = 'idle' | 'homing';
+export type BombState = 'idle' | 'carried' | 'thrown';
 
 export type Bomb = {
   pos: Vec2;
@@ -67,6 +67,8 @@ export type Bomb = {
   speed: number;
   damageFraction: number;
   floatTimer: number;
+  aimAngle: number;
+  aimDirection: 1 | -1;
 };
 
 export type ScorchMark = {
@@ -171,6 +173,7 @@ export type GameState = {
   bombUsedThisLevel: boolean;
   bombSpawnTimer: number;
   scorchMarks: ScorchMark[];
+  bossShakeTimer: number;
   keys: Record<string, boolean>;
   status: 'menu' | 'playing' | 'paused' | 'won' | 'lost';
   victoryTimer: number;

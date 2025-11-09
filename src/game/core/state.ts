@@ -49,6 +49,8 @@ export function createBombForLevel(levelConfig: LevelConfig): Bomb | null {
     speed: 70,
     damageFraction: fraction,
     floatTimer: 0,
+    aimAngle: Math.PI / 4,
+    aimDirection: 1,
   };
 
   return bomb;
@@ -119,6 +121,7 @@ export function createInitialState(level: number = 1): GameState {
     bombUsedThisLevel: !bombEnabled,
     bombSpawnTimer: 0,
     scorchMarks: [],
+    bossShakeTimer: 0,
     keys: {},
     status: 'menu',
     victoryTimer: 0,

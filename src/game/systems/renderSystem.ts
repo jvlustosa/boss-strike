@@ -102,19 +102,28 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
   // Player - usando componente dedicado
   renderPlayer(ctx, state.player);
 
-  // Boss
+  // Boss (with optional shake)
+  const bossIsShaking = state.bossShakeTimer > 0;
+  const shakeMagnitude = bossIsShaking ? 1 + (state.bossShakeTimer / 2) * 2 : 0;
+  const shakeOffsetX = bossIsShaking ? Math.sin(state.time * 80) * shakeMagnitude : 0;
+  const shakeOffsetY = bossIsShaking ? Math.cos(state.time * 95) * shakeMagnitude : 0;
+
+  ctx.save();
+  if (bossIsShaking) {
+    ctx.translate(shakeOffsetX, shakeOffsetY);
+  }
+
   ctx.fillStyle = colors.boss;
   ctx.fillRect(state.boss.pos.x, state.boss.pos.y, state.boss.w, state.boss.h);
   
-  // Boss weak spot (exposto na parte inferior, alinhado ao fundo)
   ctx.fillStyle = colors.bossWeakSpot;
   ctx.fillRect(state.boss.weakSpot.x, state.boss.weakSpot.y, state.boss.weakSpot.w, state.boss.weakSpot.h);
   
-  // Boss arms
   ctx.fillStyle = colors.bossArm;
   for (const arm of state.boss.arms) {
     ctx.fillRect(arm.pos.x, arm.pos.y, arm.w, arm.h);
   }
+  ctx.restore();
 
   // Bullets
   let skinData: ReturnType<typeof getSkinData> | null = null;
@@ -239,9 +248,11 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
   // Bomb
   if (state.bomb) {
     const bomb = state.bomb;
-    const bobOffset = Math.sin(bomb.floatTimer * 4) * 1.5;
+    const bobOffset = bomb.state === 'carried' ? 0 : Math.sin(bomb.floatTimer * 4) * 1.5;
     const renderX = Math.floor(bomb.pos.x);
     const renderY = Math.floor(bomb.pos.y + bobOffset);
+    const centerX = renderX + bomb.w / 2;
+    const centerY = renderY + bomb.h / 2;
 
     ctx.fillStyle = '#000000';
     ctx.fillRect(renderX - 1, renderY - 1, bomb.w + 2, bomb.h + 2);
@@ -252,9 +263,19 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     ctx.fillStyle = colors.bombCore;
     ctx.fillRect(renderX + 2, renderY + 2, Math.max(1, bomb.w - 4), Math.max(1, bomb.h - 4));
 
-    if (bomb.state === 'homing') {
-      ctx.fillStyle = 'rgba(255, 200, 0, 0.5)';
-      ctx.fillRect(renderX + bomb.w / 2 - 1, renderY - 3, 2, 3);
+    if (bomb.state === 'carried') {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255, 165, 0, 0.55)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]);
+      const lineLength = 42;
+      const aimX = centerX + Math.cos(bomb.aimAngle) * lineLength;
+      const aimY = centerY - Math.sin(bomb.aimAngle) * lineLength;
+      ctx.beginPath();
+      ctx.moveTo(centerX, centerY);
+      ctx.lineTo(aimX, aimY);
+      ctx.stroke();
+      ctx.restore();
     }
   }
 
