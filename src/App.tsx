@@ -240,18 +240,18 @@ function GameApp() {
   
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isLandscape = isMobile && window.innerHeight < window.innerWidth;
-
+  
   return (
     <>
       {user && (
         <UserHeader 
           onProfileClick={() => {
-            if (user && authProfile?.username) {
-              navigate(`/profile/${authProfile.username}`);
-            } else {
-              setIsPaused(true);
-              setShowProfileModal(true);
-            }
+          if (user && authProfile?.username) {
+            navigate(`/profile/${authProfile.username}`);
+          } else {
+            setIsPaused(true);
+            setShowProfileModal(true);
+          }
           }}
           onPause={!isPaused ? handlePause : undefined}
         />

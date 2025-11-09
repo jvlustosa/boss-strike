@@ -581,6 +581,38 @@ export function LevelsPage({ onStartGame }: LevelsPageProps) {
           );
         })}
         </div>
+        
+        <div style={{
+          marginTop: mobile ? '40px' : '60px',
+          padding: mobile ? '20px' : '30px',
+          textAlign: 'center',
+          opacity: 0.7,
+        }}>
+          <div style={{
+            fontSize: mobile ? '18px' : '24px',
+            marginBottom: mobile ? '10px' : '15px',
+            lineHeight: '1.1',
+            fontFamily: 'monospace',
+            color: '#4ade80',
+            textShadow: '2px 2px 0px #000, 0 0 10px rgba(74, 222, 128, 0.5)',
+            imageRendering: 'pixelated' as any,
+            letterSpacing: '1px',
+          }}>
+            <div> ░ </div>
+            <div> ░ ░ </div>
+            <div> ░ ░ ░ </div>
+            <div> ░ ░ </div>
+            <div style={{ marginTop: '2px' }}> ░ </div>
+          </div>
+          <div style={{
+            fontSize: mobile ? '16px' : '20px',
+            color: '#999',
+            fontFamily: PIXEL_FONT,
+            textShadow: '1px 1px 0px #333',
+          }}>
+            Mais em breve
+          </div>
+        </div>
         </div>
       </div>
 
