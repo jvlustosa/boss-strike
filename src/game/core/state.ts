@@ -6,7 +6,7 @@ function getMaxShieldsForLevel(level: number): number {
   // Configuração de escudos por nível
   const config: Record<number, { base: number; rare?: number }> = {
     1: { base: 0 },
-    2: { base: 1 },
+    2: { base: 0 },
     3: { base: 1 },
     4: { base: 1 },
     5: { base: 0 },
