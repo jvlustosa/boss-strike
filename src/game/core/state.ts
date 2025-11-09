@@ -119,6 +119,7 @@ export function createInitialState(level: number = 1): GameState {
     magicTrailParticles: [],
     damageNumbers: [],
     bomb: null,
+    bombTrailParticles: [],
     bombUsedThisLevel: !bombEnabled,
     bombSpawnTimer: 0,
     scorchMarks: [],

@@ -199,11 +199,15 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
                 if (showContinueButton) {
                   onStartGame(nextLevel);
                 } else {
-                  onStartGame(1);
+                  navigate('/play');
                 }
               }}
             >
-              {showContinueButton ? `CONTINUAR (FASE ${nextLevel})` : 'JOGAR'}
+              {showContinueButton ? (
+                <>
+                  CONTINUAR → <span style={{ fontSize: isLandscape ? '8px' : (isMobile ? '12px' : '13px') }}>(FASE {nextLevel})</span>
+                </>
+              ) : 'JOGAR'}
             </button>
 
               <button

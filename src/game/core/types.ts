@@ -182,6 +182,7 @@ export type GameState = {
   magicTrailParticles: MagicTrailParticle[];
   damageNumbers: DamageNumber[];
   bomb: Bomb | null;
+  bombTrailParticles: BombTrailParticle[];
   bombUsedThisLevel: boolean;
   bombSpawnTimer: number;
   scorchMarks: ScorchMark[];

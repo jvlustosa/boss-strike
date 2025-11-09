@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useCallback } from 'react';
+import React, { useEffect, useRef, useCallback, useState } from 'react';
 import type { GameState } from '../game/core/types';
 import { createInitialState } from '../game/core/state';
 import { LOGICAL_W, LOGICAL_H } from '../game/core/config';
@@ -23,28 +23,33 @@ import { MobileControlsLayout } from './MobileControlsLayout';
 import { MobileCredits } from './MobileCredits';
 import { DesktopControls } from './DesktopControls';
 import { DesktopCredits } from './DesktopCredits';
+import { VictoryModal } from './VictoryModal';
 import { useSkin } from '../hooks/useSkin';
 
 interface GameCanvasProps {
   isPaused: boolean;
   onGameStateChange?: (gameState: GameState) => void;
   gameStarted?: boolean;
+  gameState?: GameState | null;
 }
 
-export function GameCanvas({ isPaused, onGameStateChange, gameStarted = true }: GameCanvasProps) {
+export function GameCanvas({ isPaused, onGameStateChange, gameStarted = true, gameState }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
   const stateRef = useRef<GameState | null>(null);
   const scaleRef = useRef<number>(1);
   const isTransitioningRef = useRef(false);
-  const nextBtnHoverRef = useRef(false);
-  const nextBtnPressedRef = useRef(false);
   
   // Hook loads and applies skin colors automatically
   useSkin();
 
   // Start the game when component mounts - initialize state from URL
+  const mountedRef = useRef(false);
   React.useEffect(() => {
+    // Only run once on mount
+    if (mountedRef.current) return;
+    mountedRef.current = true;
+    
     // Sempre ler o nível da URL ao montar/atualizar
     const currentLevel = getLevelFromUrl();
     
@@ -63,7 +68,7 @@ export function GameCanvas({ isPaused, onGameStateChange, gameStarted = true }: 
     if (onGameStateChange && stateRef.current) {
       onGameStateChange(stateRef.current);
     }
-  }, [onGameStateChange]);
+  }, [onGameStateChange]); // Now stable with useCallback
 
   // Force restart when gameStarted changes to true (after being false)
   React.useEffect(() => {
@@ -85,6 +90,7 @@ export function GameCanvas({ isPaused, onGameStateChange, gameStarted = true }: 
         stateRef.current.pixelParticles.length = 0;
         stateRef.current.magicTrailParticles.length = 0;
         stateRef.current.damageNumbers.length = 0;
+        stateRef.current.bombTrailParticles.length = 0;
         stateRef.current.shieldFragments.length = 0;
         stateRef.current.scorchMarks.length = 0;
         
@@ -118,6 +124,7 @@ export function GameCanvas({ isPaused, onGameStateChange, gameStarted = true }: 
         stateRef.current.pixelParticles.length = 0;
         stateRef.current.magicTrailParticles.length = 0;
         stateRef.current.damageNumbers.length = 0;
+        stateRef.current.bombTrailParticles.length = 0;
         stateRef.current.shieldFragments.length = 0;
         stateRef.current.scorchMarks.length = 0;
         
@@ -197,6 +204,26 @@ export function GameCanvas({ isPaused, onGameStateChange, gameStarted = true }: 
       // Always update explosion system (even when paused or during victory timer)
       updateExplosionSystem(state, dt);
       
+      // Handle victory timer - must run regardless of pause/status to ensure modal appears
+      if (state.victoryTimer > 0) {
+        state.victoryTimer -= dt;
+        if (state.victoryTimer <= 0) {
+          state.status = 'won';
+          // Save victory (só se o nível for múltiplo de 5) and progress
+          saveVictory(state.level).catch(console.error);
+          saveProgress(state).catch(console.error);
+          // Notify parent immediately when victory modal should appear
+          if (onGameStateChange) {
+            // Create a new object to ensure React detects the change
+            onGameStateChange({
+              ...state,
+              status: 'won' as const,
+              levelConfig: { ...state.levelConfig },
+            });
+          }
+        }
+      }
+      
       if (state.status === 'playing' && !isPaused) {
         state.time += dt;
         playerSystem(state, dt);
@@ -213,17 +240,6 @@ export function GameCanvas({ isPaused, onGameStateChange, gameStarted = true }: 
           state.bossShakeTimer = Math.max(0, state.bossShakeTimer - dt);
         }
         collisionSystem(state);
-        
-        // Handle victory timer
-        if (state.victoryTimer > 0) {
-          state.victoryTimer -= dt;
-          if (state.victoryTimer <= 0) {
-            state.status = 'won';
-            // Save victory (só se o nível for múltiplo de 5) and progress
-            saveVictory(state.level).catch(console.error);
-            saveProgress(state).catch(console.error);
-          }
-        }
       } else if (state.status === 'lost') {
         // Auto-restart after 2 seconds when player loses
         state.restartTimer += dt;
@@ -259,6 +275,7 @@ export function GameCanvas({ isPaused, onGameStateChange, gameStarted = true }: 
           state.pixelParticles.length = 0;
           state.magicTrailParticles.length = 0;
           state.damageNumbers.length = 0;
+          state.bombTrailParticles.length = 0;
           state.scorchMarks.length = 0;
           state.scorchMarks = next.scorchMarks;
           state.status = next.status;
@@ -296,13 +313,24 @@ export function GameCanvas({ isPaused, onGameStateChange, gameStarted = true }: 
       updateScorchMarks(state, dt);
       
       // Notify parent component of state changes
+      // Always notify when status is 'won' to ensure modal appears
       if (onGameStateChange) {
-        onGameStateChange(state);
+        if (state.status === 'won') {
+          // Create new object for 'won' status to ensure React detects change
+          onGameStateChange({
+            ...state,
+            status: 'won' as const,
+            levelConfig: { ...state.levelConfig },
+          });
+        } else {
+          onGameStateChange(state);
+        }
       }
     };
 
     const render = () => {
-      renderSystem(ctx, state, isPaused, nextBtnHoverRef.current, nextBtnPressedRef.current);
+      // Modal de vitória agora é um componente React separado
+      renderSystem(ctx, state, isPaused);
     };
 
     const cleanupLoop = createGameLoop(update, render);
@@ -314,174 +342,12 @@ export function GameCanvas({ isPaused, onGameStateChange, gameStarted = true }: 
     window.addEventListener('resize', handleResize);
     window.addEventListener('orientationchange', handleResize);
 
-    // Mouse move handling for next level button hover
-    const onMouseMove = (e: MouseEvent) => {
-      const currentState = stateRef.current;
-      if (!currentState || currentState.status !== 'won') {
-        const wasHovering = nextBtnHoverRef.current;
-        nextBtnHoverRef.current = false;
-        if (wasHovering) {
-          // Force re-render if hover state changed
-          requestAnimationFrame(() => {
-            if (stateRef.current) {
-              renderSystem(ctx, stateRef.current, isPaused, nextBtnHoverRef.current, nextBtnPressedRef.current);
-            }
-          });
-        }
-        canvas.style.cursor = 'default';
-        return;
-      }
-      const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / scaleRef.current;
-      const y = (e.clientY - rect.top) / scaleRef.current;
-      const btn = (currentState as any)._nextBtn as { x: number; y: number; w: number; h: number } | undefined;
-      const isHovering = !!(btn && x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h);
-      const wasHovering = nextBtnHoverRef.current;
-      nextBtnHoverRef.current = isHovering;
-      canvas.style.cursor = isHovering ? 'pointer' : 'default';
-      
-      // Force re-render if hover state changed
-      if (wasHovering !== isHovering) {
-        requestAnimationFrame(() => {
-          if (stateRef.current) {
-            renderSystem(ctx, stateRef.current, isPaused, nextBtnHoverRef.current, nextBtnPressedRef.current);
-          }
-        });
-      }
-    };
-
-    const onMouseLeave = () => {
-      nextBtnHoverRef.current = false;
-      nextBtnPressedRef.current = false;
-      canvas.style.cursor = 'default';
-    };
-
-    // Click handling for next level button
-    const onClick = (e: MouseEvent) => {
-      const currentState = stateRef.current;
-      if (!currentState || currentState.status !== 'won' || isTransitioningRef.current) return;
-      const rect = canvas.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / scaleRef.current;
-      const y = (e.clientY - rect.top) / scaleRef.current;
-      const btn = (currentState as any)._nextBtn as { x: number; y: number; w: number; h: number } | undefined;
-      if (btn && x >= btn.x && x <= btn.x + btn.w && y >= btn.y && y <= btn.y + btn.h) {
-        nextBtnPressedRef.current = true;
-        // Force re-render to show pressed state
-        setTimeout(() => {
-          const ctx = canvas.getContext('2d');
-          if (ctx && currentState) {
-            renderSystem(ctx, currentState, isPaused, nextBtnHoverRef.current, nextBtnPressedRef.current);
-          }
-        }, 0);
-        
-        isTransitioningRef.current = true;
-        // Avançar para próxima fase
-        const nextLevel = currentState.level + 1;
-        updateUrlLevel(nextLevel);
-        
-        // Criar novo estado completamente
-        const newState = createInitialState(nextLevel);
-        
-        // Preservar apenas o que é necessário
-        const keysRef = currentState.keys;
-        
-        // Limpar estado atual
-        clearMagicTrail();
-        resetHitCounter();
-        currentState.bullets.length = 0;
-        currentState.hearts.length = 0;
-        currentState.shields.length = 0;
-        currentState.shieldFragments.length = 0;
-        currentState.explosionParticles.length = 0;
-        currentState.smokeParticles.length = 0;
-        currentState.pixelParticles.length = 0;
-        currentState.magicTrailParticles.length = 0;
-        currentState.damageNumbers.length = 0;
-        currentState.scorchMarks.length = 0;
-        
-        // Aplicar novo estado - atualizar propriedades específicas
-        currentState.time = newState.time;
-        currentState.level = newState.level;
-        currentState.levelConfig = { ...newState.levelConfig }; // Create new object
-        currentState.player = newState.player;
-        currentState.boss = newState.boss;
-        currentState.heartsSpawnedThisLevel = newState.heartsSpawnedThisLevel;
-        currentState.shieldsSpawnedThisLevel = newState.shieldsSpawnedThisLevel;
-        currentState.maxShieldsThisLevel = newState.maxShieldsThisLevel;
-        currentState.shieldCooldown = newState.shieldCooldown;
-        currentState.status = newState.status;
-        currentState.victoryTimer = newState.victoryTimer;
-        currentState.restartTimer = newState.restartTimer;
-        currentState.keys = keysRef;
-        currentState.bomb = newState.bomb;
-        currentState.bombUsedThisLevel = newState.bombUsedThisLevel;
-        currentState.bombSpawnTimer = newState.bombSpawnTimer;
-        currentState.scorchMarks = newState.scorchMarks;
-        currentState.bossShakeTimer = newState.bossShakeTimer;
-        
-        // Atualizar moveSpeed dos braços do boss com a nova configuração
-        for (let i = 0; i < currentState.boss.arms.length; i++) {
-          currentState.boss.arms[i].moveSpeed = currentState.levelConfig.armMoveSpeed;
-        }
-        
-        // Limpar qualquer tecla pressionada
-        for (const key in keysRef) {
-          keysRef[key] = false;
-        }
-        
-        // Force joystick cleanup on level transition
-        forceJoystickCleanup();
-        
-        if (currentState) {
-          // Reset timers
-          currentState.restartTimer = 0;
-          currentState.victoryTimer = 0;
-          currentState.time = 0;
-          
-          // Garantir que o status seja 'playing'
-          currentState.status = 'playing';
-          
-          // Notify parent component of state changes to update level title FIRST
-          if (onGameStateChange) {
-            // Create a new object to ensure React detects the change
-            const stateToNotify = {
-              ...currentState,
-              levelConfig: { ...currentState.levelConfig }
-            };
-            onGameStateChange(stateToNotify);
-          }
-          
-          // Forçar uma atualização do canvas
-          if (canvas) {
-            const ctx = canvas.getContext('2d');
-            if (ctx) {
-              renderSystem(ctx, currentState, isPaused, nextBtnHoverRef.current, nextBtnPressedRef.current);
-            }
-          }
-        }
-        
-        
-        // Reset transition flag after a short delay
-        setTimeout(() => {
-          isTransitioningRef.current = false;
-          nextBtnPressedRef.current = false;
-        }, 100);
-      }
-      
-    };
-    canvas.addEventListener('click', onClick);
-    canvas.addEventListener('mousemove', onMouseMove);
-    canvas.addEventListener('mouseleave', onMouseLeave);
-
     return () => {
       cleanupInput();
       cleanupLoop();
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('orientationchange', handleResize);
       window.removeEventListener('keydown', handleKeyDown);
-      canvas.removeEventListener('click', onClick);
-      canvas.removeEventListener('mousemove', onMouseMove);
-      canvas.removeEventListener('mouseleave', onMouseLeave);
     };
   }, [setupCanvas, isPaused]);
 
@@ -508,6 +374,121 @@ export function GameCanvas({ isPaused, onGameStateChange, gameStarted = true }: 
 
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isLandscape = isMobile && window.innerHeight < window.innerWidth;
+  
+  // Estado local para controlar visibilidade do modal
+  const [showVictoryModal, setShowVictoryModal] = useState(false);
+  const [victoryLevel, setVictoryLevel] = useState(1);
+
+  // Monitorar mudanças no gameState para mostrar o modal
+  useEffect(() => {
+    if (gameState?.status === 'won') {
+      setShowVictoryModal(true);
+      setVictoryLevel(gameState.level);
+    } else {
+      setShowVictoryModal(false);
+    }
+  }, [gameState]);
+
+  // Verificar stateRef periodicamente para garantir que o modal aparece
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const currentState = stateRef.current;
+      // Don't show modal if transitioning to next level
+      if (currentState?.status === 'won' && !isTransitioningRef.current) {
+        if (!showVictoryModal) {
+          setShowVictoryModal(true);
+          setVictoryLevel(currentState.level);
+          // Garantir que o parent está sincronizado com um novo objeto
+          if (onGameStateChange) {
+            onGameStateChange({
+              ...currentState,
+              status: 'won' as const,
+              levelConfig: { ...currentState.levelConfig },
+            });
+          }
+        }
+      } else if (showVictoryModal && (currentState?.status !== 'won' || isTransitioningRef.current)) {
+        setShowVictoryModal(false);
+      }
+    }, 100); // Check every 100ms for responsiveness
+    
+    return () => clearInterval(interval);
+  }, [showVictoryModal, onGameStateChange]); // onGameStateChange is stable now with useCallback
+
+  // Use state for modal visibility to ensure React controls it properly
+  const victoryModalVisible = showVictoryModal;
+  const currentLevel = victoryLevel || stateRef.current?.level || 1;
+
+  const handleNextPhase = () => {
+    const currentState = stateRef.current;
+    if (!currentState || isTransitioningRef.current) {
+      return;
+    }
+
+    // Esconder modal imediatamente
+    setShowVictoryModal(false);
+    setVictoryLevel(0); // Reset victory level
+
+    isTransitioningRef.current = true;
+    const nextLevel = currentState.level + 1;
+    updateUrlLevel(nextLevel);
+
+    // Criar novo estado completamente
+    const newState = createInitialState(nextLevel);
+
+    // Preservar apenas o que é necessário
+    const keysRef = currentState.keys;
+
+    // Limpar estado atual
+    clearMagicTrail();
+    resetHitCounter();
+    currentState.bullets.length = 0;
+    currentState.hearts.length = 0;
+    currentState.shields.length = 0;
+    currentState.shieldFragments.length = 0;
+    currentState.explosionParticles.length = 0;
+    currentState.smokeParticles.length = 0;
+    currentState.pixelParticles.length = 0;
+    currentState.magicTrailParticles.length = 0;
+    currentState.damageNumbers.length = 0;
+    currentState.bombTrailParticles.length = 0;
+    currentState.scorchMarks.length = 0;
+
+    // Aplicar novo estado
+    Object.assign(currentState, newState);
+    currentState.keys = keysRef;
+    currentState.status = 'playing'; // Force status to playing
+    currentState.victoryTimer = 0; // Reset victory timer
+    currentState.restartTimer = 0; // Reset restart timer
+    currentState.time = 0; // Reset time
+
+    // Atualizar moveSpeed dos braços do boss
+    for (let i = 0; i < currentState.boss.arms.length; i++) {
+      currentState.boss.arms[i].moveSpeed = currentState.levelConfig.armMoveSpeed;
+    }
+
+    // Limpar qualquer tecla pressionada
+    for (const key in keysRef) {
+      keysRef[key] = false;
+    }
+
+    // Force joystick cleanup
+    forceJoystickCleanup();
+
+    // Notify parent component with fresh state
+    if (onGameStateChange) {
+      onGameStateChange({
+        ...currentState,
+        status: 'playing' as const,
+        levelConfig: { ...currentState.levelConfig },
+      });
+    }
+
+    // Reset transition flag after a short delay
+    setTimeout(() => {
+      isTransitioningRef.current = false;
+    }, 100);
+  };
 
   return (
     <>
@@ -520,12 +501,23 @@ export function GameCanvas({ isPaused, onGameStateChange, gameStarted = true }: 
           maxHeight: isLandscape ? '100vh' : 'calc(100vh - 100px)',
           height: isLandscape ? '100vh' : 'auto',
           objectFit: 'contain',
+          pointerEvents: 'auto',
+          touchAction: 'none',
+          userSelect: 'none',
+          WebkitUserSelect: 'none',
+          msUserSelect: 'none',
+          position: 'relative',
         }}
       />
-      <MobileControlsLayout onFire={handleFire} />
-      <MobileCredits visible={true} position="top-left" />
-      <DesktopControls />
-      <DesktopCredits />
+      {!victoryModalVisible && <MobileControlsLayout onFire={handleFire} />}
+      {!victoryModalVisible && <MobileCredits visible={true} position="top-left" />}
+      {!victoryModalVisible && <DesktopControls />}
+      {!victoryModalVisible && <DesktopCredits />}
+      <VictoryModal
+        visible={victoryModalVisible}
+        onNextPhase={handleNextPhase}
+        level={currentLevel}
+      />
       {/* <SubtleLogger enabled={true} position="bottom-right" maxLogs={2} /> */}
     </>
   );

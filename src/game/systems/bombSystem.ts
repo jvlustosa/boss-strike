@@ -87,6 +87,13 @@ export function bombSystem(state: GameState, dt: number): void {
   }
 
   if (bomb.state === 'thrown') {
+    // Criar partícula de rastro
+    state.bombTrailParticles.push({
+      pos: { x: bomb.pos.x + bomb.w / 2, y: bomb.pos.y + bomb.h / 2 },
+      life: 0.3, // Duração do rastro em segundos
+      maxLife: 0.3,
+    });
+    
     const step = bomb.speed * dt;
     bomb.pos.x += Math.cos(bomb.aimAngle) * step;
     bomb.pos.y -= Math.sin(bomb.aimAngle) * step;
@@ -95,6 +102,15 @@ export function bombSystem(state: GameState, dt: number): void {
     const bossBox = { x: boss.pos.x, y: boss.pos.y, w: boss.w, h: boss.h };
     if (aabbCollision(bombBox, bossBox)) {
       applyBombDamage(state);
+    }
+  }
+  
+  // Atualizar partículas de rastro do foguete
+  for (let i = state.bombTrailParticles.length - 1; i >= 0; i--) {
+    const particle = state.bombTrailParticles[i];
+    particle.life -= dt;
+    if (particle.life <= 0) {
+      state.bombTrailParticles.splice(i, 1);
     }
   }
 }

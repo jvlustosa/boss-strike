@@ -19,6 +19,7 @@ import { updateUrlLevel, getLevelFromUrl } from './game/core/urlParams';
 import { saveProgress, clearProgress, clearVictories } from './game/core/progressCache';
 
 function GameApp() {
+  const location = useLocation();
   const [gameStarted, setGameStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [gameState, setGameState] = useState<any>(null);
@@ -30,6 +31,30 @@ function GameApp() {
   const { user, profile: authProfile, initialized, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [showRestartPrompt, setShowRestartPrompt] = useState(false);
+  
+  // Auto-start game when on /play route
+  useEffect(() => {
+    if (location.pathname === '/play' && !gameStarted) {
+      const startGame = async () => {
+        const urlLevel = getLevelFromUrl();
+        const targetLevel = urlLevel || 1;
+        updateUrlLevel(targetLevel);
+        
+        if (targetLevel === 1) {
+          await clearProgress();
+        }
+        
+        if (targetLevel === 1 && !user && !authSkipped) {
+          setShowAuthModal(true);
+          return;
+        }
+        
+        setIsPaused(false);
+        setGameStarted(true);
+      };
+      startGame();
+    }
+  }, [location.pathname, gameStarted, user, authSkipped]);
 
   const handleStartGame = useCallback(async (level?: number, clearTrophies?: boolean) => {
     // Verificar se há nível na URL primeiro, senão usar o nível passado ou 1
@@ -79,14 +104,14 @@ function GameApp() {
     setIsPaused(false);
   };
 
-  const handleGameStateChange = (state: any) => {
+  const handleGameStateChange = useCallback((state: any) => {
     setGameState(state);
     
     // Salvar progresso automaticamente quando o jogador avança de fase
     if (state.status === 'won' && state.victoryTimer > 0) {
       saveProgress(state).catch(console.error);
     }
-  };
+  }, []);
 
 
   const togglePause = () => {
@@ -462,17 +487,17 @@ function GameApp() {
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-            <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} gameStarted={gameStarted} />
+            <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} gameStarted={gameStarted} gameState={gameState} />
           </div>
         </div>
-        {isPaused && (
+        {isPaused && gameState && !(gameState.status === 'won' && gameState.victoryTimer <= 0) && (
           <PauseMenu 
             onContinue={handleContinue} 
             onMainMenu={handleMainMenu} 
           />
         )}
       </div>
-      {restartButton}
+      {!gameStarted && restartButton}
       {restartPrompt}
       {showProfileModal && user && (
         <ProfilePage 
@@ -500,17 +525,84 @@ export default function App() {
 
   if (!initialized) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '100vh',
-        background: '#000',
-        color: '#fff',
-        fontFamily: PIXEL_FONT,
-      }}>
-        Carregando...
-      </div>
+      <>
+        <style>{`
+          @keyframes spin3d {
+            0% {
+              transform: rotateX(0deg) rotateY(0deg) rotateZ(0deg);
+            }
+            25% {
+              transform: rotateX(90deg) rotateY(0deg) rotateZ(90deg);
+            }
+            50% {
+              transform: rotateX(180deg) rotateY(90deg) rotateZ(180deg);
+            }
+            75% {
+              transform: rotateX(270deg) rotateY(180deg) rotateZ(270deg);
+            }
+            100% {
+              transform: rotateX(360deg) rotateY(360deg) rotateZ(360deg);
+            }
+          }
+          @keyframes pulse {
+            0%, 100% {
+              opacity: 0.6;
+            }
+            50% {
+              opacity: 1;
+            }
+          }
+        `}</style>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
+          background: '#000',
+          color: '#fff',
+          fontFamily: PIXEL_FONT,
+          gap: '24px',
+        }}>
+          <div style={{
+            position: 'relative',
+            width: '64px',
+            height: '64px',
+          }}>
+            <div style={{
+              position: 'absolute',
+              width: '32px',
+              height: '32px',
+              border: '4px solid #0f0',
+              boxShadow: '0 0 20px rgba(0, 255, 0, 0.5), inset 0 0 20px rgba(0, 255, 0, 0.3)',
+              animation: 'spin3d 2s linear infinite',
+              transformOrigin: 'center center',
+              imageRendering: 'pixelated' as any,
+            }} />
+            <div style={{
+              position: 'absolute',
+              width: '32px',
+              height: '32px',
+              border: '4px solid #0ff',
+              boxShadow: '0 0 20px rgba(0, 255, 255, 0.5), inset 0 0 20px rgba(0, 255, 255, 0.3)',
+              animation: 'spin3d 2s linear infinite reverse',
+              transformOrigin: 'center center',
+              top: '16px',
+              left: '16px',
+              imageRendering: 'pixelated' as any,
+            }} />
+          </div>
+          <div style={{
+            fontSize: '14px',
+            letterSpacing: '2px',
+            textTransform: 'uppercase',
+            opacity: 0.8,
+            animation: 'pulse 1.5s ease-in-out infinite',
+          }}>
+            Carregando...
+          </div>
+        </div>
+      </>
     );
   }
 

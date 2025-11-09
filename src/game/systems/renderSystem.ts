@@ -11,7 +11,7 @@ const FONT_MD = '12px "Press Start 2P", "Pixelify Sans", monospace';
 const FONT_LG = '16px "Press Start 2P", "Pixelify Sans", monospace';
 const FONT_XL = '20px "Press Start 2P", "Pixelify Sans", monospace';
 
-export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, isPaused: boolean = false, nextBtnHover: boolean = false, nextBtnPressed: boolean = false): void {
+export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, isPaused: boolean = false): void {
   // Clear screen
   ctx.fillStyle = colors.background;
   ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
@@ -290,6 +290,25 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     }
     
     ctx.restore();
+  }
+
+  // Bomb Trail (renderizar antes do foguete) - Fumaça cinza escura
+  if (state.bombTrailParticles.length > 0) {
+    for (const particle of state.bombTrailParticles) {
+      const lifeProgress = particle.life / particle.maxLife;
+      const alpha = lifeProgress * 0.7; // Fade away gradual
+      const size = 2 + (1 - lifeProgress) * 1; // Cresce ligeiramente ao desaparecer
+      
+      // Cinza escuro (fumaça) que fica mais claro e transparente ao desaparecer
+      const grayValue = Math.floor(40 + (1 - lifeProgress) * 20); // 40-60 (escuro para mais claro)
+      ctx.fillStyle = `rgba(${grayValue}, ${grayValue}, ${grayValue}, ${alpha})`;
+      ctx.fillRect(
+        Math.floor(particle.pos.x - size / 2),
+        Math.floor(particle.pos.y - size / 2),
+        Math.max(1, Math.floor(size)),
+        Math.max(1, Math.floor(size))
+      );
+    }
   }
 
   // Bomb (Rocket)
@@ -619,57 +638,11 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     ctx.fillText(`${state.player.shieldHits}`, shieldX + 6, LOGICAL_H - 7);
   }
 
-  // Victory Overlay
-  if (state.status === 'won' && state.victoryTimer <= 0) {
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
+  // Victory Overlay - Removido, agora é um componente React separado
+  // O modal de vitória é renderizado como componente HTML sobreposto
 
-    // Box
-    const boxW = 120;
-    const boxH = 60;
-    const boxX = (LOGICAL_W - boxW) / 2;
-    const boxY = (LOGICAL_H - boxH) / 2;
-    ctx.fillStyle = '#111';
-    ctx.fillRect(boxX, boxY, boxW, boxH);
-    ctx.strokeStyle = '#fff';
-    ctx.strokeRect(boxX, boxY, boxW, boxH);
-
-    // Title
-    ctx.fillStyle = '#0f0';
-    ctx.font = FONT_SM;
-    ctx.textBaseline = 'top';
-    ctx.fillText('VITÓRIA!', boxX + 8, boxY + 8);
-
-    // Button
-    const btnW = 96;
-    const btnH = 16;
-    const btnX = boxX + (boxW - btnW) / 2;
-    const btnY = boxY + boxH - btnH - 8;
-    
-    // Button colors based on state
-    const btnBgColor = nextBtnPressed ? '#0f0' : (nextBtnHover ? '#333' : '#222');
-    const btnBorderColor = nextBtnPressed ? '#fff' : (nextBtnHover ? '#4f4' : '#0f0');
-    const btnTextColor = nextBtnPressed ? '#000' : (nextBtnHover ? '#4f4' : '#0f0');
-    
-    ctx.fillStyle = btnBgColor;
-    ctx.fillRect(btnX, btnY, btnW, btnH);
-    ctx.strokeStyle = btnBorderColor;
-    ctx.lineWidth = nextBtnHover || nextBtnPressed ? 2 : 1;
-    ctx.strokeRect(btnX, btnY, btnW, btnH);
-    ctx.fillStyle = btnTextColor;
-    ctx.font = FONT_XS;
-    ctx.fillText('Próxima Fase', btnX + 8, btnY + 4);
-
-    // Expor bounds do botão no estado para clique
-    // @ts-ignore
-    (state as any)._nextBtn = { x: btnX, y: btnY, w: btnW, h: btnH };
-  } else {
-    // @ts-ignore
-    (state as any)._nextBtn = undefined;
-  }
-
-  // Show pause indicator
-  if (isPaused) {
+  // Show pause indicator (não mostrar se o modal de vitória estiver visível)
+  if (isPaused && !(state.status === 'won' && state.victoryTimer <= 0)) {
     ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
     ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
     
