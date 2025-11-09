@@ -59,6 +59,9 @@ function GameApp() {
   };
 
   const handlePause = () => {
+    if (gameState) {
+      saveProgress(gameState).catch(console.error);
+    }
     setIsPaused(true);
   };
 
@@ -67,6 +70,9 @@ function GameApp() {
   };
 
   const handleMainMenu = () => {
+    if (gameState) {
+      saveProgress(gameState).catch(console.error);
+    }
     // Reset progress to level 1 when returning to main menu from pause
     updateUrlLevel(1);
     setGameStarted(false);

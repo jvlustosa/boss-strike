@@ -1,7 +1,7 @@
 levels:
   1:
     name: "Primeiro Contato"
-    bossHp: 20
+    bossHp: 28
     armMoveSpeed: 1.5
     armAmplitude: 3
     armShootCooldown: 1.5
@@ -11,7 +11,7 @@ levels:
     
   2:
     name: "Duplo Perigo"
-    bossHp: 25
+    bossHp: 34
     armMoveSpeed: 2.0
     armAmplitude: 4
     armShootCooldown: 1.2
@@ -22,7 +22,7 @@ levels:
     
   3:
     name: "Rajada Veloz"
-    bossHp: 30
+    bossHp: 42
     armMoveSpeed: 2.5
     armAmplitude: 5
     armShootCooldown: 1.0
@@ -34,7 +34,7 @@ levels:
     
   4:
     name: "Rajada Mortal"
-    bossHp: 35
+    bossHp: 48
     armMoveSpeed: 2.8
     armAmplitude: 6
     armShootCooldown: 1.3
@@ -46,7 +46,7 @@ levels:
     
   5:
     name: "Círculo de Fogo"
-    bossHp: 38
+    bossHp: 37
     armMoveSpeed: 2.7
     armAmplitude: 4
     armShootCooldown: 1.3
@@ -57,7 +57,7 @@ levels:
     
   6:
     name: "Fúria Alternada"
-    bossHp: 45
+    bossHp: 36
     armMoveSpeed: 3.2
     armAmplitude: 7
     armShootCooldown: 0.9
@@ -69,7 +69,7 @@ levels:
     
   7:
     name: "Tempestade"
-    bossHp: 50
+    bossHp: 69
     armMoveSpeed: 3.5
     armAmplitude: 5
     armShootCooldown: 0.8
@@ -81,7 +81,7 @@ levels:
     
   8:
     name: "Caos Controlado"
-    bossHp: 55
+    bossHp: 46
     armMoveSpeed: 3.8
     armAmplitude: 8
     armShootCooldown: 0.7
@@ -93,7 +93,7 @@ levels:
     
   9:
     name: "Inferno"
-    bossHp: 60
+    bossHp: 58
     armMoveSpeed: 4.0
     armAmplitude: 6
     armShootCooldown: 0.6
@@ -105,7 +105,7 @@ levels:
     
   10:
     name: "Boss Final"
-    bossHp: 70
+    bossHp: 73
     armMoveSpeed: 4.2
     armAmplitude: 9
     armShootCooldown: 0.6

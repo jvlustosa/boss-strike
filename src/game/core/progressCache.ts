@@ -33,8 +33,17 @@ async function getCurrentUserId(userId?: string | null): Promise<string | null> 
 }
 
 export async function saveProgress(gameState: GameState): Promise<void> {
+  const maxLevel = getMaxLevel();
+  const levelToSave = Math.max(
+    1,
+    Math.min(
+      gameState.status === 'won' ? gameState.level + 1 : gameState.level,
+      maxLevel,
+    ),
+  );
+
   const progress: GameProgress = {
-    level: gameState.level,
+    level: levelToSave,
     timestamp: Date.now(),
     victories: parseInt(localStorage.getItem(VICTORIES_KEY) || '0', 10)
   };
@@ -156,11 +165,8 @@ export async function getLastLevel(): Promise<number> {
 export async function getNextLevel(): Promise<number> {
   const progress = await loadProgress();
   if (!progress) return 1;
-  
-  // Retorna a próxima fase após a última vencida, mas não além do máximo
-  const nextLevel = progress.level + 1;
   const maxLevel = getMaxLevel();
-  return Math.min(nextLevel, maxLevel);
+  return Math.min(Math.max(progress.level, 1), maxLevel);
 }
 
 export async function saveVictory(level: number): Promise<void> {
