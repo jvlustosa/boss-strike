@@ -2,17 +2,41 @@ import type { GameState } from '../core/types';
 import { colors } from '../core/assets';
 import { LOGICAL_W, LOGICAL_H } from '../core/config';
 import { isDesktop } from '../core/environmentDetector';
+import { renderPlayer } from '../components/PlayerRenderer';
 
 export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, isPaused: boolean = false): void {
   // Clear screen
   ctx.fillStyle = colors.background;
   ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
 
-  // Player
-  if (state.player.alive) {
-    ctx.fillStyle = colors.player;
-    ctx.fillRect(state.player.pos.x, state.player.pos.y, state.player.w, state.player.h);
+  // Ice Trail Particles - renderizar ANTES do player para ficar atrás
+  for (const trail of state.iceTrailParticles) {
+    const alpha = trail.alpha * (trail.life / trail.maxLife);
+    const size = Math.max(1, Math.floor(trail.size));
+    
+    // Cor azul de gelo com alpha
+    ctx.fillStyle = `rgba(0, 204, 255, ${alpha})`;
+    ctx.fillRect(
+      Math.floor(trail.pos.x - size / 2),
+      Math.floor(trail.pos.y - size / 2),
+      size,
+      size
+    );
+    
+    // Adicionar um brilho sutil ao redor
+    if (size > 1) {
+      ctx.fillStyle = `rgba(102, 221, 255, ${alpha * 0.3})`;
+      ctx.fillRect(
+        Math.floor(trail.pos.x - size / 2 - 1),
+        Math.floor(trail.pos.y - size / 2 - 1),
+        size + 2,
+        size + 2
+      );
+    }
   }
+
+  // Player - usando componente dedicado
+  renderPlayer(ctx, state.player);
 
   // Boss
   ctx.fillStyle = colors.boss;

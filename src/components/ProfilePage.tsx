@@ -5,6 +5,7 @@ import type { Profile, GameProgress, Skin, UserSkinWithDetails } from '../../sup
 import { getVictoryCount, getNextLevel } from '../game/core/progressCache';
 import { parseSupabaseError } from '../utils/supabaseErrors';
 import { getAllSkins, getUserSkinsWithDetails, equipSkin } from '../utils/skins';
+import { getSkinPreviewStyle } from '../utils/skinPreview';
 
 interface ProfilePageProps {
   onClose: () => void;
@@ -28,13 +29,29 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
   const [userSkins, setUserSkins] = useState<UserSkinWithDetails[]>([]);
   const [skinsLoading, setSkinsLoading] = useState(false);
   const [equippingSkin, setEquippingSkin] = useState<string | null>(null);
+  
+  // Cheat mode: check for ?cheat=skins in URL
+  const isCheatMode = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('cheat') === 'skins';
+  };
 
   useEffect(() => {
     if (user) {
       loadProfileData();
       loadSkinsData();
     }
-  }, [user, authProfile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+  
+  // Separar useEffect para atualizar quando selected_skin mudar
+  useEffect(() => {
+    if (user && authProfile?.selected_skin !== profile?.selected_skin) {
+      loadProfileData();
+      loadSkinsData();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authProfile?.selected_skin]);
 
   const loadProfileData = async () => {
     if (!user) return;
@@ -99,12 +116,67 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
     
     setEquippingSkin(skinId);
     try {
+      const cheatMode = isCheatMode();
+      
+      // In cheat mode, create the skin if it doesn't exist
+      if (cheatMode) {
+        const hasSkin = userSkins.some(us => us.skin_id === skinId);
+        if (!hasSkin) {
+          // Unlock the skin first
+          const { data: newUserSkin, error: unlockError } = await supabase
+            .from('user_skins')
+            .insert({
+              user_id: user.id,
+              skin_id: skinId,
+            })
+            .select()
+            .single();
+          
+          if (unlockError && unlockError.code !== '23505') { // Ignore duplicate key error
+            console.error('Error unlocking skin in cheat mode:', unlockError);
+            throw new Error('Falha ao desbloquear skin');
+          }
+          
+          // If we just created it, use the newUserSkin directly
+          if (newUserSkin) {
+            // Update profile with selected_skin directly
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ selected_skin: newUserSkin.id })
+              .eq('id', user.id);
+            
+            if (updateError) {
+              console.error('Error equipping newly created skin:', updateError);
+              throw new Error('Falha ao equipar skin');
+            }
+            
+            // Atualizar apenas o necessário, sem recarregar tudo
+            await refreshProfile();
+            // Recarregar apenas skins após um pequeno delay para evitar loop
+            setTimeout(() => {
+              loadSkinsData();
+            }, 100);
+            
+            if (showSuccess) {
+              showSuccess('Skin criada e equipada com sucesso! (CHEAT MODE)');
+            }
+            setEquippingSkin(null);
+            return;
+          }
+        }
+      }
+      
       const success = await equipSkin(user.id, skinId);
       if (success) {
-        await loadSkinsData();
+        // Atualizar profile primeiro
         await refreshProfile();
+        // Recarregar skins após um pequeno delay para evitar loop
+        setTimeout(() => {
+          loadSkinsData();
+        }, 100);
+        
         if (showSuccess) {
-          showSuccess('Skin equipada com sucesso!');
+          showSuccess(cheatMode ? 'Skin criada e equipada com sucesso! (CHEAT MODE)' : 'Skin equipada com sucesso!');
         }
       } else {
         throw new Error('Falha ao equipar skin');
@@ -257,46 +329,30 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
       case 'rare': return '#60a5fa';
       case 'epic': return '#a78bfa';
       case 'legendary': return '#fbbf24';
+      case 'mythic': return '#ff00ff';
       default: return '#fff';
     }
   };
 
-  const getSkinPreviewColors = (skinName: string, rarity: string) => {
-    const name = skinName.toLowerCase();
-    if (name.includes('fire') || name.includes('fogo')) {
-      return { primary: '#ff4400', secondary: '#ff8800', bg: '#1a0000' };
-    }
-    if (name.includes('ice') || name.includes('gelo')) {
-      return { primary: '#00ccff', secondary: '#66ddff', bg: '#000033' };
-    }
-    if (name.includes('neon')) {
-      return { primary: '#00ff41', secondary: '#39ff14', bg: '#0a0a0a' };
-    }
-    if (name.includes('rainbow') || name.includes('arco')) {
-      return { primary: '#ff0000', secondary: '#00ff00', bg: '#000000' };
-    }
-    if (name.includes('gold') || name.includes('dourado')) {
-      return { primary: '#ffd700', secondary: '#ffed4e', bg: '#1a1a00' };
-    }
-    if (name.includes('void') || name.includes('vazio')) {
-      return { primary: '#6600ff', secondary: '#9900ff', bg: '#000000' };
-    }
-    return { primary: getRarityColor(rarity), secondary: '#666', bg: '#111' };
-  };
+  // Função removida - agora usa getSkinPreviewStyle que extrai do CSS
 
   const renderSkinsTab = () => {
     if (skinsLoading) {
       return <div style={{ textAlign: 'center', color: '#fff', padding: '40px' }}>Carregando skins...</div>;
     }
 
+    const cheatMode = isCheatMode();
     const unlockedSkinIds = new Set(userSkins.map(us => us.skin_id));
-    const equippedSkinId = userSkins.find(us => us.is_equipped)?.skin_id;
+    const selectedSkinId = profile?.selected_skin 
+      ? userSkins.find(us => us.id === profile.selected_skin)?.skin_id 
+      : null;
 
     const rarityOrder: Record<string, number> = {
       common: 0,
       rare: 1,
       epic: 2,
       legendary: 3,
+      mythic: 4,
     };
 
     const sortedSkins = [...allSkins].sort((a, b) => {
@@ -305,6 +361,21 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
 
     return (
       <div>
+        {cheatMode && (
+          <div style={{ 
+            marginBottom: '15px', 
+            padding: '10px', 
+            backgroundColor: '#ff00ff22', 
+            border: '2px solid #ff00ff',
+            borderRadius: '8px',
+            fontSize: isMobile ? '12px' : '14px', 
+            color: '#ff00ff',
+            textAlign: 'center',
+            fontWeight: 'bold'
+          }}>
+            🎮 CHEAT MODE ATIVO - Todas as skins disponíveis!
+          </div>
+        )}
         <div style={{ marginBottom: '20px', fontSize: isMobile ? '14px' : '16px', color: '#aaa' }}>
           Você possui {userSkins.length} de {allSkins.length} skins
         </div>
@@ -318,10 +389,15 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
           padding: '4px',
         }}>
           {sortedSkins.map((skin) => {
-            const isUnlocked = unlockedSkinIds.has(skin.id);
-            const isEquipped = equippedSkinId === skin.id;
-            const colors = getSkinPreviewColors(skin.name, skin.rarity);
+            // In cheat mode, all skins are considered unlocked
+            const isUnlocked = cheatMode || unlockedSkinIds.has(skin.id);
+            const isEquipped = selectedSkinId === skin.id;
             const rarityColor = getRarityColor(skin.rarity);
+            
+            // Obter estilos da skin do CSS (mesma lógica do PlayerRenderer)
+            const textureName = skin.sprite_data?.texture_name as string | undefined;
+            const effectName = skin.sprite_data?.effect as string | undefined;
+            const previewStyle = getSkinPreviewStyle(textureName || null, effectName || null);
 
             return (
               <div
@@ -366,7 +442,7 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
 
                 <div 
                   className={
-                    skin.rarity === 'legendary' 
+                    skin.rarity === 'mythic' || skin.rarity === 'legendary' 
                       ? 'holo-effect holo-legendary' 
                       : skin.rarity === 'epic' 
                       ? 'holo-effect holo-epic' 
@@ -392,21 +468,28 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
                     style={{
                       width: '60%',
                       aspectRatio: '1',
-                      backgroundColor: colors.primary,
+                      backgroundColor: previewStyle.backgroundColor,
+                      background: previewStyle.backgroundGradient || previewStyle.backgroundColor,
                       borderRadius: '4px',
-                      border: `2px solid ${colors.secondary}`,
+                      border: `2px solid ${previewStyle.borderColor}`,
                       flexShrink: 0,
                       position: 'relative',
                       zIndex: 3,
-                      boxShadow: skin.rarity === 'legendary'
-                        ? `0 0 20px ${rarityColor}, 0 0 40px ${rarityColor}`
-                        : skin.rarity === 'epic'
-                        ? `0 0 15px ${rarityColor}, 0 0 30px ${rarityColor}`
-                        : skin.rarity === 'rare'
-                        ? `0 0 10px ${rarityColor}, 0 0 20px ${rarityColor}`
-                        : 'none',
+                      boxShadow: previewStyle.boxShadow !== 'none' 
+                        ? previewStyle.boxShadow 
+                        : (skin.rarity === 'mythic'
+                          ? `0 0 25px ${rarityColor}, 0 0 50px ${rarityColor}, 0 0 75px ${rarityColor}`
+                          : skin.rarity === 'legendary'
+                          ? `0 0 20px ${rarityColor}, 0 0 40px ${rarityColor}`
+                          : skin.rarity === 'epic'
+                          ? `0 0 15px ${rarityColor}, 0 0 30px ${rarityColor}`
+                          : skin.rarity === 'rare'
+                          ? `0 0 10px ${rarityColor}, 0 0 20px ${rarityColor}`
+                          : 'none'),
+                      animation: previewStyle.animation,
+                      backgroundSize: previewStyle.backgroundGradient?.includes('rainbow') || previewStyle.backgroundGradient?.includes('mythic') ? '300% 100%' : 'auto',
                     }}
-                    className={skin.rarity === 'legendary' || skin.rarity === 'epic' ? 'skin-glow' : ''}
+                    className={skin.rarity === 'mythic' || skin.rarity === 'legendary' || skin.rarity === 'epic' ? 'skin-glow' : ''}
                   />
                 </div>
 
@@ -439,7 +522,7 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
                   }}>
                     {skin.rarity}
                   </div>
-                  {!isUnlocked && (
+                  {!isUnlocked && !cheatMode && (
                     <div style={{
                       fontSize: isMobile ? '10px' : '11px',
                       color: '#666',
@@ -447,17 +530,25 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
                       🔒
                     </div>
                   )}
+                  {!isUnlocked && cheatMode && (
+                    <div style={{
+                      fontSize: isMobile ? '10px' : '11px',
+                      color: '#ff00ff',
+                    }}>
+                      ✨
+                    </div>
+                  )}
                 </div>
 
-                {isUnlocked && (
+                {(isUnlocked || cheatMode) && (
                   <button
                     style={{
                       width: '100%',
                       padding: isMobile ? '8px' : '10px',
                       fontSize: isMobile ? '11px' : '12px',
-                      backgroundColor: isEquipped ? '#1a2e1a' : '#333',
-                      border: isEquipped ? '2px solid #4ade80' : '2px solid #666',
-                      color: '#fff',
+                      backgroundColor: isEquipped ? '#1a2e1a' : cheatMode && !isUnlocked ? '#ff00ff22' : '#333',
+                      border: isEquipped ? '2px solid #4ade80' : cheatMode && !isUnlocked ? '2px solid #ff00ff' : '2px solid #666',
+                      color: cheatMode && !isUnlocked ? '#ff00ff' : '#fff',
                       fontFamily: "'Pixelify Sans', monospace",
                       fontWeight: '600',
                       cursor: isEquipped ? 'default' : 'pointer',
@@ -472,11 +563,13 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
                       ? 'Equipando...' 
                       : isEquipped 
                         ? 'Equipada' 
+                        : cheatMode && !isUnlocked
+                        ? 'Criar & Equipar'
                         : 'Equipar'}
                   </button>
                 )}
 
-                {!isUnlocked && (
+                {!isUnlocked && !cheatMode && (
                   <div style={{
                     padding: isMobile ? '6px' : '8px',
                     backgroundColor: '#1a1a1a',

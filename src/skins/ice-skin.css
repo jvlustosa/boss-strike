@@ -1,4 +1,4 @@
-/* Ice Skin - Tema de Gelo */
+/* Ice Skin - Variáveis CSS */
 .skin-ice {
   --player-color: #00ccff;
   --player-glow: #66ddff;
@@ -10,31 +10,3 @@
   --heart-color: #ff0066;
   --background-color: #000033;
 }
-
-.skin-ice .player {
-  background: linear-gradient(135deg, var(--player-color), var(--player-glow));
-  box-shadow: 0 0 15px var(--player-glow), 0 0 30px rgba(102, 221, 255, 0.3);
-  animation: ice-shimmer 2s infinite;
-}
-
-@keyframes ice-shimmer {
-  0%, 100% { filter: brightness(1) hue-rotate(0deg); }
-  50% { filter: brightness(1.1) hue-rotate(10deg); }
-}
-
-.skin-ice .boss {
-  background: linear-gradient(135deg, var(--boss-color), #003366);
-  box-shadow: 0 0 20px rgba(0, 204, 255, 0.4);
-  border: 1px solid rgba(102, 221, 255, 0.3);
-}
-
-.skin-ice .boss-weakspot {
-  background: radial-gradient(circle, var(--boss-weakspot-color), #aaccff);
-  animation: ice-pulse 1.5s infinite;
-}
-
-@keyframes ice-pulse {
-  0%, 100% { opacity: 1; filter: blur(0px); }
-  50% { opacity: 0.9; filter: blur(1px); }
-}
-

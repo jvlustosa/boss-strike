@@ -13,6 +13,7 @@ export interface Profile {
   id: UUID;
   username: string | null;
   email: string | null;
+  selected_skin: UUID | null;
   created_at: Timestamp;
   updated_at: Timestamp;
 }
@@ -21,6 +22,7 @@ export interface ProfileInsert {
   id: UUID;
   username?: string | null;
   email?: string | null;
+  selected_skin?: UUID | null;
   created_at?: Timestamp;
   updated_at?: Timestamp;
 }
@@ -28,6 +30,7 @@ export interface ProfileInsert {
 export interface ProfileUpdate {
   username?: string | null;
   email?: string | null;
+  selected_skin?: UUID | null;
   updated_at?: Timestamp;
 }
 
@@ -97,7 +100,7 @@ export interface GameStatsUpdate {
 // ----------------------------------------------------------------------------
 // skins table
 // ----------------------------------------------------------------------------
-export type SkinRarity = 'common' | 'rare' | 'epic' | 'legendary';
+export type SkinRarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
 
 export interface Skin {
   id: UUID;

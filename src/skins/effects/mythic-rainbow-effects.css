@@ -1,0 +1,542 @@
+/* Mythic Rainbow Skin Effects - Animações e estilos visuais avançados */
+
+/* Mythic Rainbow 1 Effects */
+.skin-mythic-rainbow-1 .player {
+  position: relative;
+  background: linear-gradient(90deg, 
+    #ff0000 0%, 
+    #ff7f00 8%, 
+    #ffff00 16%, 
+    #00ff00 24%, 
+    #00ffff 32%, 
+    #0000ff 40%, 
+    #4b0082 48%, 
+    #9400d3 56%, 
+    #ff1493 64%, 
+    #ff0000 72%, 
+    #ff7f00 80%, 
+    #ffff00 88%, 
+    #00ff00 96%, 
+    #ff0000 100%);
+  background-size: 300% 100%;
+  animation: mythic-rainbow-flow 1.5s linear infinite;
+  box-shadow: 
+    0 0 20px rgba(255, 255, 255, 0.6),
+    0 0 40px rgba(255, 0, 255, 0.4),
+    0 0 60px rgba(0, 255, 255, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  overflow: hidden;
+}
+
+.skin-mythic-rainbow-1 .player::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    repeating-linear-gradient(0deg, 
+      var(--sunpillar-clr-1) calc(var(--space)*1), 
+      var(--sunpillar-clr-2) calc(var(--space)*2), 
+      var(--sunpillar-clr-3) calc(var(--space)*3), 
+      var(--sunpillar-clr-4) calc(var(--space)*4), 
+      var(--sunpillar-clr-5) calc(var(--space)*5), 
+      var(--sunpillar-clr-6) calc(var(--space)*6), 
+      var(--sunpillar-clr-1) calc(var(--space)*7)
+    ),
+    repeating-linear-gradient(var(--angle), 
+      #0e152e 0%, 
+      hsl(180, 10%, 60%) 3.8%, 
+      hsl(180, 29%, 66%) 4.5%, 
+      hsl(180, 10%, 60%) 5.2%, 
+      #0e152e 10%, 
+      #0e152e 12%
+    );
+  background-position: 0% var(--shine-y), calc(var(--shine-x) + (var(--shine-y)*0.2)) var(--shine-y);
+  background-size: 200% 700%, 300% 100%;
+  background-blend-mode: hue, hard-light;
+  animation: mythic-shine-move 3s linear infinite;
+  filter: brightness(0.6) contrast(1.4) saturate(2.25);
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+.skin-mythic-rainbow-1 .player::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    repeating-linear-gradient(0deg, 
+      var(--sunpillar-clr-1) calc(var(--space)*1), 
+      var(--sunpillar-clr-2) calc(var(--space)*2), 
+      var(--sunpillar-clr-3) calc(var(--space)*3), 
+      var(--sunpillar-clr-4) calc(var(--space)*4), 
+      var(--sunpillar-clr-5) calc(var(--space)*5), 
+      var(--sunpillar-clr-6) calc(var(--space)*6), 
+      var(--sunpillar-clr-1) calc(var(--space)*7)
+    ),
+    repeating-linear-gradient(var(--angle), 
+      #0e152e 0%, 
+      hsl(180, 10%, 60%) 3.8%, 
+      hsl(180, 29%, 66%) 4.5%, 
+      hsl(180, 10%, 60%) 5.2%, 
+      #0e152e 10%, 
+      #0e152e 12%
+    );
+  background-position: 0% var(--shine-y), calc((var(--shine-x) + (var(--shine-y)*0.2)) * -1) calc(var(--shine-y) * -1);
+  background-size: 200% 400%, 195% 100%;
+  background-blend-mode: hue, hard-light;
+  animation: mythic-shine-move-reverse 3s linear infinite;
+  filter: brightness(0.8) contrast(1.5) saturate(1.25);
+  mix-blend-mode: exclusion;
+  pointer-events: none;
+}
+
+@keyframes mythic-shine-move {
+  0% { 
+    --shine-x: 0%;
+    --shine-y: 0%;
+  }
+  25% { 
+    --shine-x: 100%;
+    --shine-y: 25%;
+  }
+  50% { 
+    --shine-x: 50%;
+    --shine-y: 100%;
+  }
+  75% { 
+    --shine-x: 0%;
+    --shine-y: 75%;
+  }
+  100% { 
+    --shine-x: 0%;
+    --shine-y: 0%;
+  }
+}
+
+@keyframes mythic-shine-move-reverse {
+  0% { 
+    --shine-x: 100%;
+    --shine-y: 100%;
+  }
+  25% { 
+    --shine-x: 0%;
+    --shine-y: 75%;
+  }
+  50% { 
+    --shine-x: 50%;
+    --shine-y: 0%;
+  }
+  75% { 
+    --shine-x: 100%;
+    --shine-y: 25%;
+  }
+  100% { 
+    --shine-x: 100%;
+    --shine-y: 100%;
+  }
+}
+
+@keyframes mythic-rainbow-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
+
+.skin-mythic-rainbow-1 .boss {
+  position: relative;
+  background: linear-gradient(90deg, 
+    #0000ff 0%, 
+    #ff00ff 25%, 
+    #ff0080 50%, 
+    #ff00ff 75%, 
+    #0000ff 100%);
+  background-size: 200% 100%;
+  animation: mythic-rainbow-boss 2s linear infinite;
+  box-shadow: 
+    0 0 30px rgba(255, 0, 255, 0.8),
+    0 0 60px rgba(0, 255, 255, 0.5);
+  border: 2px solid rgba(255, 0, 255, 0.6);
+  overflow: hidden;
+}
+
+.skin-mythic-rainbow-1 .boss::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    repeating-linear-gradient(var(--angle), 
+      #0e152e 0%, 
+      hsl(300, 10%, 60%) 3.8%, 
+      hsl(300, 29%, 66%) 4.5%, 
+      hsl(300, 10%, 60%) 5.2%, 
+      #0e152e 10%, 
+      #0e152e 12%
+    );
+  background-position: calc(var(--shine-x) + (var(--shine-y)*0.2)) var(--shine-y);
+  background-size: 300% 100%;
+  background-blend-mode: hard-light;
+  animation: mythic-shine-move 4s linear infinite;
+  filter: brightness(0.5) contrast(1.6) saturate(2.5);
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+@keyframes mythic-rainbow-boss {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+.skin-mythic-rainbow-1 .boss-weakspot {
+  position: relative;
+  background: radial-gradient(circle, #ffff00, #ffaa00, #ff00ff);
+  animation: mythic-rainbow-weakspot 0.8s infinite;
+  box-shadow: 
+    0 0 40px #ffff00,
+    0 0 80px rgba(255, 255, 0, 0.6);
+  overflow: hidden;
+}
+
+.skin-mythic-rainbow-1 .boss-weakspot::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 50% 50%, 
+    hsl(60, 100%, 100%) 0%, 
+    hsla(60, 100%, 50%, 0) 40%);
+  mix-blend-mode: overlay;
+  opacity: 0.75;
+  animation: mythic-glare-pulse 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes mythic-glare-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.2); }
+}
+
+@keyframes mythic-rainbow-weakspot {
+  0%, 100% { 
+    filter: hue-rotate(0deg) brightness(1.2);
+    transform: scale(1);
+  }
+  50% { 
+    filter: hue-rotate(180deg) brightness(1.5);
+    transform: scale(1.15);
+  }
+}
+
+/* Mythic Rainbow 2 Effects */
+.skin-mythic-rainbow-2 .player {
+  position: relative;
+  background: 
+    radial-gradient(circle at 30% 30%, rgba(255, 0, 128, 0.8), transparent 50%),
+    radial-gradient(circle at 70% 70%, rgba(0, 255, 255, 0.8), transparent 50%),
+    linear-gradient(135deg, 
+      #ff0080 0%, 
+      #ff00ff 14%, 
+      #8000ff 28%, 
+      #0080ff 42%, 
+      #00ffff 57%, 
+      #00ff80 71%, 
+      #80ff00 85%, 
+      #ff8000 100%);
+  background-size: 200% 200%, 200% 200%, 250% 100%;
+  animation: 
+    mythic-cosmic-shift 4s ease-in-out infinite,
+    mythic-cosmic-flow 2s linear infinite;
+  box-shadow: 
+    0 0 25px rgba(255, 0, 128, 0.8),
+    0 0 50px rgba(0, 255, 255, 0.6),
+    0 0 75px rgba(128, 0, 255, 0.4),
+    inset 0 0 30px rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  overflow: hidden;
+}
+
+.skin-mythic-rainbow-2 .player::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    repeating-linear-gradient(0deg, 
+      var(--sunpillar-clr-1) calc(var(--space)*1), 
+      var(--sunpillar-clr-2) calc(var(--space)*2), 
+      var(--sunpillar-clr-3) calc(var(--space)*3), 
+      var(--sunpillar-clr-4) calc(var(--space)*4), 
+      var(--sunpillar-clr-5) calc(var(--space)*5), 
+      var(--sunpillar-clr-6) calc(var(--space)*6), 
+      var(--sunpillar-clr-1) calc(var(--space)*7)
+    ),
+    repeating-linear-gradient(var(--angle), 
+      #0e152e 0%, 
+      hsl(300, 10%, 60%) 3.8%, 
+      hsl(300, 29%, 66%) 4.5%, 
+      hsl(300, 10%, 60%) 5.2%, 
+      #0e152e 10%, 
+      #0e152e 12%
+    ),
+    radial-gradient(farthest-corner circle at var(--shine-x) var(--shine-y),
+      hsla(0, 0%, 0%, 0.1) 12%, 
+      hsla(0, 0%, 0%, 0.15) 20%, 
+      hsla(0, 0%, 0%, 0.25) 120%
+    );
+  background-position: 
+    0% var(--shine-y), 
+    calc(var(--shine-x) + (var(--shine-y)*0.2)) var(--shine-y), 
+    var(--shine-x) var(--shine-y);
+  background-size: 200% 700%, 300% 100%, 200% 100%;
+  background-blend-mode: soft-light, hue, hard-light;
+  animation: mythic-cosmic-shine-move 3.5s linear infinite;
+  filter: brightness(calc((var(--shine-intensity)*0.4) + .4)) contrast(1.4) saturate(2.25);
+  pointer-events: none;
+}
+
+.skin-mythic-rainbow-2 .player::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    repeating-linear-gradient(0deg, 
+      var(--sunpillar-clr-1) calc(var(--space)*1), 
+      var(--sunpillar-clr-2) calc(var(--space)*2), 
+      var(--sunpillar-clr-3) calc(var(--space)*3), 
+      var(--sunpillar-clr-4) calc(var(--space)*4), 
+      var(--sunpillar-clr-5) calc(var(--space)*5), 
+      var(--sunpillar-clr-6) calc(var(--space)*6), 
+      var(--sunpillar-clr-1) calc(var(--space)*7)
+    ),
+    repeating-linear-gradient(var(--angle), 
+      #0e152e 0%, 
+      hsl(300, 10%, 60%) 3.8%, 
+      hsl(300, 29%, 66%) 4.5%, 
+      hsl(300, 10%, 60%) 5.2%, 
+      #0e152e 10%, 
+      #0e152e 12%
+    );
+  background-position: 
+    0% var(--shine-y), 
+    calc((var(--shine-x) + (var(--shine-y)*0.2)) * -1) calc(var(--shine-y) * -1);
+  background-size: 200% 400%, 195% 100%;
+  background-blend-mode: hue, hard-light;
+  animation: mythic-cosmic-shine-move-reverse 3.5s linear infinite;
+  filter: brightness(calc((var(--shine-intensity)*.4) + .8)) contrast(1.5) saturate(1.25);
+  mix-blend-mode: exclusion;
+  pointer-events: none;
+}
+
+@keyframes mythic-cosmic-shine-move {
+  0% { 
+    --shine-x: 0%;
+    --shine-y: 0%;
+    --shine-intensity: 0.5;
+  }
+  25% { 
+    --shine-x: 100%;
+    --shine-y: 30%;
+    --shine-intensity: 1;
+  }
+  50% { 
+    --shine-x: 50%;
+    --shine-y: 100%;
+    --shine-intensity: 0.7;
+  }
+  75% { 
+    --shine-x: 0%;
+    --shine-y: 70%;
+    --shine-intensity: 0.9;
+  }
+  100% { 
+    --shine-x: 0%;
+    --shine-y: 0%;
+    --shine-intensity: 0.5;
+  }
+}
+
+@keyframes mythic-cosmic-shine-move-reverse {
+  0% { 
+    --shine-x: 100%;
+    --shine-y: 100%;
+    --shine-intensity: 0.8;
+  }
+  25% { 
+    --shine-x: 0%;
+    --shine-y: 70%;
+    --shine-intensity: 1;
+  }
+  50% { 
+    --shine-x: 50%;
+    --shine-y: 0%;
+    --shine-intensity: 0.6;
+  }
+  75% { 
+    --shine-x: 100%;
+    --shine-y: 30%;
+    --shine-intensity: 0.9;
+  }
+  100% { 
+    --shine-x: 100%;
+    --shine-y: 100%;
+    --shine-intensity: 0.8;
+  }
+}
+
+@keyframes mythic-cosmic-shift {
+  0%, 100% { 
+    background-position: 0% 0%, 100% 100%, 0% 50%;
+  }
+  50% { 
+    background-position: 100% 100%, 0% 0%, 100% 50%;
+  }
+}
+
+@keyframes mythic-cosmic-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 250% 50%; }
+}
+
+.skin-mythic-rainbow-2 .boss {
+  position: relative;
+  background: 
+    radial-gradient(circle at 50% 50%, rgba(128, 0, 255, 0.6), transparent 70%),
+    linear-gradient(90deg, 
+      #8000ff 0%, 
+      #ff00ff 33%, 
+      #ff0080 66%, 
+      #8000ff 100%);
+  background-size: 150% 150%, 200% 100%;
+  animation: mythic-cosmic-boss 2.5s linear infinite;
+  box-shadow: 
+    0 0 35px rgba(128, 0, 255, 0.9),
+    0 0 70px rgba(255, 0, 255, 0.6),
+    inset 0 0 40px rgba(255, 0, 128, 0.3);
+  border: 2px solid rgba(255, 0, 255, 0.7);
+  overflow: hidden;
+}
+
+.skin-mythic-rainbow-2 .boss::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    repeating-linear-gradient(var(--angle), 
+      #0e152e 0%, 
+      hsl(300, 10%, 60%) 3.8%, 
+      hsl(300, 29%, 66%) 4.5%, 
+      hsl(300, 10%, 60%) 5.2%, 
+      #0e152e 10%, 
+      #0e152e 12%
+    );
+  background-position: calc(var(--shine-x) + (var(--shine-y)*0.2)) var(--shine-y);
+  background-size: 300% 100%;
+  background-blend-mode: hard-light;
+  animation: mythic-cosmic-shine-move 4s linear infinite;
+  filter: brightness(0.5) contrast(1.6) saturate(2.5);
+  mix-blend-mode: soft-light;
+  pointer-events: none;
+}
+
+@keyframes mythic-cosmic-boss {
+  0% { 
+    background-position: 0% 0%, 0% 50%;
+    filter: hue-rotate(0deg);
+  }
+  100% { 
+    background-position: 100% 100%, 200% 50%;
+    filter: hue-rotate(360deg);
+  }
+}
+
+.skin-mythic-rainbow-2 .boss-weakspot {
+  position: relative;
+  background: 
+    radial-gradient(circle, #ffff00 0%, #ffaa00 30%, #ff00ff 60%, #00ffff 100%);
+  animation: mythic-cosmic-weakspot 1s infinite;
+  box-shadow: 
+    0 0 50px #ffff00,
+    0 0 100px rgba(255, 255, 0, 0.8),
+    0 0 150px rgba(255, 0, 255, 0.5);
+  overflow: hidden;
+}
+
+.skin-mythic-rainbow-2 .boss-weakspot::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at 50% 50%, 
+    hsl(60, 100%, 100%) 0%, 
+    hsla(60, 100%, 50%, 0) 40%);
+  mix-blend-mode: overlay;
+  opacity: 0.75;
+  animation: mythic-cosmic-glare-pulse 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.skin-mythic-rainbow-2 .boss-weakspot::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image:
+    repeating-linear-gradient(var(--angle), 
+      #0e152e 0%, 
+      hsl(60, 29%, 66%) 4.5%, 
+      #0e152e 10%
+    );
+  background-position: calc(var(--shine-x) + (var(--shine-y)*0.2)) var(--shine-y);
+  background-size: 200% 100%;
+  background-blend-mode: hard-light;
+  animation: mythic-cosmic-shine-move 2s linear infinite;
+  filter: brightness(0.6) contrast(2) saturate(1.5);
+  mix-blend-mode: difference;
+  pointer-events: none;
+}
+
+@keyframes mythic-cosmic-glare-pulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.2); }
+}
+
+@keyframes mythic-cosmic-weakspot {
+  0%, 100% { 
+    filter: hue-rotate(0deg) brightness(1.3) saturate(1.5);
+    transform: scale(1) rotate(0deg);
+  }
+  25% { 
+    filter: hue-rotate(90deg) brightness(1.5) saturate(1.8);
+    transform: scale(1.1) rotate(90deg);
+  }
+  50% { 
+    filter: hue-rotate(180deg) brightness(1.4) saturate(1.6);
+    transform: scale(1.2) rotate(180deg);
+  }
+  75% { 
+    filter: hue-rotate(270deg) brightness(1.5) saturate(1.8);
+    transform: scale(1.1) rotate(270deg);
+  }
+}
+

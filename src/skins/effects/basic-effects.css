@@ -1,0 +1,24 @@
+/* Basic Skin Effects - Estilos simples para skins básicas */
+.skin-basic .player,
+.skin-basic-blue .player,
+.skin-basic-red .player,
+.skin-basic-green .player {
+  background: var(--player-color);
+  border: 1px solid var(--player-glow);
+}
+
+.skin-basic .boss,
+.skin-basic-blue .boss,
+.skin-basic-red .boss,
+.skin-basic-green .boss {
+  background: var(--boss-color);
+  border: 1px solid var(--boss-arm-color);
+}
+
+.skin-basic .boss-weakspot,
+.skin-basic-blue .boss-weakspot,
+.skin-basic-red .boss-weakspot,
+.skin-basic-green .boss-weakspot {
+  background: var(--boss-weakspot-color);
+}
+

@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS public.skins (
   name TEXT NOT NULL UNIQUE,
   display_name TEXT NOT NULL,
   description TEXT,
-  rarity TEXT NOT NULL DEFAULT 'common' CHECK (rarity IN ('common', 'rare', 'epic', 'legendary')),
+  rarity TEXT NOT NULL DEFAULT 'common' CHECK (rarity IN ('common', 'rare', 'epic', 'legendary', 'mythic')),
   unlock_condition TEXT,
   unlock_level INTEGER,
   unlock_victories INTEGER,

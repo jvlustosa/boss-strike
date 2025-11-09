@@ -1,0 +1,112 @@
+/* ============================================================================
+   ALL SKINS CSS - Centralized skin styles
+   Imports all individual skin files and effects
+   Reference skins by class name (e.g., skin-fire, skin-ice, etc.)
+   ============================================================================ */
+
+/* Import base skin variables */
+@import './basic-skin.css';
+@import './fire-skin.css';
+@import './ice-skin.css';
+@import './neon-skin.css';
+@import './rainbow-skin.css';
+@import './gold-skin.css';
+@import './void-skin.css';
+
+/* Import skin-specific effects */
+@import './effects/basic-effects.css';
+@import './effects/fire-effects.css';
+@import './effects/ice-effects.css';
+@import './effects/neon-effects.css';
+@import './effects/rainbow-effects.css';
+@import './effects/gold-effects.css';
+@import './effects/void-effects.css';
+@import './effects/mythic-rainbow-effects.css';
+
+/* Import game effect bridge (connects effects to game elements) */
+@import './effects/game-effect-bridge.css';
+
+/* Import shared effect styles (for reference, may not be used directly) */
+@import './effects/base.css';
+@import './effects/basic.css';
+@import './effects/regular-holo.css';
+@import './effects/reverse-holo.css';
+@import './effects/rainbow-holo.css';
+@import './effects/radiant-holo.css';
+@import './effects/cosmos-holo.css';
+@import './effects/shiny-rare.css';
+@import './effects/shiny-v.css';
+@import './effects/shiny-vmax.css';
+@import './effects/v-regular.css';
+@import './effects/v-full-art.css';
+@import './effects/v-max.css';
+@import './effects/v-star.css';
+@import './effects/secret-rare.css';
+@import './effects/amazing-rare.css';
+@import './effects/trainer-gallery-v-regular.css';
+@import './effects/trainer-gallery-v-max.css';
+@import './effects/trainer-gallery-holo.css';
+@import './effects/trainer-gallery-secret-rare.css';
+@import './effects/trainer-full-art.css';
+@import './effects/swsh-pikachu.css';
+@import './effects/rainbow-alt.css';
+
+/* ============================================================================
+   MYTHIC SKINS - Most Rare Skins Variables
+   ============================================================================ */
+
+/* Mythic Rainbow Skin 1 - Variáveis CSS */
+.skin-mythic-rainbow-1 {
+  --player-color: #ff0000;
+  --player-glow: #00ff00;
+  --boss-color: #0000ff;
+  --boss-arm-color: #6600cc;
+  --boss-weakspot-color: #ffff00;
+  --player-bullet-color: #ffffff;
+  --boss-bullet-color: #ff00ff;
+  --heart-color: #ff0066;
+  --background-color: #000000;
+  --space: 5%;
+  --angle: 133deg;
+  --sunpillar-clr-1: rgba(255, 255, 255, 0.1);
+  --sunpillar-clr-2: rgba(255, 0, 255, 0.15);
+  --sunpillar-clr-3: rgba(0, 255, 255, 0.2);
+  --sunpillar-clr-4: rgba(255, 255, 0, 0.15);
+  --sunpillar-clr-5: rgba(255, 0, 128, 0.2);
+  --sunpillar-clr-6: rgba(128, 0, 255, 0.15);
+}
+
+/* Mythic Rainbow Skin 2 - Variáveis CSS */
+.skin-mythic-rainbow-2 {
+  --player-color: #ff0080;
+  --player-glow: #00ffff;
+  --boss-color: #8000ff;
+  --boss-arm-color: #4000ff;
+  --boss-weakspot-color: #ffff00;
+  --player-bullet-color: #ffffff;
+  --boss-bullet-color: #ff00ff;
+  --heart-color: #ff0066;
+  --background-color: #000000;
+  --space: 5%;
+  --angle: 133deg;
+  --sunpillar-clr-1: rgba(255, 0, 128, 0.12);
+  --sunpillar-clr-2: rgba(0, 255, 255, 0.18);
+  --sunpillar-clr-3: rgba(128, 0, 255, 0.22);
+  --sunpillar-clr-4: rgba(255, 0, 255, 0.18);
+  --sunpillar-clr-5: rgba(255, 255, 0, 0.22);
+  --sunpillar-clr-6: rgba(0, 255, 128, 0.15);
+}
+
+/* ============================================================================
+   ANIMAÇÕES PARA PREVIEW
+   ============================================================================ */
+
+@keyframes rainbow-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+
+@keyframes mythic-rainbow-flow {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 300% 50%; }
+}
