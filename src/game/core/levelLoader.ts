@@ -4,7 +4,7 @@ import type { LevelConfig } from './types';
 const LEVEL_CONFIGS: Record<number, LevelConfig> = {
   1: {
     name: "Primeiro Contato",
-    bossHp: 20,
+    bossHp: 200,
     armMoveSpeed: 1.5,
     armAmplitude: 3,
     armShootCooldown: 1.5,
@@ -13,7 +13,7 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
   },
   2: {
     name: "Duplo Perigo",
-    bossHp: 25,
+    bossHp: 250,
     armMoveSpeed: 2.0,
     armAmplitude: 4,
     armShootCooldown: 1.2,
@@ -22,7 +22,7 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
   },
   3: {
     name: "Rajada Veloz",
-    bossHp: 30,
+    bossHp: 300,
     armMoveSpeed: 2.5,
     armAmplitude: 5,
     armShootCooldown: 1.0,
@@ -32,7 +32,7 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
   },
   4: {
     name: "Spread Mortal",
-    bossHp: 26,
+    bossHp: 260,
     armMoveSpeed: 2.1,
     armAmplitude: 4.5,
     armShootCooldown: 1.0,
@@ -42,7 +42,7 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
   },
   5: {
     name: "Círculo de Fogo",
-    bossHp: 40,
+    bossHp: 400,
     armMoveSpeed: 3.0,
     armAmplitude: 4,
     armShootCooldown: 1.1,
@@ -52,7 +52,7 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
   },
   6: {
     name: "Fúria Alternada",
-    bossHp: 45,
+    bossHp: 450,
     armMoveSpeed: 3.2,
     armAmplitude: 7,
     armShootCooldown: 0.9,
@@ -62,7 +62,7 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
   },
   7: {
     name: "Tempestade",
-    bossHp: 50,
+    bossHp: 500,
     armMoveSpeed: 3.5,
     armAmplitude: 5,
     armShootCooldown: 1.0, // 1 segundo entre rajadas
@@ -72,7 +72,7 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
   },
   8: {
     name: "Caos Controlado",
-    bossHp: 55,
+    bossHp: 550,
     armMoveSpeed: 3.8,
     armAmplitude: 8,
     armShootCooldown: 0.7,
@@ -82,7 +82,7 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
   },
   9: {
     name: "Inferno",
-    bossHp: 60,
+    bossHp: 600,
     armMoveSpeed: 4.0,
     armAmplitude: 6,
     armShootCooldown: 0.6,
@@ -92,7 +92,7 @@ const LEVEL_CONFIGS: Record<number, LevelConfig> = {
   },
   10: {
     name: "Boss Final",
-    bossHp: 60,
+    bossHp: 600,
     armMoveSpeed: 4.0,
     armAmplitude: 8,
     armShootCooldown: 0.7,

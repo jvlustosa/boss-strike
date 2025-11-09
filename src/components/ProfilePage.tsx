@@ -493,15 +493,15 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
                   />
                 </div>
 
-                <div style={{
+                    <div style={{ 
                   fontSize: isMobile ? '12px' : '13px',
-                  fontWeight: '600',
+                      fontWeight: '600',
                   color: rarityColor,
-                  marginBottom: '4px',
+                      marginBottom: '4px',
                   textAlign: 'center',
-                }}>
-                  {skin.display_name}
-                </div>
+                    }}>
+                      {skin.display_name}
+                    </div>
 
                 <div style={{
                   display: 'flex',
@@ -539,7 +539,7 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
                     </div>
                   )}
                 </div>
-
+                
                 {(isUnlocked || cheatMode) && (
                   <button
                     style={{
@@ -568,7 +568,7 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
                         : 'Equipar'}
                   </button>
                 )}
-
+                
                 {!isUnlocked && !cheatMode && (
                   <div style={{
                     padding: isMobile ? '6px' : '8px',
@@ -790,8 +790,8 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
           }
         }
       `}</style>
-      <div style={modalStyle} onClick={onClose}>
-        <div style={contentStyle} onClick={(e) => e.stopPropagation()}>
+    <div style={modalStyle} onClick={onClose}>
+      <div style={contentStyle} onClick={(e) => e.stopPropagation()}>
         <button
           style={closeButtonStyle}
           onClick={onClose}

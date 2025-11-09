@@ -51,6 +51,11 @@ export function renderPlayer(
     applyEffectStyles(ctx, player, skinData.effectName, playerColor, playerGlow);
   }
 
+  // Aplicar brilho pulsante para skins lendárias e míticas
+  if (skinData.rarity === 'legendary' || skinData.rarity === 'mythic') {
+    applyRarityGlow(ctx, player, skinData.rarity, playerColor, playerGlow);
+  }
+
   ctx.restore();
 }
 
@@ -257,6 +262,77 @@ function applySkinStyles(
   }
   
   // Não fazer restore aqui - será feito no renderPlayer
+}
+
+/**
+ * Aplica brilho pulsante para skins lendárias e míticas
+ */
+function applyRarityGlow(
+  ctx: CanvasRenderingContext2D,
+  player: Player,
+  rarity: string,
+  playerColor: string,
+  playerGlow: string
+): void {
+  const x = player.pos.x;
+  const y = player.pos.y;
+  const w = player.w;
+  const h = player.h;
+  const time = Date.now() / 1000;
+  
+  // Intensidade do pulso baseada no tempo
+  const pulseIntensity = 0.3 + Math.sin(time * 3) * 0.2; // Pulso entre 0.3 e 0.5
+  const glowSize = 1.5 + Math.sin(time * 2.5) * 0.5; // Tamanho do glow varia
+  
+  ctx.save();
+  
+  if (rarity === 'mythic') {
+    // Brilho mítico - múltiplas camadas coloridas pulsantes
+    const colors = [
+      'rgba(255, 255, 255, ' + pulseIntensity + ')',
+      'rgba(255, 0, 255, ' + (pulseIntensity * 0.7) + ')',
+      'rgba(0, 255, 255, ' + (pulseIntensity * 0.5) + ')',
+      'rgba(255, 255, 0, ' + (pulseIntensity * 0.4) + ')',
+    ];
+    
+    // Aplicar múltiplos glows em camadas
+    for (let i = 0; i < colors.length; i++) {
+      drawGlow(ctx, x, y, w, h, colors[i], glowSize + i * 0.5);
+    }
+    
+    // Brilho interno pulsante
+    ctx.globalAlpha = pulseIntensity * 0.4;
+    const innerGradient = ctx.createRadialGradient(
+      x + w / 2, y + h / 2, 0,
+      x + w / 2, y + h / 2, Math.max(w, h) / 2
+    );
+    innerGradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');
+    innerGradient.addColorStop(0.5, 'rgba(255, 0, 255, 0.4)');
+    innerGradient.addColorStop(1, 'rgba(0, 255, 255, 0)');
+    ctx.fillStyle = innerGradient;
+    ctx.fillRect(x, y, w, h);
+    ctx.globalAlpha = 1;
+  } else if (rarity === 'legendary') {
+    // Brilho lendário - glow dourado/amarelo pulsante
+    const glowColor = `rgba(255, 215, 0, ${pulseIntensity})`;
+    drawGlow(ctx, x, y, w, h, glowColor, glowSize * 1.2);
+    drawGlow(ctx, x, y, w, h, 'rgba(255, 255, 255, ' + (pulseIntensity * 0.6) + ')', glowSize * 0.8);
+    
+    // Brilho interno dourado
+    ctx.globalAlpha = pulseIntensity * 0.3;
+    const innerGradient = ctx.createRadialGradient(
+      x + w / 2, y + h / 2, 0,
+      x + w / 2, y + h / 2, Math.max(w, h) / 2
+    );
+    innerGradient.addColorStop(0, 'rgba(255, 215, 0, 0.6)');
+    innerGradient.addColorStop(0.5, 'rgba(255, 255, 255, 0.3)');
+    innerGradient.addColorStop(1, 'rgba(255, 215, 0, 0)');
+    ctx.fillStyle = innerGradient;
+    ctx.fillRect(x, y, w, h);
+    ctx.globalAlpha = 1;
+  }
+  
+  ctx.restore();
 }
 
 /**

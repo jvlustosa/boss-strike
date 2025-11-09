@@ -74,6 +74,7 @@ export function useSkin() {
         effectName: null,
         playerColor: null,
         playerGlow: null,
+        rarity: null,
         cssVariables: {},
       });
       setCurrentSkin(null);
@@ -157,6 +158,7 @@ export function useSkin() {
                 effectName: effectName || null,
                 playerColor: playerColor || defaultColors.player,
                 playerGlow: playerGlow || playerColor || defaultColors.player,
+                rarity: skin.rarity || null,
                 cssVariables,
               });
               

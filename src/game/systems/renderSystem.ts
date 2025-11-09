@@ -9,29 +9,76 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
   ctx.fillStyle = colors.background;
   ctx.fillRect(0, 0, LOGICAL_W, LOGICAL_H);
 
-  // Ice Trail Particles - renderizar ANTES do player para ficar atrás
-  for (const trail of state.iceTrailParticles) {
-    const alpha = trail.alpha * (trail.life / trail.maxLife);
-    const size = Math.max(1, Math.floor(trail.size));
+  // Magic Trail Particles - renderizar ANTES do player para ficar atrás
+  // Usa a cor da skin para skins raras
+  if (state.magicTrailParticles.length > 0) {
+    // Converter cor hex para rgba com alpha (definir uma vez fora do loop)
+    const hexToRgba = (color: string, alpha: number): string => {
+      if (!color || typeof color !== 'string') {
+        return `rgba(0, 204, 255, ${alpha})`;
+      }
+      
+      // Se já é rgba/rgb, extrair valores
+      if (color.startsWith('rgba') || color.startsWith('rgb')) {
+        const match = color.match(/\d+/g);
+        if (match && match.length >= 3) {
+          return `rgba(${match[0]}, ${match[1]}, ${match[2]}, ${alpha})`;
+        }
+      }
+      
+      // Se é hex (#rrggbb)
+      if (color.startsWith('#')) {
+        const hex = color.slice(1);
+        if (hex.length === 6) {
+          const r = parseInt(hex.slice(0, 2), 16);
+          const g = parseInt(hex.slice(2, 4), 16);
+          const b = parseInt(hex.slice(4, 6), 16);
+          if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+          }
+        }
+        // Hex curto (#rgb)
+        if (hex.length === 3) {
+          const r = parseInt(hex[0] + hex[0], 16);
+          const g = parseInt(hex[1] + hex[1], 16);
+          const b = parseInt(hex[2] + hex[2], 16);
+          if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+            return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+          }
+        }
+      }
+      
+      // Fallback: usar cor padrão azul
+      return `rgba(0, 204, 255, ${alpha})`;
+    };
     
-    // Cor azul de gelo com alpha
-    ctx.fillStyle = `rgba(0, 204, 255, ${alpha})`;
-    ctx.fillRect(
-      Math.floor(trail.pos.x - size / 2),
-      Math.floor(trail.pos.y - size / 2),
-      size,
-      size
-    );
-    
-    // Adicionar um brilho sutil ao redor
-    if (size > 1) {
-      ctx.fillStyle = `rgba(102, 221, 255, ${alpha * 0.3})`;
+    for (const trail of state.magicTrailParticles) {
+      const alpha = trail.alpha * (trail.life / trail.maxLife);
+      const size = Math.max(1, Math.floor(trail.size));
+      
+      // Validar que temos uma cor válida
+      const trailColor = trail.color || '#00ccff';
+      
+      // Cor da skin com alpha
+      ctx.fillStyle = hexToRgba(trailColor, alpha);
       ctx.fillRect(
-        Math.floor(trail.pos.x - size / 2 - 1),
-        Math.floor(trail.pos.y - size / 2 - 1),
-        size + 2,
-        size + 2
+        Math.floor(trail.pos.x - size / 2),
+        Math.floor(trail.pos.y - size / 2),
+        size,
+        size
       );
+      
+      // Adicionar um brilho sutil ao redor (mais claro que a cor base)
+      if (size > 1) {
+        const glowAlpha = alpha * 0.3;
+        ctx.fillStyle = hexToRgba(trailColor, glowAlpha);
+        ctx.fillRect(
+          Math.floor(trail.pos.x - size / 2 - 1),
+          Math.floor(trail.pos.y - size / 2 - 1),
+          size + 2,
+          size + 2
+        );
+      }
     }
   }
 
@@ -42,20 +89,88 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
   ctx.fillStyle = colors.boss;
   ctx.fillRect(state.boss.pos.x, state.boss.pos.y, state.boss.w, state.boss.h);
   
+  // Boss weak spot (exposto na parte inferior, alinhado ao fundo)
+  ctx.fillStyle = colors.bossWeakSpot;
+  ctx.fillRect(state.boss.weakSpot.x, state.boss.weakSpot.y, state.boss.weakSpot.w, state.boss.weakSpot.h);
+  
   // Boss arms
   ctx.fillStyle = colors.bossArm;
   for (const arm of state.boss.arms) {
     ctx.fillRect(arm.pos.x, arm.pos.y, arm.w, arm.h);
   }
-  
-  // Boss weak spot
-  ctx.fillStyle = colors.bossWeakSpot;
-  ctx.fillRect(state.boss.weakSpot.x, state.boss.weakSpot.y, state.boss.weakSpot.w, state.boss.weakSpot.h);
 
   // Bullets
   for (const bullet of state.bullets) {
     ctx.fillStyle = bullet.from === 'player' ? colors.playerBullet : colors.bossBullet;
-    ctx.fillRect(bullet.pos.x, bullet.pos.y, bullet.w, bullet.h);
+    
+    if (bullet.from === 'boss') {
+      // Calcular ângulo do tiro baseado na velocidade
+      // Adicionar 90 graus (π/2) para corrigir a orientação
+      const angle = Math.atan2(bullet.vel.y, bullet.vel.x) + Math.PI / 2;
+      const centerX = bullet.pos.x + bullet.w / 2;
+      const centerY = bullet.pos.y + bullet.h / 2;
+      
+      ctx.save();
+      ctx.translate(centerX, centerY);
+      ctx.rotate(angle);
+      
+      // Desenhar quadrado rotacionado (centralizado)
+      ctx.fillRect(-bullet.w / 2, -bullet.h / 2, bullet.w, bullet.h);
+      
+      ctx.restore();
+    } else {
+      // Player bullets - manter formato original (retângulo vertical)
+      ctx.fillRect(bullet.pos.x, bullet.pos.y, bullet.w, bullet.h);
+    }
+  }
+
+  // Damage Numbers (renderizar depois dos bullets para ficar por cima)
+  for (const damageNumber of state.damageNumbers) {
+    const lifeProgress = damageNumber.life / damageNumber.maxLife;
+    const alpha = Math.min(1, Math.max(0, lifeProgress * 2)); // Fade out na segunda metade
+    const scale = 0.8 + lifeProgress * 0.4; // Começa menor e cresce
+    
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    
+    // Posição
+    const x = Math.floor(damageNumber.pos.x);
+    const y = Math.floor(damageNumber.pos.y);
+    
+    const isCritical = damageNumber.isCritical || false;
+    
+    // Escala do texto (menor para crítico)
+    const fontSize = isCritical 
+      ? Math.max(4, Math.floor(6 * scale)) // Menor para crítico
+      : Math.max(5, Math.floor(7 * scale));
+    ctx.font = `bold ${fontSize}px 'Pixelify Sans', monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    
+    // Cor e estilo diferentes para crítico
+    if (isCritical) {
+      // Contorno para crítico
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2;
+      ctx.strokeText('Critical!', x, y - fontSize - 2);
+      ctx.strokeText(damageNumber.value.toString(), x, y);
+      
+      // Texto roxo para crítico
+      ctx.fillStyle = '#9333ea'; // Roxo vibrante para crítico
+      ctx.fillText('Critical!', x, y - fontSize - 2);
+      ctx.fillText(damageNumber.value.toString(), x, y);
+    } else {
+      // Contorno preto (outline) estilo Fortnite
+      ctx.strokeStyle = '#000000';
+      ctx.lineWidth = 2; // Reduzido proporcionalmente
+      ctx.strokeText(damageNumber.value.toString(), x, y);
+      
+      // Texto branco/amarelo
+      ctx.fillStyle = '#ffff00'; // Amarelo como Fortnite
+      ctx.fillText(damageNumber.value.toString(), x, y);
+    }
+    
+    ctx.restore();
   }
 
   // Hearts

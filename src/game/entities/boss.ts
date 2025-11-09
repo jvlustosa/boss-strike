@@ -1,6 +1,6 @@
-import type { Boss, Bullet, Player, LevelConfig, BulletPattern } from '../core/types';
+import type { Boss, Bullet, Player, LevelConfig, BulletPattern, GameState } from '../core/types';
 import { LOGICAL_H, LOGICAL_W } from '../core/config';
-// import { audioManager } from '../core/audio';
+import { audioManager } from '../core/audio';
 
 export function updateBoss(boss: Boss, dt: number, bullets: Bullet[], player: Player, levelConfig: LevelConfig): void {
   // Atualizar movimento do boss (a partir do nível 4)
@@ -8,7 +8,7 @@ export function updateBoss(boss: Boss, dt: number, bullets: Bullet[], player: Pl
     updateBossMovement(boss, dt, levelConfig);
   }
   
-  // Atualizar posição do weak spot relativo ao boss
+  // Atualizar posição do weak spot relativo ao boss (centro)
   boss.weakSpot.x = boss.pos.x + boss.w / 2 - boss.weakSpot.w / 2;
   boss.weakSpot.y = boss.pos.y + boss.h / 2 - boss.weakSpot.h / 2;
   
@@ -271,6 +271,37 @@ function createBullet(origin: { x: number; y: number }, angle: number, speed: nu
   };
 }
 
-export function damageBoss(boss: Boss, damage: number): void {
-  boss.hp = Math.max(0, boss.hp - damage);
+export function damageBoss(boss: Boss, damage: number, state?: GameState, isCritical: boolean = false): void {
+  // Aplicar multiplicador crítico se necessário (x3)
+  const finalDamage = isCritical ? damage * 3 : damage;
+  boss.hp = Math.max(0, boss.hp - finalDamage);
+  
+  // Criar número de dano e tocar som se state for fornecido
+  if (state && state.damageNumbers) {
+    // Tocar som de hit do boss
+    audioManager.playSound('boss_hit', 0.5, 0.2);
+    
+    // Criar número de dano na posição do weak spot do boss
+    const weakSpotCenterX = boss.weakSpot.x + boss.weakSpot.w / 2;
+    const weakSpotCenterY = boss.weakSpot.y + boss.weakSpot.h / 2;
+    
+    // Adicionar pequeno offset aleatório para não sobrepor números
+    const offsetX = (Math.random() - 0.5) * 8;
+    const offsetY = (Math.random() - 0.5) * 8;
+    
+    state.damageNumbers.push({
+      pos: {
+        x: weakSpotCenterX + offsetX,
+        y: weakSpotCenterY + offsetY,
+      },
+      value: finalDamage,
+      life: 1.0, // 1 segundo de vida
+      maxLife: 1.0,
+      vel: {
+        x: (Math.random() - 0.5) * 20, // Drift horizontal leve
+        y: -30 - Math.random() * 10, // Movimento para cima
+      },
+      isCritical: isCritical,
+    });
+  }
 }

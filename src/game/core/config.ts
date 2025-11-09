@@ -11,4 +11,4 @@ export const BOSS_H = 16;
 export const BULLET_W = 2;
 export const BULLET_H = 4;
 
-export const BOSS_HP = 20;
+export const BOSS_HP = 200;

@@ -84,12 +84,22 @@ export type SmokeParticle = {
   drift: number;
 };
 
-export type IceTrailParticle = {
+export type MagicTrailParticle = {
   pos: Vec2;
   life: number;
   maxLife: number;
   size: number;
   alpha: number;
+  color: string; // Cor da skin para o rastro
+};
+
+export type DamageNumber = {
+  pos: Vec2;
+  value: number;
+  life: number;
+  maxLife: number;
+  vel: Vec2; // Velocidade para movimento (sobe e drift)
+  isCritical?: boolean; // Se é um hit crítico
 };
 
 export type BulletPattern = 
@@ -134,7 +144,8 @@ export type GameState = {
   explosionParticles: ExplosionParticle[];
   smokeParticles: SmokeParticle[];
   shieldFragments: ShieldFragment[];
-  iceTrailParticles: IceTrailParticle[];
+  magicTrailParticles: MagicTrailParticle[];
+  damageNumbers: DamageNumber[];
   keys: Record<string, boolean>;
   status: 'menu' | 'playing' | 'paused' | 'won' | 'lost';
   victoryTimer: number;

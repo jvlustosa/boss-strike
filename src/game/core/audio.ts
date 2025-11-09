@@ -86,5 +86,6 @@ export const audioManager = new AudioManager();
 audioManager.loadSound('shoot', '/audio/mixkit-explainer-video-game-alert-sweep-236.wav');
 audioManager.loadSound('boss_shoot', '/audio/mixkit-explainer-video-game-alert-sweep-236.wav');
 audioManager.loadSound('hit', '/audio/mixkit-fast-blow-2144.wav');
+audioManager.loadSound('boss_hit', '/audio/mixkit-weak-fast-blow-2145.wav');
 audioManager.loadSound('heal', '/audio/heal-health.mp3', true); // Critical sound
 audioManager.loadSound('shield', '/audio/Divinity_Shield.mp3', true); // Critical sound

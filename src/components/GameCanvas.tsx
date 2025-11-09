@@ -12,7 +12,9 @@ import { heartSystem } from '../game/systems/heartSystem';
 import { shieldSystem, updateShieldFragments } from '../game/systems/shieldSystem';
 import { renderSystem } from '../game/systems/renderSystem';
 import { updateExplosionSystem } from '../game/systems/explosionSystem';
-import { createIceTrail, updateIceTrail, clearIceTrail } from '../game/systems/iceTrailSystem';
+import { createMagicTrail, updateMagicTrail, clearMagicTrail } from '../game/systems/magicTrailSystem';
+import { updateDamageNumbers } from '../game/systems/damageNumberSystem';
+import { resetHitCounter } from '../game/systems/criticalHitSystem';
 import { getLevelFromUrl, updateUrlLevel } from '../game/core/urlParams';
 import { saveProgress, saveVictory } from '../game/core/progressCache';
 import { MobileControlsLayout } from './MobileControlsLayout';
@@ -102,8 +104,9 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
       if (state.status === 'playing' && !isPaused) {
         state.time += dt;
         playerSystem(state, dt);
-        createIceTrail(state); // Criar rastro de gelo se aplicável
-        updateIceTrail(state, dt); // Atualizar partículas de rastro
+        createMagicTrail(state); // Criar rastro mágico se aplicável
+        updateMagicTrail(state, dt); // Atualizar partículas de rastro
+        updateDamageNumbers(state, dt); // Atualizar números de dano
         bossSystem(state, dt);
         bulletSystem(state, dt);
         heartSystem(state, dt);
@@ -132,8 +135,9 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
           // Preservar a referência do objeto keys para não quebrar o input
           const keysRef = state.keys;
           
-          // Limpar rastro de gelo
-          clearIceTrail();
+          // Limpar rastro mágico e resetar contador de hits
+          clearMagicTrail();
+          resetHitCounter();
           
           // Aplicar novo estado - atualizar propriedades específicas
           state.time = next.time;
@@ -147,7 +151,8 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
           state.shieldCooldown = next.shieldCooldown;
           state.shields.length = 0;
           state.shieldFragments.length = 0;
-          state.iceTrailParticles.length = 0;
+          state.magicTrailParticles.length = 0;
+          state.damageNumbers.length = 0;
           state.status = next.status;
           state.victoryTimer = next.victoryTimer;
           state.restartTimer = next.restartTimer;
@@ -218,14 +223,16 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         const keysRef = currentState.keys;
         
         // Limpar estado atual
-        clearIceTrail();
+        clearMagicTrail();
+        resetHitCounter();
         currentState.bullets.length = 0;
         currentState.hearts.length = 0;
         currentState.shields.length = 0;
         currentState.shieldFragments.length = 0;
         currentState.explosionParticles.length = 0;
         currentState.smokeParticles.length = 0;
-        currentState.iceTrailParticles.length = 0;
+        currentState.magicTrailParticles.length = 0;
+        currentState.damageNumbers.length = 0;
         
         // Aplicar novo estado - atualizar propriedades específicas
         currentState.time = newState.time;

@@ -17,6 +17,7 @@ export interface SkinData {
   effectName: string | null;
   playerColor: string | null;
   playerGlow: string | null;
+  rarity: string | null;
   cssVariables: Record<string, string>;
 }
 
@@ -25,6 +26,7 @@ let currentSkinData: SkinData = {
   effectName: null,
   playerColor: null,
   playerGlow: null,
+  rarity: null,
   cssVariables: {},
 };
 

@@ -5,6 +5,7 @@ import { audioManager } from '../core/audio';
 import { createBossExplosion, createBulletExplosion } from '../systems/explosionSystem';
 import { isCheatActive } from '../core/urlParams';
 import { createShieldFragments } from '../systems/shieldSystem';
+import { checkCriticalHit, resetHitCounter } from '../systems/criticalHitSystem';
 
 export function checkCollisions(state: GameState): void {
   const { bullets, boss, player, hearts, shields } = state;
@@ -61,9 +62,40 @@ export function checkCollisions(state: GameState): void {
         continue;
       }
       
-      // Check collision with boss weak spot
-      if (aabbCollision(toAABB(bullet), boss.weakSpot)) {
-        damageBoss(boss, 1);
+      // Verificar colisão com o corpo do boss primeiro
+      const bossBody = { x: boss.pos.x, y: boss.pos.y, w: boss.w, h: boss.h };
+      const hitsBossBody = aabbCollision(toAABB(bullet), bossBody);
+      
+      if (hitsBossBody) {
+        // Calcular posições do weak spot e bullet
+        const bulletCenterX = bullet.pos.x + bullet.w / 2;
+        const bulletCenterY = bullet.pos.y + bullet.h / 2;
+        const weakSpotLeft = boss.weakSpot.x;
+        const weakSpotRight = boss.weakSpot.x + boss.weakSpot.w;
+        const weakSpotTop = boss.weakSpot.y;
+        const weakSpotBottom = boss.weakSpot.y + boss.weakSpot.h;
+        
+        // Verifica se acerta diretamente o weak spot
+        const hitsWeakSpot = aabbCollision(toAABB(bullet), boss.weakSpot);
+        
+        // Verifica se está na mesma linha vertical do weak spot
+        const isInVerticalLine = bulletCenterX >= weakSpotLeft && bulletCenterX <= weakSpotRight &&
+                                  bulletCenterY >= weakSpotTop && bulletCenterY <= weakSpotBottom;
+        
+        // Verifica se o tiro está abaixo do amarelo (mesma linha X, abaixo do weak spot)
+        const isBelowYellow = bulletCenterX >= weakSpotLeft && bulletCenterX <= weakSpotRight &&
+                              bulletCenterY > weakSpotBottom;
+        
+        // Se acertar weak spot, linha vertical, ou estiver abaixo do amarelo = 10 de dano
+        if (hitsWeakSpot || isInVerticalLine || isBelowYellow) {
+          const isCritical = checkCriticalHit(); // 1 em 30 chance
+          damageBoss(boss, 10, state, isCritical);
+        } else {
+          // Caso contrário, acertou parte vermelha = 3 de dano
+          resetHitCounter();
+          damageBoss(boss, 3, state, false);
+        }
+        
         bullets.splice(i, 1);
         
         if (boss.hp <= 0) {
