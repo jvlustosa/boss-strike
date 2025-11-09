@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { GameCanvas } from './components/GameCanvas';
 import { MainMenu } from './components/MainMenu';
-import { PauseButton } from './components/PauseButton';
 import { PauseMenu } from './components/PauseMenu';
 import { LevelTitle } from './components/LevelTitle';
-import { PlayroomSessionScreen } from './components/PlayroomSessionScreen';
 import { AuthModal } from './components/AuthModal';
 import { ProfilePage } from './components/ProfilePage';
 import { ProfileRoute } from './components/ProfileRoute';
@@ -23,7 +21,6 @@ function GameApp() {
   const [gameStarted, setGameStarted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [gameState, setGameState] = useState<any>(null);
-  const [showPlayroomSession, setShowPlayroomSession] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [authSkipped, setAuthSkipped] = useState(false);
@@ -54,8 +51,9 @@ function GameApp() {
       return;
     }
     
-    // Start game session
-    setShowPlayroomSession(true);
+    // Start game directly
+    setIsPaused(false);
+    setGameStarted(true);
   };
 
   const handlePause = () => {
@@ -88,14 +86,6 @@ function GameApp() {
     }
   };
 
-  const handleSessionReady = () => {
-    setShowPlayroomSession(false);
-    setIsPaused(false);
-    // Use setTimeout to ensure state updates are processed
-    setTimeout(() => {
-      setGameStarted(true);
-    }, 0);
-  };
 
   const togglePause = () => {
     if (gameStarted) {
@@ -108,10 +98,9 @@ function GameApp() {
     await refreshProfile();
     setShowAuthModal(false);
     setAuthSkipped(false);
-    // Small delay to ensure state is updated
-    setTimeout(() => {
-      setShowPlayroomSession(true);
-    }, 100);
+    // Start game directly
+    setIsPaused(false);
+    setGameStarted(true);
   };
 
   // Listen for ESC key to toggle pause
@@ -160,7 +149,8 @@ function GameApp() {
   const handleAuthSkip = () => {
     setAuthSkipped(true);
     setShowAuthModal(false);
-    setShowPlayroomSession(true);
+    setIsPaused(false);
+    setGameStarted(true);
   };
 
 
@@ -229,25 +219,28 @@ function GameApp() {
             showSuccess={toast.showSuccess}
           />
         )}
-        {showPlayroomSession && (
-          <PlayroomSessionScreen onSessionReady={handleSessionReady} />
-        )}
         <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
       </>
     );
   }
   
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isLandscape = isMobile && window.innerHeight < window.innerWidth;
+
   return (
     <>
       {user && (
-        <UserHeader onProfileClick={() => {
-          if (user && authProfile?.username) {
-            navigate(`/profile/${authProfile.username}`);
-          } else {
-            setIsPaused(true);
-            setShowProfileModal(true);
-          }
-        }} />
+        <UserHeader 
+          onProfileClick={() => {
+            if (user && authProfile?.username) {
+              navigate(`/profile/${authProfile.username}`);
+            } else {
+              setIsPaused(true);
+              setShowProfileModal(true);
+            }
+          }}
+          onPause={!isPaused ? handlePause : undefined}
+        />
       )}
       {!user && !showAuthModal && (
         <button
@@ -292,24 +285,30 @@ function GameApp() {
         <div
           style={{
             display: 'flex',
-            flexDirection: 'column',
+            flexDirection: isLandscape ? 'row' : 'column',
             alignItems: 'center',
-            gap: '12px',
+            justifyContent: 'center',
+            gap: isLandscape ? '0' : '12px',
             maxHeight: '100vh',
             overflow: 'hidden',
             width: '100%',
+            height: isLandscape ? '100vh' : 'auto',
           }}
         >
-          {gameState && <LevelTitle key={gameState.level} gameState={gameState} />}
+          {gameState && (isMobile || !isLandscape) && <LevelTitle key={gameState.level} gameState={gameState} />}
           <div style={{ 
             position: 'relative',
-            maxHeight: 'calc(100vh - 100px)',
+            maxHeight: isLandscape ? '100vh' : 'calc(100vh - 100px)',
+            height: isLandscape ? '100vh' : 'auto',
+            width: isLandscape ? '100vw' : 'auto',
             overflow: 'hidden',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}>
             <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} />
           </div>
         </div>
-        {!isPaused && <PauseButton onPause={handlePause} />}
         {isPaused && (
           <PauseMenu 
             onContinue={handleContinue} 

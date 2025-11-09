@@ -65,8 +65,14 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
   const setupCanvas = useCallback((canvas: HTMLCanvasElement) => {
     const ctx = canvas.getContext('2d')!;
     
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const isLandscape = isMobile && window.innerHeight < window.innerWidth;
+    
     // Pixel-perfect scaling - considerar espaço para header e outros elementos
-    const availableHeight = Math.min(window.innerHeight - 100, window.innerHeight * 0.9);
+    // Em mobile landscape, usar 100vh
+    const availableHeight = isLandscape 
+      ? window.innerHeight 
+      : Math.min(window.innerHeight - 100, window.innerHeight * 0.9);
     const availableWidth = window.innerWidth;
     const scale = Math.floor(Math.min(availableWidth / LOGICAL_W, availableHeight / LOGICAL_H));
     canvas.width = LOGICAL_W * scale;
@@ -205,6 +211,7 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
       setupCanvas(canvas);
     };
     window.addEventListener('resize', handleResize);
+    window.addEventListener('orientationchange', handleResize);
 
     // Mouse move handling for next level button hover
     const onMouseMove = (e: MouseEvent) => {
@@ -364,6 +371,7 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
       cleanupInput();
       cleanupLoop();
       window.removeEventListener('resize', handleResize);
+      window.removeEventListener('orientationchange', handleResize);
       window.removeEventListener('keydown', handleKeyDown);
       canvas.removeEventListener('click', onClick);
       canvas.removeEventListener('mousemove', onMouseMove);
@@ -371,29 +379,29 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
     };
   }, [setupCanvas, isPaused]);
 
-  const handlePlayroomFire = () => {
+  const handleFire = () => {
     if ((window as any).handleTouchFire) {
       (window as any).handleTouchFire();
     }
   };
 
-  // Soft restart joystick on game restart/level change (keep session alive)
+  // Clear input on game restart/level change
   const forceJoystickCleanup = () => {
     // Clear input first
     if ((window as any).forceClearInput) {
       (window as any).forceClearInput();
     }
     
-    // Dispatch custom event for soft restart (keeps Playroom session alive)
-    window.dispatchEvent(new CustomEvent('forceJoystickCleanup'));
-    
-    // Reinitialize input system after Playroom session has restarted
+    // Reinitialize input system
     setTimeout(() => {
       if ((window as any).forceReinitInput) {
         (window as any).forceReinitInput();
       }
-    }, 200); // Increased delay to ensure Playroom session is ready
+    }, 100);
   };
+
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const isLandscape = isMobile && window.innerHeight < window.innerWidth;
 
   return (
     <>
@@ -403,15 +411,15 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
           border: '2px solid #333',
           display: 'block',
           maxWidth: '100vw',
-          maxHeight: 'calc(100vh - 100px)',
+          maxHeight: isLandscape ? '100vh' : 'calc(100vh - 100px)',
+          height: isLandscape ? '100vh' : 'auto',
           objectFit: 'contain',
         }}
       />
-      <MobileControlsLayout onFire={handlePlayroomFire} />
+      <MobileControlsLayout onFire={handleFire} />
       <MobileCredits visible={true} position="top-left" />
       <DesktopControls />
       <DesktopCredits />
-      {/* <PlayroomDebug /> */}
       {/* <SubtleLogger enabled={true} position="bottom-right" maxLogs={2} /> */}
     </>
   );

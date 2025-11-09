@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { shouldUsePlayroom } from '../game/core/environmentDetector';
+import { isMobile } from '../game/core/environmentDetector';
 
 interface MobileCreditsProps {
   visible?: boolean;
@@ -12,9 +12,9 @@ export function MobileCredits({
 }: MobileCreditsProps) {
   const [shouldRender, setShouldRender] = useState(false);
 
-  // Only render on mobile/touch devices
+  // Only render on mobile devices
   useEffect(() => {
-    setShouldRender(shouldUsePlayroom());
+    setShouldRender(isMobile());
   }, []);
 
   if (!shouldRender || !visible) {
@@ -43,18 +43,18 @@ export function MobileCredits({
 
     switch (position) {
       case 'top-left':
-        return { ...baseStyles, top: '60px', left: '15px' }; // Moved below level title
+        return { ...baseStyles, top: '45px', left: '15px' }; // Below level title (15px + ~30px for level title)
       case 'top-right':
         return { ...baseStyles, top: '15px', right: '15px' };
       case 'top-center':
         return { 
           ...baseStyles, 
-          top: '60px', // Moved below level title
+          top: '45px', // Below level title
           left: '50%', 
           transform: 'translateX(-50%)' 
         };
       default:
-        return { ...baseStyles, top: '60px', left: '15px' }; // Moved below level title
+        return { ...baseStyles, top: '45px', left: '15px' }; // Below level title
     }
   };
 

@@ -64,7 +64,7 @@ Sinta-se à vontade para usar este código como base para criar jogos com as cri
 ## 🎯 Funcionalidades
 
 - ✅ Controles de teclado (WASD/Arrow Keys + Space)
-- ✅ Controles touch para mobile (Playroom Joystick)
+- ✅ Controles touch para mobile (Joystick nativo)
 - ✅ Sistema de níveis progressivos
 - ✅ Sistema de pontuação e vitórias
 - ✅ Efeitos sonoros
@@ -108,7 +108,6 @@ npm run preview
 - React 18
 - TypeScript
 - Vite
-- Playroom Kit (joystick mobile)
 - Canvas API
 - Web Audio API
 
