@@ -57,6 +57,25 @@ export type Shield = {
   collected: boolean;
 };
 
+export type BombState = 'idle' | 'homing';
+
+export type Bomb = {
+  pos: Vec2;
+  w: number;
+  h: number;
+  state: BombState;
+  speed: number;
+  damageFraction: number;
+  floatTimer: number;
+};
+
+export type ScorchMark = {
+  pos: Vec2;
+  size: number;
+  life: number;
+  maxLife: number;
+};
+
 export type ShieldFragment = {
   pos: Vec2;
   vel: Vec2;
@@ -127,6 +146,7 @@ export type LevelConfig = {
     speed?: number;
     amplitude?: number;
   };
+  bombDamageFraction?: number;
 };
 
 export type GameState = {
@@ -147,6 +167,10 @@ export type GameState = {
   shieldFragments: ShieldFragment[];
   magicTrailParticles: MagicTrailParticle[];
   damageNumbers: DamageNumber[];
+  bomb: Bomb | null;
+  bombUsedThisLevel: boolean;
+  bombSpawnTimer: number;
+  scorchMarks: ScorchMark[];
   keys: Record<string, boolean>;
   status: 'menu' | 'playing' | 'paused' | 'won' | 'lost';
   victoryTimer: number;

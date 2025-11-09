@@ -10,6 +10,8 @@ import { bulletSystem } from '../game/systems/bulletSystem';
 import { collisionSystem } from '../game/systems/collisionSystem';
 import { heartSystem } from '../game/systems/heartSystem';
 import { shieldSystem, updateShieldFragments } from '../game/systems/shieldSystem';
+import { bombSystem } from '../game/systems/bombSystem';
+import { updateScorchMarks } from '../game/systems/scorchSystem';
 import { renderSystem } from '../game/systems/renderSystem';
 import { updateExplosionSystem } from '../game/systems/explosionSystem';
 import { createMagicTrail, updateMagicTrail, clearMagicTrail } from '../game/systems/magicTrailSystem';
@@ -115,7 +117,9 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         bulletSystem(state, dt);
         heartSystem(state, dt);
         shieldSystem(state, dt);
+        bombSystem(state, dt);
         updateShieldFragments(state, dt);
+        updateScorchMarks(state, dt);
         collisionSystem(state);
         
         // Handle victory timer
@@ -153,10 +157,15 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
           state.shieldsSpawnedThisLevel = next.shieldsSpawnedThisLevel;
           state.maxShieldsThisLevel = next.maxShieldsThisLevel;
           state.shieldCooldown = next.shieldCooldown;
+          state.bomb = next.bomb;
+          state.bombUsedThisLevel = next.bombUsedThisLevel;
+          state.bombSpawnTimer = next.bombSpawnTimer;
           state.shields.length = 0;
           state.shieldFragments.length = 0;
           state.magicTrailParticles.length = 0;
           state.damageNumbers.length = 0;
+          state.scorchMarks.length = 0;
+          state.scorchMarks = next.scorchMarks;
           state.status = next.status;
           state.victoryTimer = next.victoryTimer;
           state.restartTimer = next.restartTimer;
@@ -288,6 +297,7 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         currentState.smokeParticles.length = 0;
         currentState.magicTrailParticles.length = 0;
         currentState.damageNumbers.length = 0;
+        currentState.scorchMarks.length = 0;
         
         // Aplicar novo estado - atualizar propriedades específicas
         currentState.time = newState.time;
@@ -303,6 +313,10 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         currentState.victoryTimer = newState.victoryTimer;
         currentState.restartTimer = newState.restartTimer;
         currentState.keys = keysRef;
+        currentState.bomb = newState.bomb;
+        currentState.bombUsedThisLevel = newState.bombUsedThisLevel;
+        currentState.bombSpawnTimer = newState.bombSpawnTimer;
+        currentState.scorchMarks = newState.scorchMarks;
         
         // Atualizar moveSpeed dos braços do boss com a nova configuração
         for (let i = 0; i < currentState.boss.arms.length; i++) {
