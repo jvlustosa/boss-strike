@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import { PIXEL_FONT } from '../utils/fonts';
 import { isMobile } from '../game/core/environmentDetector';
 
@@ -11,14 +11,24 @@ interface VictoryModalProps {
 export function VictoryModal({ visible, onNextPhase, level }: VictoryModalProps) {
   const [hovered, setHovered] = useState(false);
   const [pressed, setPressed] = useState(false);
-  const mobile = isMobile();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const mobile = useMemo(() => isMobile(), []);
+
+  // Check if this level earns a trophy (every 5 levels)
+  const earnedTrophy = useMemo(() => level % 5 === 0, [level]);
+
+  // Cleanup timeout on unmount or when visible changes
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, [visible]);
 
   if (!visible) {
     return null;
   }
-
-  // Check if this level earns a trophy (every 5 levels)
-  const earnedTrophy = level % 5 === 0;
 
   const overlayStyle: React.CSSProperties = {
     position: 'fixed',
@@ -108,10 +118,23 @@ export function VictoryModal({ visible, onNextPhase, level }: VictoryModalProps)
 
   const handleClick = () => {
     setPressed(true);
-    setTimeout(() => {
-      onNextPhase();
-      setPressed(false);
-      setHovered(false);
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => {
+      try {
+        onNextPhase();
+      } catch (error) {
+        // Silently handle errors in production
+        if (process.env.NODE_ENV === 'development') {
+          console.error('Error in onNextPhase:', error);
+        }
+      } finally {
+        setPressed(false);
+        setHovered(false);
+        timeoutRef.current = null;
+      }
     }, 100);
   };
 
