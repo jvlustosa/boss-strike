@@ -102,18 +102,20 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
   // Player - usando componente dedicado
   renderPlayer(ctx, state.player);
 
-  // Boss
-  ctx.fillStyle = colors.boss;
-  ctx.fillRect(state.boss.pos.x, state.boss.pos.y, state.boss.w, state.boss.h);
-  
-  // Boss weak spot (exposto na parte inferior, alinhado ao fundo)
-  ctx.fillStyle = colors.bossWeakSpot;
-  ctx.fillRect(state.boss.weakSpot.x, state.boss.weakSpot.y, state.boss.weakSpot.w, state.boss.weakSpot.h);
-  
-  // Boss arms
-  ctx.fillStyle = colors.bossArm;
-  for (const arm of state.boss.arms) {
-    ctx.fillRect(arm.pos.x, arm.pos.y, arm.w, arm.h);
+  // Boss (only render if alive and no pixel particles exist - when exploding, show only pixels)
+  if (state.boss.hp > 0 && state.pixelParticles.length === 0) {
+    ctx.fillStyle = colors.boss;
+    ctx.fillRect(state.boss.pos.x, state.boss.pos.y, state.boss.w, state.boss.h);
+    
+    // Boss weak spot (exposto na parte inferior, alinhado ao fundo)
+    ctx.fillStyle = colors.bossWeakSpot;
+    ctx.fillRect(state.boss.weakSpot.x, state.boss.weakSpot.y, state.boss.weakSpot.w, state.boss.weakSpot.h);
+    
+    // Boss arms
+    ctx.fillStyle = colors.bossArm;
+    for (const arm of state.boss.arms) {
+      ctx.fillRect(arm.pos.x, arm.pos.y, arm.w, arm.h);
+    }
   }
 
   // Bullets
@@ -320,6 +322,27 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
       ctx.fillRect(x + 6, y + 4, 1, 1);      // borda direita base
       ctx.fillRect(x + 3, y + 5, 2, 1);      // base inferior
     }
+  }
+
+  // Pixel particles (boss explosion)
+  for (const pixel of state.pixelParticles) {
+    const alpha = pixel.life / pixel.maxLife;
+    const size = pixel.size * alpha;
+    
+    ctx.save();
+    ctx.translate(pixel.pos.x, pixel.pos.y);
+    ctx.rotate(pixel.rotation);
+    ctx.globalAlpha = alpha;
+    
+    ctx.fillStyle = pixel.color;
+    ctx.fillRect(
+      Math.floor(-size / 2),
+      Math.floor(-size / 2),
+      Math.max(1, Math.floor(size)),
+      Math.max(1, Math.floor(size))
+    );
+    
+    ctx.restore();
   }
 
   // Explosion particles

@@ -113,6 +113,9 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
 
     // Game loop
     const update = (dt: number) => {
+      // Always update explosion system (even when paused or during victory timer)
+      updateExplosionSystem(state, dt);
+      
       if (state.status === 'playing' && !isPaused) {
         state.time += dt;
         playerSystem(state, dt);
@@ -168,6 +171,9 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
           state.bombSpawnTimer = next.bombSpawnTimer;
           state.shields.length = 0;
           state.shieldFragments.length = 0;
+          state.explosionParticles.length = 0;
+          state.smokeParticles.length = 0;
+          state.pixelParticles.length = 0;
           state.magicTrailParticles.length = 0;
           state.damageNumbers.length = 0;
           state.scorchMarks.length = 0;
@@ -302,6 +308,7 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         currentState.shieldFragments.length = 0;
         currentState.explosionParticles.length = 0;
         currentState.smokeParticles.length = 0;
+        currentState.pixelParticles.length = 0;
         currentState.magicTrailParticles.length = 0;
         currentState.damageNumbers.length = 0;
         currentState.scorchMarks.length = 0;
@@ -374,8 +381,6 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
         }, 100);
       }
       
-      // Always update explosion system (even when game is won/lost)
-      updateExplosionSystem(state, 0);
     };
     canvas.addEventListener('click', onClick);
     canvas.addEventListener('mousemove', onMouseMove);

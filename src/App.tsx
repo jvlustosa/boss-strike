@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { GameCanvas } from './components/GameCanvas';
 import { MainMenu } from './components/MainMenu';
 import { PauseMenu } from './components/PauseMenu';
@@ -7,6 +7,7 @@ import { LevelTitle } from './components/LevelTitle';
 import { AuthModal } from './components/AuthModal';
 import { ProfilePage } from './components/ProfilePage';
 import { ProfileRoute } from './components/ProfileRoute';
+import { LevelsPage } from './components/LevelsPage';
 import { ToastContainer } from './components/ToastContainer';
 import { UserHeader } from './components/UserHeader';
 import { SkinUnlockAnimation } from './components/SkinUnlockAnimation';
@@ -29,7 +30,7 @@ function GameApp() {
   const { user, profile: authProfile, initialized, refreshProfile } = useAuth();
   const navigate = useNavigate();
 
-  const handleStartGame = async (level?: number, clearTrophies?: boolean) => {
+  const handleStartGame = useCallback(async (level?: number, clearTrophies?: boolean) => {
     // Verificar se há nível na URL primeiro, senão usar o nível passado ou 1
     const urlLevel = getLevelFromUrl();
     const targetLevel = level || urlLevel || 1;
@@ -54,7 +55,7 @@ function GameApp() {
     // Start game directly
     setIsPaused(false);
     setGameStarted(true);
-  };
+  }, [user, authSkipped]);
 
   const handlePause = () => {
     if (gameState) {
@@ -114,6 +115,19 @@ function GameApp() {
       window.removeEventListener('togglePause', handleTogglePause);
     };
   }, [gameStarted, isPaused]);
+
+  // Listen for startGame event from LevelsPage
+  useEffect(() => {
+    const handleStartGameEvent = (event: CustomEvent) => {
+      const { level } = event.detail;
+      handleStartGame(level);
+    };
+
+    window.addEventListener('startGame', handleStartGameEvent as EventListener);
+    return () => {
+      window.removeEventListener('startGame', handleStartGameEvent as EventListener);
+    };
+  }, [handleStartGame]);
 
   // Auto-pause when tab becomes hidden
   useEffect(() => {
@@ -360,8 +374,18 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/profile/:username" element={<ProfileRoute />} />
+        <Route path="/fases" element={<LevelsPageRoute />} />
         <Route path="*" element={<GameApp />} />
       </Routes>
     </BrowserRouter>
   );
+}
+
+function LevelsPageRoute() {
+  const navigate = useNavigate();
+  const handleStartGame = async (level: number) => {
+    navigate('/');
+    window.dispatchEvent(new CustomEvent('startGame', { detail: { level } }));
+  };
+  return <LevelsPage onStartGame={handleStartGame} />;
 }

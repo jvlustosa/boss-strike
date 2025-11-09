@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AnimatedBackground } from './AnimatedBackground';
 import { hasProgress, getNextLevel, getVictoryCount } from '../game/core/progressCache';
 import { getLevelFromUrl } from '../game/core/urlParams';
@@ -11,14 +12,12 @@ interface MainMenuProps {
 }
 
 export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
+  const navigate = useNavigate();
   const [primaryHovered, setPrimaryHovered] = useState(false);
-  const [restartHovered, setRestartHovered] = useState(false);
+  const [phasesHovered, setPhasesHovered] = useState(false);
   const [victoryCount, setVictoryCount] = useState(0);
   const [canContinue, setCanContinue] = useState(false);
   const [nextLevel, setNextLevel] = useState(1);
-  const [showRestartDialog, setShowRestartDialog] = useState(false);
-  const [yesHovered, setYesHovered] = useState(false);
-  const [noHovered, setNoHovered] = useState(false);
   const [profileHovered, setProfileHovered] = useState(false);
   const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   const isLandscape = isMobile && window.innerHeight < window.innerWidth;
@@ -41,11 +40,10 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
     };
     
     loadData();
-  }, [showRestartDialog]);
+  }, []);
 
   const hasVictories = victoryCount > 0;
   const showContinueButton = canContinue && nextLevel > 1;
-  const showRestart = showContinueButton || hasVictories || (canContinue && nextLevel <= 1);
 
   const getButtonStyle = (hovered: boolean, isSecondary: boolean = false, isContinue: boolean = false): React.CSSProperties => {
     const greenColor = '#4ade80';
@@ -165,99 +163,10 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
     textTransform: 'uppercase',
   };
 
-  const handleRestartYes = () => {
-    setShowRestartDialog(false);
-    onStartGame(1, true);
-  };
-
-  const handleRestartNo = () => {
-    setShowRestartDialog(false);
-    onStartGame(1, false);
-  };
-
-  const dialogStyle: React.CSSProperties = {
-    position: 'fixed',
-    top: '50%',
-    left: '50%',
-    transform: 'translate(-50%, -50%)',
-    backgroundColor: '#111',
-    border: '4px solid #fff',
-    padding: isMobile ? '20px' : '30px',
-    zIndex: 1000,
-    textAlign: 'center',
-    fontFamily: "'Pixelify Sans', monospace",
-    color: '#fff',
-    minWidth: isMobile ? '280px' : '350px',
-    boxShadow: '0 0 0 4px #333, 8px 8px 0px #333',
-  };
-
-  const dialogButtonStyle = (hovered: boolean): React.CSSProperties => ({
-    fontFamily: "'Pixelify Sans', monospace",
-    fontSize: isMobile ? '16px' : '18px',
-    fontWeight: '600',
-    color: '#fff',
-    backgroundColor: hovered ? '#444' : '#222',
-    border: '3px solid #fff',
-    padding: isMobile ? '12px 24px' : '14px 28px',
-    cursor: 'pointer',
-    textTransform: 'uppercase',
-    letterSpacing: '2px',
-    margin: '10px',
-    minWidth: '100px',
-    textShadow: '1px 1px 0px #333',
-    boxShadow: hovered 
-      ? 'inset 0 0 0 2px #fff, 0 0 0 2px #fff, 4px 4px 0px #333' 
-      : 'inset 0 0 0 2px #fff, 4px 4px 0px #333',
-    transition: 'none',
-    outline: 'none',
-  });
 
   return (
     <>
       <AnimatedBackground />
-      {showRestartDialog && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-          zIndex: 999,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <div style={dialogStyle}>
-            <div style={{
-              fontSize: isMobile ? '18px' : '22px',
-              marginBottom: '20px',
-              color: '#fff',
-              textShadow: '2px 2px 0px #333',
-            }}>
-              Você quer reiniciar os seus troféus também?
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-              <button
-                style={dialogButtonStyle(yesHovered)}
-                onMouseEnter={() => setYesHovered(true)}
-                onMouseLeave={() => setYesHovered(false)}
-                onClick={handleRestartYes}
-              >
-                SIM
-              </button>
-              <button
-                style={dialogButtonStyle(noHovered)}
-                onMouseEnter={() => setNoHovered(true)}
-                onMouseLeave={() => setNoHovered(false)}
-                onClick={handleRestartNo}
-              >
-                NÃO
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
       <div style={containerStyle}>
         <div style={{ textAlign: 'center' }}>
           <h1 style={titleStyle}>
@@ -297,19 +206,17 @@ export function MainMenu({ onStartGame, onShowProfile, user }: MainMenuProps) {
               {showContinueButton ? `CONTINUAR (FASE ${nextLevel})` : 'JOGAR'}
             </button>
 
-            {showRestart && (
-              <button
-                style={{
-                  ...getButtonStyle(restartHovered, true),
-                  margin: 0,
-                }}
-                onMouseEnter={() => setRestartHovered(true)}
-                onMouseLeave={() => setRestartHovered(false)}
-                onClick={() => setShowRestartDialog(true)}
-              >
-                REINICIAR
-              </button>
-            )}
+            <button
+              style={{
+                ...getButtonStyle(phasesHovered, true),
+                margin: 0,
+              }}
+              onMouseEnter={() => setPhasesHovered(true)}
+              onMouseLeave={() => setPhasesHovered(false)}
+              onClick={() => navigate('/fases')}
+            >
+              VER FASES
+            </button>
           </div>
         </div>
         

@@ -112,6 +112,7 @@ export function createInitialState(level: number = 1): GameState {
     shieldCooldown: 0,
     explosionParticles: [],
     smokeParticles: [],
+    pixelParticles: [],
     shieldFragments: [],
     magicTrailParticles: [],
     damageNumbers: [],
