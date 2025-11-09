@@ -9,7 +9,7 @@ function getMaxShieldsForLevel(level: number): number {
     2: { base: 1 },
     3: { base: 1 },
     4: { base: 1 },
-    5: { base: 1 },
+    5: { base: 0 },
     6: { base: 1, rare: 2 },
     7: { base: 1, rare: 2 },
     8: { base: 2 },
