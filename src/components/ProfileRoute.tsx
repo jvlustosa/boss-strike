@@ -10,6 +10,7 @@ import { PIXEL_FONT } from '../utils/fonts';
 import { getSkinPreviewStyle } from '../utils/skinPreview';
 import { useToast } from '../hooks/useToast';
 import { ToastContainer } from './ToastContainer';
+import { SkinDetailsModal } from './SkinDetailsModal';
 
 type Tab = 'profile' | 'skins';
 
@@ -28,6 +29,7 @@ export function ProfileRoute() {
   const [userSkins, setUserSkins] = useState<UserSkinWithDetails[]>([]);
   const [skinsLoading, setSkinsLoading] = useState(false);
   const [equippingSkin, setEquippingSkin] = useState<string | null>(null);
+  const [selectedSkinForModal, setSelectedSkinForModal] = useState<Skin | null>(null);
   const [error, setError] = useState<Error | null>(null);
   const [errorDetails, setErrorDetails] = useState<string>('');
   const toast = useToast();
@@ -409,6 +411,7 @@ export function ProfileRoute() {
             const isUnlocked = cheatMode || unlockedSkinIds.has(skin.id);
             const isEquipped = selectedSkinId === skin.id;
             const rarityColor = getRarityColor(skin.rarity);
+            const isMystery = skin.is_mystery && !isUnlocked;
             
             const textureName = skin.sprite_data?.texture_name as string | undefined;
             const effectName = skin.sprite_data?.effect as string | undefined;
@@ -417,6 +420,7 @@ export function ProfileRoute() {
             return (
               <div
                 key={skin.id}
+                onClick={() => setSelectedSkinForModal(skin)}
                 style={{
                   backgroundColor: isEquipped ? '#1a2e1a' : '#222',
                   border: isEquipped 
@@ -426,7 +430,7 @@ export function ProfileRoute() {
                   padding: isMobile ? '6px' : '8px',
                   opacity: isUnlocked ? 1 : 0.5,
                   position: 'relative',
-                  cursor: isOwner && isUnlocked ? 'pointer' : 'default',
+                  cursor: 'pointer',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -453,7 +457,42 @@ export function ProfileRoute() {
                   </div>
                 )}
 
-                {!isUnlocked && !cheatMode && (
+                {!isUnlocked && !cheatMode && isMystery && (
+                  <div style={{
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 5,
+                    borderRadius: '4px',
+                  }}>
+                    <div 
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.1) rotate(5deg)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
+                      }}
+                      style={{
+                        fontSize: isMobile ? '48px' : '64px',
+                        color: rarityColor,
+                        fontWeight: 'bold',
+                        filter: `drop-shadow(0 0 8px ${rarityColor})`,
+                        animation: 'pulse 2s ease-in-out infinite',
+                        transition: 'transform 0.3s ease',
+                        transform: 'scale(1) rotate(0deg)',
+                      }}
+                    >
+                      ?
+                    </div>
+                  </div>
+                )}
+                {!isUnlocked && !cheatMode && !isMystery && (
                   <div style={{
                     position: 'absolute',
                     top: 0,
@@ -500,6 +539,12 @@ export function ProfileRoute() {
                   }}
                 >
                   <div 
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'scale(1.1) rotate(5deg)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
+                    }}
                     style={{
                       width: '50%',
                       aspectRatio: '1',
@@ -526,6 +571,8 @@ export function ProfileRoute() {
                           : 'none'),
                       animation: previewStyle.animation,
                       backgroundSize: previewStyle.backgroundGradient?.includes('rainbow') || previewStyle.backgroundGradient?.includes('mythic') ? '300% 100%' : 'auto',
+                      transition: 'transform 0.3s ease',
+                      transform: 'scale(1) rotate(0deg)',
                     }}
                     className={skin.rarity === 'mythic' || skin.rarity === 'legendary' || skin.rarity === 'epic' ? 'skin-glow' : ''}
                   >
@@ -550,7 +597,7 @@ export function ProfileRoute() {
                   textAlign: 'center',
                   lineHeight: '1.2',
                 }}>
-                  {skin.display_name}
+                  {isMystery ? '???' : skin.display_name}
                 </div>
 
                 <div style={{
@@ -600,7 +647,10 @@ export function ProfileRoute() {
                       transition: 'all 0.15s ease',
                       transform: 'scale(1)',
                     }}
-                    onClick={() => !isEquipped && handleEquipSkin(skin.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isEquipped) handleEquipSkin(skin.id);
+                    }}
                     disabled={isEquipped || equippingSkin === skin.id}
                     onMouseEnter={(e) => {
                       if (!isEquipped && equippingSkin !== skin.id) {
@@ -638,6 +688,14 @@ export function ProfileRoute() {
             );
           })}
           </div>
+          
+          {selectedSkinForModal && (
+            <SkinDetailsModal
+              skin={selectedSkinForModal}
+              isUnlocked={cheatMode || unlockedSkinIds.has(selectedSkinForModal.id)}
+              onClose={() => setSelectedSkinForModal(null)}
+            />
+          )}
         </div>
       </div>
     );

@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Skin, UserSkin, UserSkinWithDetails } from '../../supabase/supabase-structure';
+import type { Skin, UserSkin, UserSkinWithDetails } from '../utils/supabase-structure';
 
 export async function getAllSkins(): Promise<Skin[]> {
   const { data, error } = await supabase
@@ -125,37 +125,47 @@ export async function checkAndUnlockSkins(
   userId: string,
   currentLevel: number,
   currentVictories: number
-): Promise<string[]> {
-  const unlockedSkinIds: string[] = [];
+): Promise<Skin[]> {
+  const unlockedSkins: Skin[] = [];
 
-  // Get all skins that can be unlocked
-  const { data: unlockableSkins, error } = await supabase
+  // Get all skins that have unlock conditions (exclude default skin which is unlocked on signup)
+  const { data: allSkins, error } = await supabase
     .from('skins')
-    .select('id, unlock_level, unlock_victories')
-    .or(`unlock_level.lte.${currentLevel},unlock_victories.lte.${currentVictories}`);
+    .select('*')
+    .or(`unlock_level.not.is.null,unlock_victories.not.is.null`);
 
   if (error) {
     console.error('Error checking unlockable skins:', error);
     return [];
   }
 
-  if (!unlockableSkins) return [];
+  if (!allSkins) return [];
 
   // Get already unlocked skins
   const userSkins = await getUserSkins(userId);
   const unlockedSkinIdsSet = new Set(userSkins.map(us => us.skin_id));
 
-  // Unlock new skins
-  for (const skin of unlockableSkins) {
-    if (!unlockedSkinIdsSet.has(skin.id)) {
+  // Filter and unlock skins that meet their requirements
+  for (const skin of allSkins) {
+    // Skip if already unlocked
+    if (unlockedSkinIdsSet.has(skin.id)) continue;
+
+    // Check if skin meets unlock requirements
+    const meetsLevelRequirement = skin.unlock_level !== null && currentLevel >= skin.unlock_level;
+    const meetsVictoryRequirement = skin.unlock_victories !== null && currentVictories >= skin.unlock_victories;
+    
+    // Unlock if it meets at least one of its requirements
+    const shouldUnlock = meetsLevelRequirement || meetsVictoryRequirement;
+
+    if (shouldUnlock) {
       const unlocked = await unlockSkin(userId, skin.id);
       if (unlocked) {
-        unlockedSkinIds.push(skin.id);
+        unlockedSkins.push(skin as Skin);
       }
     }
   }
 
-  return unlockedSkinIds;
+  return unlockedSkins;
 }
 
 export async function getUserSkinsWithDetails(userId: string): Promise<UserSkinWithDetails[]> {

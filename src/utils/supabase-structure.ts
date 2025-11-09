@@ -114,6 +114,7 @@ export interface Skin {
   image_url: string | null;
   sprite_data: Record<string, any> | null;
   is_default: boolean;
+  is_mystery: boolean;
   created_at: Timestamp;
   updated_at: Timestamp;
 }
@@ -130,6 +131,7 @@ export interface SkinInsert {
   image_url?: string | null;
   sprite_data?: Record<string, any> | null;
   is_default?: boolean;
+  is_mystery?: boolean;
   created_at?: Timestamp;
   updated_at?: Timestamp;
 }

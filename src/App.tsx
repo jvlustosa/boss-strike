@@ -11,7 +11,9 @@ import { ProfilePage } from './components/ProfilePage';
 import { ProfileRoute } from './components/ProfileRoute';
 import { ToastContainer } from './components/ToastContainer';
 import { UserHeader } from './components/UserHeader';
+import { SkinUnlockAnimation } from './components/SkinUnlockAnimation';
 import { useToast } from './hooks/useToast';
+import { useSkinUnlock } from './hooks/useSkinUnlock';
 import { useAuth } from './contexts/AuthContext';
 import { PIXEL_FONT } from './utils/fonts';
 import { updateUrlLevel, getLevelFromUrl } from './game/core/urlParams';
@@ -26,6 +28,7 @@ function GameApp() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [authSkipped, setAuthSkipped] = useState(false);
   const toast = useToast();
+  const skinUnlock = useSkinUnlock();
   const { user, profile: authProfile, initialized, refreshProfile } = useAuth();
   const navigate = useNavigate();
 
@@ -116,6 +119,37 @@ function GameApp() {
       window.removeEventListener('togglePause', handleTogglePause);
     };
   }, [gameStarted, isPaused]);
+
+  // Auto-pause when tab becomes hidden
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden && gameStarted && !isPaused) {
+        // Save progress when pausing due to tab change
+        if (gameState?.status === 'playing') {
+          saveProgress(gameState).catch(console.error);
+        }
+        setIsPaused(true);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [gameStarted, isPaused, gameState]);
+
+  // Listen for skin unlock events
+  useEffect(() => {
+    const handleSkinsUnlocked = (event: CustomEvent) => {
+      const unlockedSkins = event.detail;
+      skinUnlock.addUnlockedSkins(unlockedSkins);
+    };
+
+    window.addEventListener('skinsUnlocked', handleSkinsUnlocked as EventListener);
+    return () => {
+      window.removeEventListener('skinsUnlocked', handleSkinsUnlocked as EventListener);
+    };
+  }, [skinUnlock]);
 
   const handleAuthSkip = () => {
     setAuthSkipped(true);
@@ -288,6 +322,12 @@ function GameApp() {
         />
       )}
       <ToastContainer toasts={toast.toasts} onClose={toast.removeToast} />
+      {skinUnlock.currentAnimation && (
+        <SkinUnlockAnimation
+          skin={skinUnlock.currentAnimation}
+          onComplete={skinUnlock.completeAnimation}
+        />
+      )}
     </>
   );
 }

@@ -1,6 +1,7 @@
 import type { GameState } from './types';
 import { getMaxLevel } from './levelLoader';
 import { supabase } from '../../utils/supabase';
+import { checkAndUnlockSkins } from '../../utils/skins';
 
 export interface GameProgress {
   level: number;
@@ -58,6 +59,17 @@ export async function saveProgress(gameState: GameState): Promise<void> {
       
       if (error) {
         console.warn('Failed to save progress to Supabase:', error);
+      } else {
+        // Check and unlock skins based on current progress
+        checkAndUnlockSkins(userId, progress.level, progress.victories)
+          .then((unlockedSkins) => {
+            if (unlockedSkins.length > 0) {
+              window.dispatchEvent(new CustomEvent('skinsUnlocked', { detail: unlockedSkins }));
+            }
+          })
+          .catch(err => {
+            console.warn('Error checking skin unlocks:', err);
+          });
       }
     } catch (error) {
       console.warn('Error syncing progress to Supabase:', error);
@@ -162,12 +174,43 @@ export async function saveVictory(level: number): Promise<void> {
     const userId = await getCurrentUserId();
     if (userId) {
       try {
-        await supabase
+        // First, get current progress to preserve level
+        const { data: existingProgress } = await supabase
           .from('game_progress')
-          .update({ victories: newVictories })
-          .eq('user_id', userId);
+          .select('level')
+          .eq('user_id', userId)
+          .single();
+        
+        const currentLevel = existingProgress?.level || level;
+        
+        // Use upsert to ensure record exists, preserving level and updating victories
+        const { error } = await supabase
+          .from('game_progress')
+          .upsert({
+            user_id: userId,
+            level: currentLevel,
+            victories: newVictories,
+            last_played_at: new Date().toISOString(),
+          }, {
+            onConflict: 'user_id'
+          });
+        
+        if (error) {
+          console.error('Error saving victory to Supabase:', error);
+        } else {
+          // Check and unlock skins based on updated victories
+          checkAndUnlockSkins(userId, currentLevel, newVictories)
+            .then((unlockedSkins) => {
+              if (unlockedSkins.length > 0) {
+                window.dispatchEvent(new CustomEvent('skinsUnlocked', { detail: unlockedSkins }));
+              }
+            })
+            .catch(err => {
+              console.warn('Error checking skin unlocks:', err);
+            });
+        }
       } catch (error) {
-        console.warn('Error saving victory to Supabase:', error);
+        console.error('Error saving victory to Supabase:', error);
       }
     }
   }

@@ -7,6 +7,7 @@ import { parseSupabaseError } from '../utils/supabaseErrors';
 import { getAllSkins, getUserSkinsWithDetails, equipSkin } from '../utils/skins';
 import { PIXEL_FONT } from '../utils/fonts';
 import { getSkinPreviewStyle } from '../utils/skinPreview';
+import { SkinDetailsModal } from './SkinDetailsModal';
 
 interface ProfilePageProps {
   onClose: () => void;
@@ -30,12 +31,35 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
   const [userSkins, setUserSkins] = useState<UserSkinWithDetails[]>([]);
   const [skinsLoading, setSkinsLoading] = useState(false);
   const [equippingSkin, setEquippingSkin] = useState<string | null>(null);
+  const [selectedSkinForModal, setSelectedSkinForModal] = useState<Skin | null>(null);
   
   // Cheat mode: check for ?cheat=skins in URL
   const isCheatMode = () => {
     const params = new URLSearchParams(window.location.search);
     return params.get('cheat') === 'skins';
   };
+
+  useEffect(() => {
+    // Add pulse animation for mystery skins
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes pulse {
+        0%, 100% { opacity: 1; transform: scale(1); }
+        50% { opacity: 0.7; transform: scale(1.1); }
+      }
+    `;
+    style.setAttribute('data-pulse-animation', 'true');
+    if (!document.head.querySelector('style[data-pulse-animation]')) {
+      document.head.appendChild(style);
+    }
+    
+    return () => {
+      const existing = document.head.querySelector('style[data-pulse-animation]');
+      if (existing) {
+        document.head.removeChild(existing);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -394,6 +418,7 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
             const isUnlocked = cheatMode || unlockedSkinIds.has(skin.id);
             const isEquipped = selectedSkinId === skin.id;
             const rarityColor = getRarityColor(skin.rarity);
+            const isMystery = skin.is_mystery && !isUnlocked;
             
             // Obter estilos da skin do CSS (mesma lógica do PlayerRenderer)
             const textureName = skin.sprite_data?.texture_name as string | undefined;
@@ -403,6 +428,7 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
             return (
               <div
                 key={skin.id}
+                onClick={() => setSelectedSkinForModal(skin)}
                 style={{
                   backgroundColor: isEquipped ? '#1a2e1a' : '#222',
                   border: isEquipped 
@@ -412,7 +438,7 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
                   padding: isMobile ? '10px' : '12px',
                   opacity: isUnlocked ? 1 : 0.6,
                   position: 'relative',
-                  cursor: isUnlocked ? 'pointer' : 'default',
+                  cursor: 'pointer',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
@@ -443,9 +469,9 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
 
                 <div 
                   className={
-                    skin.rarity === 'mythic' || skin.rarity === 'legendary' 
+                    !isMystery && (skin.rarity === 'mythic' || skin.rarity === 'legendary')
                       ? 'holo-effect holo-legendary' 
-                      : skin.rarity === 'epic' 
+                      : !isMystery && skin.rarity === 'epic' 
                       ? 'holo-effect holo-epic' 
                       : ''
                   }
@@ -465,44 +491,82 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
                     overflow: 'hidden',
                   }}
                 >
-                  <div 
-                    style={{
-                      width: '60%',
-                      aspectRatio: '1',
-                      backgroundColor: previewStyle.backgroundColor,
-                      background: previewStyle.backgroundGradient || previewStyle.backgroundColor,
-                      borderRadius: '4px',
-                      border: `2px solid ${previewStyle.borderColor}`,
-                      flexShrink: 0,
-                      position: 'relative',
-                      zIndex: 3,
-                      boxShadow: previewStyle.boxShadow !== 'none' 
-                        ? previewStyle.boxShadow 
-                        : (skin.rarity === 'mythic'
-                          ? `0 0 25px ${rarityColor}, 0 0 50px ${rarityColor}, 0 0 75px ${rarityColor}`
-                          : skin.rarity === 'legendary'
-                          ? `0 0 20px ${rarityColor}, 0 0 40px ${rarityColor}`
-                          : skin.rarity === 'epic'
-                          ? `0 0 15px ${rarityColor}, 0 0 30px ${rarityColor}`
-                          : skin.rarity === 'rare'
-                          ? `0 0 10px ${rarityColor}, 0 0 20px ${rarityColor}`
-                          : 'none'),
-                      animation: previewStyle.animation,
-                      backgroundSize: previewStyle.backgroundGradient?.includes('rainbow') || previewStyle.backgroundGradient?.includes('mythic') ? '300% 100%' : 'auto',
-                    }}
-                    className={skin.rarity === 'mythic' || skin.rarity === 'legendary' || skin.rarity === 'epic' ? 'skin-glow' : ''}
-                  />
+                  {isMystery ? (
+                    <div 
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.1) rotate(5deg)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
+                      }}
+                      style={{
+                        width: '60%',
+                        aspectRatio: '1',
+                        backgroundColor: '#1a1a1a',
+                        borderRadius: '4px',
+                        border: `3px solid ${rarityColor}`,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: isMobile ? '48px' : '64px',
+                        color: rarityColor,
+                        fontWeight: 'bold',
+                        boxShadow: `0 0 20px ${rarityColor}, 0 0 40px ${rarityColor}`,
+                        animation: 'pulse 2s ease-in-out infinite',
+                        transition: 'transform 0.3s ease',
+                        transform: 'scale(1) rotate(0deg)',
+                      }}
+                    >
+                      ?
+                    </div>
+                  ) : (
+                    <div 
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'scale(1.1) rotate(5deg)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
+                      }}
+                      style={{
+                        width: '60%',
+                        aspectRatio: '1',
+                        backgroundColor: previewStyle.backgroundColor,
+                        background: previewStyle.backgroundGradient || previewStyle.backgroundColor,
+                        borderRadius: '4px',
+                        border: `2px solid ${previewStyle.borderColor}`,
+                        flexShrink: 0,
+                        position: 'relative',
+                        zIndex: 3,
+                        boxShadow: previewStyle.boxShadow !== 'none' 
+                          ? previewStyle.boxShadow 
+                          : (skin.rarity === 'mythic'
+                            ? `0 0 25px ${rarityColor}, 0 0 50px ${rarityColor}, 0 0 75px ${rarityColor}`
+                            : skin.rarity === 'legendary'
+                            ? `0 0 20px ${rarityColor}, 0 0 40px ${rarityColor}`
+                            : skin.rarity === 'epic'
+                            ? `0 0 15px ${rarityColor}, 0 0 30px ${rarityColor}`
+                            : skin.rarity === 'rare'
+                            ? `0 0 10px ${rarityColor}, 0 0 20px ${rarityColor}`
+                            : 'none'),
+                        animation: previewStyle.animation,
+                        backgroundSize: previewStyle.backgroundGradient?.includes('rainbow') || previewStyle.backgroundGradient?.includes('mythic') ? '300% 100%' : 'auto',
+                        transition: 'transform 0.3s ease',
+                        transform: 'scale(1) rotate(0deg)',
+                      }}
+                      className={skin.rarity === 'mythic' || skin.rarity === 'legendary' || skin.rarity === 'epic' ? 'skin-glow' : ''}
+                    />
+                  )}
                 </div>
 
-                    <div style={{ 
+                <div style={{ 
                   fontSize: isMobile ? '12px' : '13px',
-                      fontWeight: '600',
+                  fontWeight: '600',
                   color: rarityColor,
-                      marginBottom: '4px',
+                  marginBottom: '4px',
                   textAlign: 'center',
-                    }}>
-                      {skin.display_name}
-                    </div>
+                }}>
+                  {isMystery ? '???' : skin.display_name}
+                </div>
 
                 <div style={{
                   display: 'flex',
@@ -557,7 +621,10 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
                       borderRadius: '4px',
                       textTransform: 'uppercase',
                     }}
-                    onClick={() => !isEquipped && handleEquipSkin(skin.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (!isEquipped) handleEquipSkin(skin.id);
+                    }}
                     disabled={isEquipped || equippingSkin === skin.id}
                   >
                     {equippingSkin === skin.id 
@@ -580,7 +647,7 @@ export function ProfilePage({ onClose, showToast, showSuccess }: ProfilePageProp
                     textAlign: 'center',
                     borderRadius: '4px',
                   }}>
-                    {skin.unlock_condition || 'Bloqueada'}
+                    {isMystery ? '???' : (skin.unlock_condition || 'Bloqueada')}
                   </div>
                 )}
               </div>
