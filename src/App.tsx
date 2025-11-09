@@ -120,7 +120,17 @@ function GameApp() {
   useEffect(() => {
     const handleStartGameEvent = (event: CustomEvent) => {
       const { level } = event.detail;
-      handleStartGame(level);
+      if (level) {
+        // Update URL immediately
+        updateUrlLevel(level);
+        // Force game restart by setting gameStarted to false first, then starting
+        setGameStarted(false);
+        setIsPaused(false);
+        // Small delay to ensure state is reset before starting new game
+        setTimeout(() => {
+          handleStartGame(level);
+        }, 50);
+      }
     };
 
     window.addEventListener('startGame', handleStartGameEvent as EventListener);
@@ -320,7 +330,7 @@ function GameApp() {
             alignItems: 'center',
             justifyContent: 'center',
           }}>
-            <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} />
+            <GameCanvas isPaused={isPaused} onGameStateChange={handleGameStateChange} gameStarted={gameStarted} />
           </div>
         </div>
         {isPaused && (
@@ -384,8 +394,14 @@ export default function App() {
 function LevelsPageRoute() {
   const navigate = useNavigate();
   const handleStartGame = async (level: number) => {
+    // Update URL first
+    updateUrlLevel(level);
+    // Navigate to home
     navigate('/');
-    window.dispatchEvent(new CustomEvent('startGame', { detail: { level } }));
+    // Dispatch event after a small delay to ensure navigation completed
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('startGame', { detail: { level } }));
+    }, 50);
   };
   return <LevelsPage onStartGame={handleStartGame} />;
 }

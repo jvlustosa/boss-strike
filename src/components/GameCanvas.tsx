@@ -28,9 +28,10 @@ import { useSkin } from '../hooks/useSkin';
 interface GameCanvasProps {
   isPaused: boolean;
   onGameStateChange?: (gameState: GameState) => void;
+  gameStarted?: boolean;
 }
 
-export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
+export function GameCanvas({ isPaused, onGameStateChange, gameStarted = true }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
   const stateRef = useRef<GameState | null>(null);
@@ -63,6 +64,86 @@ export function GameCanvas({ isPaused, onGameStateChange }: GameCanvasProps) {
       onGameStateChange(stateRef.current);
     }
   }, [onGameStateChange]);
+
+  // Force restart when gameStarted changes to true (after being false)
+  React.useEffect(() => {
+    if (gameStarted) {
+      const currentLevel = getLevelFromUrl();
+      // Force reset to the level from URL
+      if (stateRef.current) {
+        stateRef.current = createInitialState(currentLevel);
+        stateRef.current.status = 'playing';
+        stateRef.current.time = 0;
+        stateRef.current.victoryTimer = 0;
+        stateRef.current.restartTimer = 0;
+        stateRef.current.bossShakeTimer = 0;
+        
+        // Clear all particles and effects
+        stateRef.current.bullets.length = 0;
+        stateRef.current.explosionParticles.length = 0;
+        stateRef.current.smokeParticles.length = 0;
+        stateRef.current.pixelParticles.length = 0;
+        stateRef.current.magicTrailParticles.length = 0;
+        stateRef.current.damageNumbers.length = 0;
+        stateRef.current.shieldFragments.length = 0;
+        stateRef.current.scorchMarks.length = 0;
+        
+        // Notify parent component
+        if (onGameStateChange) {
+          onGameStateChange(stateRef.current);
+        }
+      }
+    }
+  }, [gameStarted, onGameStateChange]);
+
+  // Listen for level changes from URL (when user selects a level from /fases)
+  React.useEffect(() => {
+    const checkLevelChange = () => {
+      const currentLevel = getLevelFromUrl();
+      if (stateRef.current && stateRef.current.level !== currentLevel) {
+        // Level changed, reset game state
+        stateRef.current = createInitialState(currentLevel);
+        stateRef.current.status = 'playing';
+        
+        // Reset all game timers and state
+        stateRef.current.time = 0;
+        stateRef.current.victoryTimer = 0;
+        stateRef.current.restartTimer = 0;
+        stateRef.current.bossShakeTimer = 0;
+        
+        // Clear all particles and effects
+        stateRef.current.bullets.length = 0;
+        stateRef.current.explosionParticles.length = 0;
+        stateRef.current.smokeParticles.length = 0;
+        stateRef.current.pixelParticles.length = 0;
+        stateRef.current.magicTrailParticles.length = 0;
+        stateRef.current.damageNumbers.length = 0;
+        stateRef.current.shieldFragments.length = 0;
+        stateRef.current.scorchMarks.length = 0;
+        
+        // Notify parent component
+        if (onGameStateChange) {
+          onGameStateChange(stateRef.current);
+        }
+      }
+    };
+
+    // Check immediately
+    checkLevelChange();
+
+    // Listen for popstate (back/forward) and custom level change events
+    window.addEventListener('popstate', checkLevelChange);
+    window.addEventListener('levelChange', checkLevelChange);
+    
+    // Also check periodically (in case URL changes without events)
+    const interval = setInterval(checkLevelChange, 100);
+
+    return () => {
+      window.removeEventListener('popstate', checkLevelChange);
+      window.removeEventListener('levelChange', checkLevelChange);
+      clearInterval(interval);
+    };
+  }, [onGameStateChange, gameStarted]);
 
   const setupCanvas = useCallback((canvas: HTMLCanvasElement) => {
     const ctx = canvas.getContext('2d')!;

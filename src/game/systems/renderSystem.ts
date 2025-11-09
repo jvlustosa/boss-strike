@@ -204,7 +204,6 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     const scale = 0.8 + lifeProgress * 0.4; // Começa menor e cresce
     
     ctx.save();
-    ctx.globalAlpha = alpha;
     
     // Posição
     const x = Math.floor(damageNumber.pos.x);
@@ -212,34 +211,77 @@ export function renderSystem(ctx: CanvasRenderingContext2D, state: GameState, is
     
     const isCritical = damageNumber.isCritical || false;
     
-    // Escala do texto (menor para crítico)
-    const fontSize = isCritical 
-      ? Math.max(4, Math.floor(6 * scale)) // Menor para crítico
-      : Math.max(5, Math.floor(7 * scale));
+    // Tamanhos diferentes baseados no valor e tipo
+    const baseSize = isCritical ? 8 : 7;
+    const valueMultiplier = Math.min(1.5, 1 + (damageNumber.value / 100)); // Aumenta com dano
+    const fontSize = Math.max(4, Math.floor(baseSize * scale * valueMultiplier));
+    
     ctx.font = `bold ${fontSize}px 'Pixelify Sans', monospace`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     
-    // Cor e estilo diferentes para crítico
+    // Efeitos de brilho diferentes
     if (isCritical) {
-      // Contorno para crítico
+      // Glow intenso pulsante para crítico
+      const pulse = 0.7 + Math.sin(state.time * 8) * 0.3;
+      const glowIntensity = pulse * alpha;
+      
+      // Múltiplas camadas de glow roxo/dourado
+      for (let i = 3; i >= 1; i--) {
+        ctx.globalAlpha = (glowIntensity * 0.3) / i;
+        ctx.fillStyle = i === 3 ? '#9333ea' : (i === 2 ? '#fbbf24' : '#ffffff');
+        ctx.fillText('Critical!', x, y - fontSize - 2);
+        ctx.fillText(damageNumber.value.toString(), x, y);
+      }
+      
+      // Glow externo mais suave
+      ctx.globalAlpha = glowIntensity * 0.2;
+      ctx.fillStyle = '#9333ea';
+      for (let offset = 1; offset <= 4; offset++) {
+        ctx.fillText('Critical!', x + offset, y - fontSize - 2);
+        ctx.fillText('Critical!', x - offset, y - fontSize - 2);
+        ctx.fillText('Critical!', x, y - fontSize - 2 + offset);
+        ctx.fillText('Critical!', x, y - fontSize - 2 - offset);
+        ctx.fillText(damageNumber.value.toString(), x + offset, y);
+        ctx.fillText(damageNumber.value.toString(), x - offset, y);
+        ctx.fillText(damageNumber.value.toString(), x, y + offset);
+        ctx.fillText(damageNumber.value.toString(), x, y - offset);
+      }
+      
+      // Contorno preto
+      ctx.globalAlpha = alpha;
       ctx.strokeStyle = '#000000';
       ctx.lineWidth = 2;
       ctx.strokeText('Critical!', x, y - fontSize - 2);
       ctx.strokeText(damageNumber.value.toString(), x, y);
       
-      // Texto roxo para crítico
-      ctx.fillStyle = '#9333ea'; // Roxo vibrante para crítico
+      // Texto principal roxo/dourado
+      ctx.fillStyle = '#9333ea';
       ctx.fillText('Critical!', x, y - fontSize - 2);
+      ctx.fillStyle = '#fbbf24';
       ctx.fillText(damageNumber.value.toString(), x, y);
     } else {
-      // Contorno preto (outline) estilo Fortnite
+      // Glow suave amarelo para dano normal
+      const glowIntensity = alpha * 0.4;
+      
+      // Glow externo
+      ctx.globalAlpha = glowIntensity;
+      ctx.fillStyle = '#ffff00';
+      for (let offset = 1; offset <= 2; offset++) {
+        ctx.fillText(damageNumber.value.toString(), x + offset, y);
+        ctx.fillText(damageNumber.value.toString(), x - offset, y);
+        ctx.fillText(damageNumber.value.toString(), x, y + offset);
+        ctx.fillText(damageNumber.value.toString(), x, y - offset);
+      }
+      
+      // Contorno preto
+      ctx.globalAlpha = alpha;
       ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 2; // Reduzido proporcionalmente
+      ctx.lineWidth = 2;
       ctx.strokeText(damageNumber.value.toString(), x, y);
       
-      // Texto branco/amarelo
-      ctx.fillStyle = '#ffff00'; // Amarelo como Fortnite
+      // Texto principal amarelo
+      ctx.fillStyle = '#ffff00';
       ctx.fillText(damageNumber.value.toString(), x, y);
     }
     

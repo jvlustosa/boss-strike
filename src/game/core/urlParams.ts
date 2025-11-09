@@ -50,6 +50,9 @@ export function updateUrlLevel(level: number): void {
   const url = new URL(window.location.href);
   url.searchParams.set('nivel', level.toString());
   window.history.pushState(null, '', url.toString());
+  
+  // Dispatch custom event to notify GameCanvas of level change
+  window.dispatchEvent(new CustomEvent('levelChange', { detail: { level } }));
 }
 
 export function isCheatActive(cheatName: string): boolean {
